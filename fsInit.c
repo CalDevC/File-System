@@ -68,15 +68,32 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 		// 0 = occupied
 		// 1 = free
-		bitVector = 0;
 
-		for(int i = 0; i < numberOfBlocks / 8; i++){
-			for(int j = 0; j < 7; j++){
-				//bitVector[i] | (1 << (j - 1));
-				bitVector[j] = 5;
-				printf("bitVector[i]: %d\n", bitVector[i]);
+		// Initialize bitVector to 0
+		bitVector = 0;
+		int count1 = 0;
+		int bit = 0;
+		
+		// Set all bits to 0
+		for(int i = 0; i < (numberOfBlocks / 8) + 1; i++){
+			for(int j = 0; j < 8; j++){
+				// Set each bit to one
+				bit = bitVector[i] | (1 << (j - 1));
+				
+				//printf("bit: %d\n", bit);
+				count1++;
 			}
 		}
+		int count2 = 0;
+
+		// Set first 7 bits to 0
+		for(int i = 0; i < 7; i++){
+				// Set each bit to one
+				bitVector[0] | (1 << (i - 1));
+				//printf("bitVector[i]: %d\n", bitVector[i]);
+				count2++;
+		}
+		printf("Count: %d\n", count2);
 
 	}
 
