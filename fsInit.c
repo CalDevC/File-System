@@ -59,8 +59,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     //vcbPtr->rootDir = 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
-    printf("We need to allocate: %ld bytes\n", (numberOfBlocks / 8) + 3);
-
+    printf("We need to allocate: %ld bytes\n", (numberOfBlocks / 32) + 1);
     // We need to add one so that we can allocate 2444 bytes
     int numOfInts = (numberOfBlocks / 32) + 1;
 
@@ -72,8 +71,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     // will give us 19,552 bits (since 2444 / 4 = 611 ints and each int 
     // contains 4 bytes (32bits)) So we can only go from [0 - 610] 
     // inclusive
-    int* bitVector = malloc(numOfInts * sizeof(int));
+    // int * bitVector = malloc(numOfInts * sizeof(int)); 
 
+    int* bitVector = malloc(5 * blockSize);
 
     // Block 0 is the partition table
     // Block 1 is the VCB
@@ -107,7 +107,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       }
     }
 
-    for (int i = 1; i < (numOfInts); i++) {
+    // Set all the bits starting from bit 33 to 1
+    for (int i = 1; i < numOfInts; i++) {
       for (int j = 31; j >= 0; j--) {
         totalBits++;
         // Set bit to 1
@@ -115,25 +116,18 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       }
     }
 
-    // Display all the 19,552 bits
-    int counter = 0;
-    for (int i = 0; i < (numOfInts); i++) {
-      for (int j = 31; j >= 0; j--) {
-        counter++;
-        if (bitVector[i] & (1 << j)) {
-          printf("The value at %dth bit is: %d\n", counter, 1);
-        } else {
-          printf("The value at %dth bit is: %d\n", counter, 0);
-        }
-      }
-    }
-
     printf("Total bits are: %d\n", totalBits);
 
+
+    printf("Allocating resources for LBAread block 0\n");
+
+    int numBlocksWritten = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK);
+
+    printf("Number of blocks written to the LBA: %d\n", numBlocksWritten);
+
+    vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
+
   }
-
-  printf("Allocating resources for LBAread block 0\n");
-
 
   return 0;
 }
@@ -142,3 +136,4 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 void exitFileSystem() {
   printf("System exiting\n");
 }
+
