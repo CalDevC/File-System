@@ -99,13 +99,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       }
     }
 
-    for (int i = 31; i >= 0; i--) {
-      if (bitVector[0] & (1 << i)) {
-        printf("The value at %dth bit is: %d\n", (31 - i) + 1, 1);
-      } else {
-        printf("The value at %dth bit is: %d\n", (31 - i) + 1, 0);
-      }
-    }
+    // for (int i = 31; i >= 0; i--) {
+    //   if (bitVector[0] & (1 << i)) {
+    //     printf("The value at %dth bit is: %d\n", (31 - i) + 1, 1);
+    //   } else {
+    //     printf("The value at %dth bit is: %d\n", (31 - i) + 1, 0);
+    //   }
+    // }
 
     // Set all the bits starting from bit 33 to 1
     for (int i = 1; i < numOfInts; i++) {
