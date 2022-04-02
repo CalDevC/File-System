@@ -60,48 +60,77 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
  		//vcbPtr->rootDir = 
 		vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
-		int * bitVector = malloc(numberOfBlocks / 8); 
+		int memoryToAllocate = (numberOfBlocks / 8) + 3;
+		//int * bitVector = malloc(memoryToAllocate); 
+		int * bitVector = malloc(5 * blockSize); 
 
 		// Block 0 is the partition table
 		// Block 1 is the VCB
 
-
 		// 0 = occupied
 		// 1 = free
 
-		// Initialize bitVector to 0
-		bitVector = 0;
-		int count1 = 0;
-		int bit = 0;
-		
-		// Set all bits to 0
-		for(int i = 0; i < (numberOfBlocks / 8) + 1; i++){
-			for(int j = 0; j < 8; j++){
-				// Set each bit to one
-				bit = bitVector[i] | (1 << (j - 1));
-				
-				//printf("bit: %d\n", bit);
-				count1++;
+		// Set first 7 bits to 0 and the rest of
+		// 25 bits of 1st integer to 1
+		int totalBits = 0;
+		// Set all bits starting from bit 33 to 1
+		for (int i = 31; i >= 0; i--) {
+			totalBits++;
+			if (i >= 25) {
+				// Set bit to 0
+				bitVector[0] = bitVector[0] & ~(1 << i);
+
+			} else {
+				// Set bit to 1
+				bitVector[0] = bitVector[0] | (1 << i);			
 			}
 		}
-		int count2 = 0;
 
-		// Set first 7 bits to 0
-		for(int i = 0; i < 7; i++){
-				// Set each bit to one
-				bitVector[0] | (1 << (i - 1));
-				//printf("bitVector[i]: %d\n", bitVector[i]);
-				count2++;
+		for (int i = 31; i >= 0; i--) {
+			if (bitVector[0] & (1 << i)) {
+				printf("The value at %dth bit is: %d\n", (31-i) + 1, 1);	
+			} else {
+				printf("The value at %dth bit is: %d\n", (31-i) + 1, 0);
+			}
 		}
-		printf("Count: %d\n", count2);
 
+		for (int i = 1; i < (memoryToAllocate / 4); i++) {
+          for (int j = 31; j >= 0; j--) {
+			totalBits++;  
+			// Set bit to 1
+			bitVector[i] = bitVector[i] | (1 << j);			
+		  }
+		}
+
+		// Display all the 19,552 bits
+		int counter = 0;
+		for (int i = 0; i < (memoryToAllocate / 4); i++) {
+          for (int j = 0; j >= 31; j++) {
+			counter++;  
+			if (bitVector[i] & (1 << j)) {
+				printf("The value at %dth bit is: %d\n", counter, 1);	
+			} else {
+				printf("The value at %dth bit is: %d\n", counter, 0);
+			}
+		  }
+		}
+
+		printf("Total bits are: %d\n", totalBits);
+
+		printf("Allocating resources for LBAread block 0\n");
+
+
+		/* Now write that to disk with LBAwrite(theFreeSpaceMap, 5, 1) 
+		*  – that is write 5 blocks starting from block 1
+		*/
+		int numBlockWritten = LBAwrite(bitVector, 5, 2);
+
+	 	printf("Number of blocks written to LBA!: %d\n", numBlockWritten);
+		
+		// ... Or mark it yourself if the VCB is a global structure.
+		vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 	}
-
-
-
-	printf("Allocating resources for LBAread block 0\n");
-
-
+	
 	return 0;
 	}
 	
