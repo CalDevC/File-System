@@ -20,13 +20,13 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "rootDirectory.h"
 #include "fsLow.h"
 #include "mfs.h"
 
 // Magic number for fsInit.c
 #define SIG 12345
-#define FREE_SPACE_START_BLOCK 2
+#define FREE_SPACE_START_BLOCK 1
 
 struct volumeCtrlBlock{
     long signature;   //Marker left behind that can be checked 
@@ -44,7 +44,12 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	/* TODO: Add any code you need to initialize your file system. */
 	printf("Allocating resources for VCB pointer\n");
 
-	struct volumeCtrlBlock * vcbPtr = malloc(sizeof(volumeCtrlBlock));
+	struct volumeCtrlBlock * vcbPtr = malloc(blockSize);
+
+	// Reads data into VCB to check signature
+	LBAread(vcbPtr, 1, 0);
+
+	
 
 	if (vcbPtr->signature == SIG){
 		printf("%d\n", SIG); 
@@ -54,37 +59,17 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		printf("Volume not formatted\n");
 
 		vcbPtr->signature = SIG;
-		vcbPtr->blockSize = MINBLOCKSIZE;
+		vcbPtr->blockSize = blockSize;
 		vcbPtr->blockCount = numberOfBlocks;
-		//vcbPtr->numFreeBlocks = 
- 		//vcbPtr->rootDir = 
 		vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
-		printf("We need to allocate: %ld bytes\n", (numberOfBlocks / 32) + 1);
-		// We need to add one so that we can allocate 2444 bytes
-		int numOfInts = (numberOfBlocks / 32) + 1;
-
-		// The reason we were getting an error was because here we were
-		// allocating 2444 bytes and using an int pointer (4 bytes) to 
-		// iterate through which means that at every index we have access
-		// to 4 bytes, so in total we have access to 2444 / 4 = 611 blocks 
-		// so we were going way over the allocated 2444 bytes. 2444 bytes
-		// will give us 19,552 bits (since 2444 / 4 = 611 ints and each int 
-		// contains 4 bytes (32bits)) So we can only go from [0 - 610] 
-		// inclusive
-		// int * bitVector = malloc(numOfInts * sizeof(int)); 
-
-         int * bitVector = malloc(5 * blockSize);
 		
-		// Block 0 is the partition table
-		// Block 1 is the VCB
+		// We need to add one byte so that we can allocate 2444 bytes
+		int numOfInts = (numberOfBlocks / 32) + 1;
+        int * bitVector = malloc(5 * blockSize);
 
 		// 0 = occupied
 		// 1 = free
-
-		// Initialize bitVector to 0
-		// ERROR: The following (bitVector = 0) was giving the issue:
-		// bitVector = 0;
 
 		// Set first 7 bits to 0 and the rest of
 		// 25 bits of 1st integer to 1
@@ -100,14 +85,6 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 			}
 		}
 
-		for (int i = 31; i >= 0; i--) {
-			if (bitVector[0] & (1 << i)) {
-				printf("The value at %dth bit is: %d\n", (31-i) + 1, 1);	
-			} else {
-				printf("The value at %dth bit is: %d\n", (31-i) + 1, 0);
-			}
-		}
-
 		// Set all the bits starting from bit 33 to 1
 		for (int i = 1; i < numOfInts; i++) {
           for (int j = 31; j >= 0; j--) {
@@ -117,19 +94,34 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		  }
 		}
 
-		printf("Total bits are: %d\n", totalBits);
-        
-
-		printf("Allocating resources for LBAread block 0\n");
-
+		// Points to an array of directory entries in a free state
+		hashmap* dirEntries = hashmapInit();
+	
+		// Saves starting block of the free space and root directory in the VCB
 	    int numBlocksWritten = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK);
-
-		printf("Number of blocks written to the LBA: %d\n", numBlocksWritten);
+		int writeRootDirBlocks = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK + numBlocksWritten);
 
 		vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
+		vcbPtr->rootDir = FREE_SPACE_START_BLOCK + numBlocksWritten;
+		
+		int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+		int maxDirSize = (5 * blockSize);	//2560 bytes
+		int numofEntries = maxDirSize - (maxDirSize % sizeOfEntry); //53 entries
+		
+		// Initializing the "." current directory, the ".." parent Directory 
+		dirEntry* curDir = dirEntryInit(".", FREE_SPACE_START_BLOCK + numBlocksWritten,
+										5 * blockSize, time(0), time(0));
+		setEntry(curDir->filename, curDir, dirEntries);
 
+		dirEntry* parentDir = dirEntryInit("..", FREE_SPACE_START_BLOCK + numBlocksWritten,
+											5 * blockSize, time(0), time(0));
+		setEntry(parentDir->filename, parentDir, dirEntries);
+
+		printMap(dirEntries);
+		// Writes VCB to block 0
+		int writeVCB = LBAwrite(bitVector, 1, 0);
 	}
-
+		
 	return 0;
 	}
 	
