@@ -127,6 +127,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
+
+
   }
 
   return 0;

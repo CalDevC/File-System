@@ -50,6 +50,8 @@ typedef struct hashmap {
 hashmap* hashmapInit() {
   hashmap* newMap = malloc(sizeof(node*) * SIZE);
 
+  //Each node in the map should be set to NULL so that we know if there 
+  //is a collision or not
   for (int i = 0; i < SIZE; i++) {
     node* temp = NULL;
     newMap->entries[i] = temp;
@@ -58,41 +60,60 @@ hashmap* hashmapInit() {
   return newMap;
 }
 
+//Get the hash value for a given key (filenames are used as keys)
 int hash(const char filename[20]) {
   int value = 1;
+
+  //Alter the hash value based on each char in 
+  //the name to try to get a unique value
   for (int i = 0; i < 20; i++) {
-    // printf("Char value is %d making value %d\n", filename[i], value);
     value *= 2 + filename[i];
   }
 
+  //If the integer overflows, correct the value to be positive
   if (value < 0) {
     value *= -1;
   }
 
-  // printf("Total is %d\n", value);
+  //Return a value that will definitely be a valid index in the map
+  //by using the remainder of (calculated value / map size)
   return value % SIZE;
 }
 
+//Initialize an entry for the hashmap
 node* entryInit(char key[20], dirEntry* value) {
+  //allocate memory for the entry in the table and 
+  //the entry's value (directory entry)
   node* entry = malloc(sizeof(node));
   entry->value = malloc(sizeof(dirEntry));
+
+  //Transfer the data to the allocated memory
   strcpy(entry->key, key);
   memcpy(entry->value, value, sizeof(dirEntry));
   entry->next = NULL;
+
   return entry;
 }
 
+//Update an existing entry or add a new one
 void setEntry(char key[20], dirEntry* value, hashmap* map) {
+  //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
   node* entry = map->entries[hashVal];
 
+  //If there is no collision then add a new initialized entry
   if (entry == NULL) {
     map->entries[hashVal] = entryInit(key, value);
     return;
   }
 
   node* prevEntry;
+
+  //If there is a collision
   while (entry != NULL) {
+
+    //If the current entry has the same key that we are attempting 
+    //to add then update the existing entry
     if (strcmp(entry->key, key) == 0) {
       free(entry->value);
       entry->value = malloc(sizeof(dirEntry));
@@ -100,18 +121,24 @@ void setEntry(char key[20], dirEntry* value, hashmap* map) {
       return;
     }
 
+    //Move on to check the next entry at the current map location
     prevEntry = entry;
     entry = prevEntry->next;
   }
 
+  //If the key was not found at the map location then add it to 
+  //the end of the list at that location
   prevEntry->next = entryInit(key, value);
 
 }
 
+//Retrieve an entry from a provided hashmap
 dirEntry* getEntry(char key[20], hashmap* map) {
+  //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
   node* entry = map->entries[hashVal];
 
+  //
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
       return entry->value;
@@ -139,6 +166,7 @@ void printMap(hashmap* map) {
 
 }
 
+//Free the memory allocated to the hashmap
 void clean(hashmap* map) {
   for (int i = 0; i < SIZE; i++) {
     node* entry = map->entries[i];
