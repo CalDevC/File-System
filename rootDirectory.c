@@ -16,12 +16,18 @@ typedef struct {
   time_t dateCreated;	  //Date file was created
 } dirEntry;
 
-int directoryEntry(uint64_t numberOfBlocks, uint64_t blockSize) {
-  dirEntry* dirPtr = malloc(sizeof(dirEntry));
+dirEntry* dirEntryInit(char filename[20], int location, unsigned int fileSize,
+  time_t dateModified, time_t dateCreated) {
 
-  dirPtr->fileSize = MINBLOCKSIZE / ENTRIES_PER_BLOCK;
+  dirEntry* entry = malloc(sizeof(dirEntry));
 
-  return 0;
+  strcpy(entry->filename, filename);
+  entry->location = location;
+  entry->fileSize = fileSize;
+  entry->dateModified = dateModified;
+  entry->dateCreated = dateCreated;
+
+  return entry;
 }
 
 //Hashmap functions
@@ -29,12 +35,12 @@ int directoryEntry(uint64_t numberOfBlocks, uint64_t blockSize) {
 
 typedef struct node {
   char key[20];
-  dirEntry value;
-  // node* next;  Will point to the next object at that map position
+  dirEntry* value;
+  struct node* next;  //Will point to the next object at that map position
 } node;
 
 typedef struct hashmap {
-  node entries[SIZE];
+  node* entries[SIZE];
 } hashmap;
 
 hashmap* hashmapInit() {
@@ -42,7 +48,7 @@ hashmap* hashmapInit() {
 
   for (int i = 0; i < SIZE; i++) {
     node* temp = NULL;
-    newMap->entries[i] = *temp;
+    newMap->entries[0] = temp;
   }
 
   return newMap;
@@ -63,6 +69,59 @@ int hash(const char filename[20]) {
   return value % SIZE;
 }
 
+void setEntry(char key[20], dirEntry* value, hashmap* map) {
+  int hashVal = hash(key);
+  node* entry = map->entries[hashVal];
+
+  if (entry == NULL) {
+    entry = malloc(sizeof(entry));
+    strcpy(entry->key, key);
+    entry->value = value;
+    entry->next = NULL;
+    return;
+  }
+
+  node* prevEntry;
+  while (entry != NULL) {
+    if (strcmp(entry->key, key) == 0) {
+      free(entry->value);
+      entry->value = value;
+      return;
+    }
+
+    prevEntry = entry;
+    entry = prevEntry->next;
+  }
+
+  entry = malloc(sizeof(entry));
+  strcpy(entry->key, key);
+  entry->value = value;
+  entry->next = NULL;
+
+}
+
+dirEntry* getEntry(char key[20], hashmap* map) {
+  int hashVal = hash(key);
+  node* entry = map->entries[hashVal];
+
+  while (entry != NULL) {
+    if (strcmp(entry->key, key) == 0) {
+      return entry->value;
+    }
+
+    entry = entry->next;
+  }
+
+  return NULL;
+}
+
+void clean(hashmap* mapToFree) {
+  free(mapToFree);
+}
+
 int main() {
   printf("Hash %d\n", hash("filenames"));
+  hashmap* testMap = hashmapInit();
+  printf("Releasing memory\n");
+  clean(testMap);
 }
