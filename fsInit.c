@@ -1,8 +1,8 @@
 /**************************************************************
 * Class:  CSC-415-0# Fall 2021
-* Names: Patrick Celedio,
-* Student IDs: 920457223,
-* GitHub Name: PatrickCeledio,
+* Names: Patrick Celedio, Chase Alexander
+* Student IDs: 920457223, 921040156
+* GitHub Name: PatrickCeledio, CalDevC
 * Group Name: Sudoers
 * Project: Basic File System
 *
@@ -20,13 +20,17 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-
+#include "rootDirectory.h"
 #include "fsLow.h"
 #include "mfs.h"
 
 // Magic number for fsInit.c
-#define SIG 12345
-#define FREE_SPACE_START_BLOCK 2
+#define SIG 90981
+#define FREE_SPACE_START_BLOCK 1
+
+// This will help us determine the int block in which we
+// found a bit of value 1 representing free block
+int intBlock = 0;
 
 struct volumeCtrlBlock {
   long signature;   //Marker left behind that can be checked 
@@ -38,59 +42,75 @@ struct volumeCtrlBlock {
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
 
+int getFreeBlockNum(int numOfInts, int* bitVector) {
+  //**********Get the free block number ***********
+  // This will help determine the first block number that is
+  // free
+  int freeBlock = 0;
+
+  //****Calculate free space block number*****
+  // We can use the following formula to calculate the block
+  // number => (32 * i) + (32 - j), where (32 * i) will give us 
+  // the number of 32 bit blocks where we found a bit of value 1
+  // and we add (32 - j) which is a offset to get the block number 
+  // it represents within that 32 bit block
+  for (int i = 0; i < numOfInts; i++) {
+    for (int j = 31; j >= 0; j--) {
+      if (bitVector[i] & (1 << j)) {
+        intBlock = i;
+        freeBlock = (intBlock * 32) + (32 - j);
+        return freeBlock;
+      }
+    }
+  }
+}
+
+void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
+  // Set the number of bits specified in the blocksAllocated
+  // to 0 starting from freeBlock
+  for (int i = freeBlock; i < (freeBlock + blocksAllocated); i++) {
+    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - i));
+  }
+}
+
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
   /* TODO: Add any code you need to initialize your file system. */
   printf("Allocating resources for VCB pointer\n");
 
-  struct volumeCtrlBlock* vcbPtr = malloc(sizeof(volumeCtrlBlock));
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+
+  // Reads data into VCB to check signature
+  LBAread(vcbPtr, 1, 0);
+
+
 
   if (vcbPtr->signature == SIG) {
     printf("%d\n", SIG);
     printf("Equal\n");
   } else {
-    printf("%d\n", SIG);
+    printf("Signature is %d\n", SIG);
     printf("Volume not formatted\n");
 
     vcbPtr->signature = SIG;
-    vcbPtr->blockSize = MINBLOCKSIZE;
+    vcbPtr->blockSize = blockSize;
     vcbPtr->blockCount = numberOfBlocks;
-    //vcbPtr->numFreeBlocks = 
-    //vcbPtr->rootDir = 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
-    printf("We need to allocate: %ld bytes\n", (numberOfBlocks / 32) + 1);
-    // We need to add one so that we can allocate 2444 bytes
+
+    // We need to add one byte so that we can allocate 2444 bytes
     int numOfInts = (numberOfBlocks / 32) + 1;
-
-    // The reason we were getting an error was because here we were
-    // allocating 2444 bytes and using an int pointer (4 bytes) to 
-    // iterate through which means that at every index we have access
-    // to 4 bytes, so in total we have access to 2444 / 4 = 611 blocks 
-    // so we were going way over the allocated 2444 bytes. 2444 bytes
-    // will give us 19,552 bits (since 2444 / 4 = 611 ints and each int 
-    // contains 4 bytes (32bits)) So we can only go from [0 - 610] 
-    // inclusive
-    // int * bitVector = malloc(numOfInts * sizeof(int)); 
-
     int* bitVector = malloc(5 * blockSize);
-
-    // Block 0 is the partition table
-    // Block 1 is the VCB
 
     // 0 = occupied
     // 1 = free
 
-    // Initialize bitVector to 0
-    // ERROR: The following (bitVector = 0) was giving the issue:
-    // bitVector = 0;
-
-    // Set first 7 bits to 0 and the rest of
+    // Set first 6 bits to 0 and the rest of
     // 25 bits of 1st integer to 1
     int totalBits = 0;
     for (int i = 31; i >= 0; i--) {
       totalBits++;
-      if (i >= 25) {
+      if (i >= 26) {
         // Set bit to 0
         bitVector[0] = bitVector[0] & ~(1 << i);
       } else {
@@ -99,36 +119,53 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       }
     }
 
-    // for (int i = 31; i >= 0; i--) {
-    //   if (bitVector[0] & (1 << i)) {
-    //     printf("The value at %dth bit is: %d\n", (31 - i) + 1, 1);
-    //   } else {
-    //     printf("The value at %dth bit is: %d\n", (31 - i) + 1, 0);
-    //   }
-    // }
-
     // Set all the bits starting from bit 33 to 1
     for (int i = 1; i < numOfInts; i++) {
       for (int j = 31; j >= 0; j--) {
-        totalBits++;
+
         // Set bit to 1
         bitVector[i] = bitVector[i] | (1 << j);
       }
     }
 
-    printf("Total bits are: %d\n", totalBits);
+    // Points to an array of directory entries in a free state
+    hashmap* dirEntries = hashmapInit();
 
-
-    printf("Allocating resources for LBAread block 0\n");
-
+    // Saves starting block of the free space and root directory in the VCB
     int numBlocksWritten = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK);
-
-    printf("Number of blocks written to the LBA: %d\n", numBlocksWritten);
+    int writeRootDirBlocks = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK + numBlocksWritten);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
+    vcbPtr->rootDir = getFreeBlockNum(numOfInts, bitVector);
+
+    int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+    int maxDirSize = (5 * blockSize);	//2560 bytes
+    int numofEntries = maxDirSize - (maxDirSize % sizeOfEntry); //53 entries
+
+    // Initializing the "." current directory and the ".." parent Directory 
+    dirEntry* curDir = dirEntryInit(".", FREE_SPACE_START_BLOCK + numBlocksWritten,
+      numofEntries, time(0), time(0));
+    setEntry(curDir->filename, curDir, dirEntries);
+
+    dirEntry* parentDir = dirEntryInit("..", FREE_SPACE_START_BLOCK + numBlocksWritten,
+      numofEntries, time(0), time(0));
+    setEntry(parentDir->filename, parentDir, dirEntries);
 
 
+    // Writes VCB to block 0
+    int writeVCB = LBAwrite(bitVector, 1, 0);
 
+    //**********Get the free block number ***********
+    int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+    //printf("Free block found at: %d\n", freeBlock);
+
+        //**********Set the allocated blocks to 0***********
+    setBlocksAsAllocated(freeBlock, 5, bitVector);
+
+    freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+    //printf("Free block found at: %d\n", freeBlock);
   }
 
   return 0;
@@ -138,4 +175,3 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 void exitFileSystem() {
   printf("System exiting\n");
 }
-
