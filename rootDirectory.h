@@ -46,6 +46,7 @@ typedef struct node {
 typedef struct hashmap {
   node* entries[SIZE];
   int numEntries;
+  int maxNumEntries;
 } hashmap;
 
 //Get the hash value for a given key (filenames are used as keys)
@@ -84,9 +85,9 @@ node* entryInit(char key[20], dirEntry* value) {
 }
 
 //Initialize a new hashmap
-hashmap* hashmapInit() {
+hashmap* hashmapInit(int maxNumEntries) {
   hashmap* map = malloc(sizeof(node*) * SIZE);
-
+  map->maxNumEntries = maxNumEntries;
   //Each node in the map should be set to NULL so that we know if there 
   //is a collision or not
   for (int i = 0; i < SIZE; i++) {
@@ -105,6 +106,10 @@ void setEntry(char key[20], dirEntry* value, hashmap* map) {
   //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
   node* entry = map->entries[hashVal];
+  if (map->numEntries == map->maxNumEntries) {
+    printf("Directory is full, no directory entry created.\n");
+    return;
+  }
   map->numEntries++;
 
   //If there is no collision then add a new initialized entry
