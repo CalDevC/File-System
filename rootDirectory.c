@@ -44,6 +44,7 @@ typedef struct node {
 //Hashmap object that holds all of the node entries
 typedef struct hashmap {
   node* entries[SIZE];
+  int numEntries;
 } hashmap;
 
 //Initialize a new hashmap
@@ -56,6 +57,8 @@ hashmap* hashmapInit() {
     node* temp = NULL;
     newMap->entries[i] = temp;
   }
+
+  newMap->numEntries = 0;
 
   return newMap;
 }
@@ -100,6 +103,7 @@ void setEntry(char key[20], dirEntry* value, hashmap* map) {
   //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
   node* entry = map->entries[hashVal];
+  map->numEntries++;
 
   //If there is no collision then add a new initialized entry
   if (entry == NULL) {
@@ -138,7 +142,6 @@ dirEntry* getEntry(char key[20], hashmap* map) {
   int hashVal = hash(key);
   node* entry = map->entries[hashVal];
 
-  //
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
       return entry->value;
@@ -161,9 +164,41 @@ void printMap(hashmap* map) {
         printf(", %s", entry->key);
       }
     }
-
   }
 
+}
+
+void writeMapData(hashmap* map, int lbaCount, int lbaPosition) {
+  //Create an array whose size is the number of directory entries in map
+  int arrSize = map->numEntries;
+  dirEntry arr[arrSize];
+
+  //j will track indcies for the array
+  int j = 0;
+
+  //iterate through the whole map
+  for (int i = 0; i < SIZE; i++) {
+    node* entry = map->entries[i];
+    if (entry != NULL) {
+      arr[j] = *entry->value;  //add entry
+      j++;
+
+      //add other entries that are at the same hash location
+      while (entry->next != NULL) {
+        entry = entry->next;
+        arr[j] = *entry->value;  //add entry
+        j++;
+      }
+    }
+
+    //Don't bother lookng through rest of map if all entries are found
+    if (j == arrSize - 1) {
+      break;
+    }
+  }
+
+  //Write the array to the disk
+  LBAwrite(arr, lbaCount, lbaPosition);
 }
 
 //Free the memory allocated to the hashmap
@@ -191,4 +226,8 @@ int main() {
   printMap(map);
   printf("\n\nReleasing memory\n");
   clean(map);
+
+
+  // printf("%ld\n%d\n", time(0), time(NULL));
+  printf("%ld -> %ld, %ld, %ld, %ld, %ld\n", sizeof(dirEntry), sizeof(int), sizeof(char[20]), sizeof(unsigned int), sizeof(time_t), sizeof(char*));
 }
