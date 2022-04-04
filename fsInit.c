@@ -26,7 +26,12 @@
 
 // Magic number for fsInit.c
 #define SIG 12345
+
 #define FREE_SPACE_START_BLOCK 1
+
+// This will help us determine the int block in which we
+// found a bit of value 1 representing free block
+int intBlock = 0;
 
 struct volumeCtrlBlock{
     long signature;           //Marker left behind that can be checked 
@@ -37,6 +42,37 @@ struct volumeCtrlBlock{
 	int rootDir;		 //Block number where root starts
 	int freeBlockNum;   //To store the block number where our bitmap starts
 } volumeCtrlBlock; 
+
+int getFreeBlockNum(int numOfInts, int * bitVector) {
+	//**********Get the free block number ***********
+	// This will help determine the first block number that is
+	// free
+	int freeBlock = 0;
+
+	//****Calculate free space block number*****
+	// We can use the following formula to calculate the block
+	// number => (32 * i) + (32 - j), where (32 * i) will give us 
+	// the number of 32 bit blocks where we found a bit of value 1
+	// and we add (32 - j) which is a offset to get the block number 
+	// it represents within that 32 bit block
+	for (int i = 0; i < numOfInts; i++) {
+		for (int j = 31; j >= 0; j--) {
+			if (bitVector[i] & (1 << j)) {
+				intBlock = i;
+				freeBlock = (intBlock * 32) + (32 - j);
+				return freeBlock;
+			}
+		}
+	}
+}
+
+void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int * bitVector) {
+	// Set the number of bits specified in the blocksAllocated
+	// to 0 starting from freeBlock
+	for (int i = freeBlock; i < (freeBlock + blocksAllocated); i++) {
+		bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - i));
+	}
+}
 
 int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 	{
@@ -88,17 +124,17 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		// 0 = occupied
 		// 1 = free
 
-		// Set first 7 bits to 0 and the rest of
+		// Set first 6 bits to 0 and the rest of
 		// 25 bits of 1st integer to 1
 		int totalBits = 0;
 		for (int i = 31; i >= 0; i--) {
 			totalBits++;
-			if (i >= 25) {
+			if (i >= 26) {
 			   // Set bit to 0
                bitVector[0] = bitVector[0] & ~(1 << i);
 			} else {
-				// Set bit to 1
-				bitVector[0] = bitVector[0] | (1 << i);			
+			   // Set bit to 1
+			   bitVector[0] = bitVector[0] | (1 << i);	
 			}
 		}
 
@@ -112,9 +148,8 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 		// handled the 1st int
 		for (int i = 1; i < numOfInts; i++) {
           for (int j = 31; j >= 0; j--) {
-			totalBits++;  
 			// Set bit to 1
-			bitVector[i] = bitVector[i] | (1 << j);			
+			bitVector[i] = bitVector[i] | (1 << j);
 		  }
 		}
 
@@ -127,10 +162,34 @@ int initFileSystem (uint64_t numberOfBlocks, uint64_t blockSize)
 
 		vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
+
+		//**********Get the free block number ***********
+		int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+		printf("Free block found at: %d\n", freeBlock);
+
+        //**********Set the allocated blocks to 0***********
+		setBlocksAsAllocated(freeBlock, 5, bitVector);
+
+		freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+		printf("Free block found at: %d\n", freeBlock);
+
+		// Display the bits and their values (0 or 1) in 1st int 
+		// block (32 bits)
+		for (int i = 31; i >= 0; i--) {
+      		if (bitVector[0] & (1 << i)) {
+        		printf("The value at %dth bit is: %d\n", (32 - i), 1);
+      		} else {
+       			printf("The value at %dth bit is: %d\n", (32 - i), 0);
+      		}
+    	}
+
 	}
 
 	return 0;
 	}
+
 	
 	
 void exitFileSystem ()
