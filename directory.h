@@ -1,3 +1,20 @@
+/**************************************************************
+* Class:  CSC-415-02 Fall 2021
+* Names: Patrick Celedio, Chase Alexander
+* Student IDs: 920457223, 921040156
+* GitHub Name: PatrickCeledio, CalDevC
+* Group Name: Sudoers
+* Project: Basic File System
+*
+* File: directory.h
+*
+* Description: This file defines the structure of our directory
+* entry, a function to initialize a directory entry, and the
+* implementation of our hashmap which we use to store directory
+* entries.
+*
+**************************************************************/
+
 #include <time.h>
 #include <stdlib.h>
 #include <unistd.h>

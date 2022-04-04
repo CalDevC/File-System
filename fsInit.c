@@ -1,5 +1,5 @@
 /**************************************************************
-* Class:  CSC-415-0# Fall 2021
+* Class:  CSC-415-02 Fall 2021
 * Names: Patrick Celedio, Chase Alexander
 * Student IDs: 920457223, 921040156
 * GitHub Name: PatrickCeledio, CalDevC
@@ -20,7 +20,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-#include "rootDirectory.h"
+#include "directory.h"
 #include "fsLow.h"
 #include "mfs.h"
 
