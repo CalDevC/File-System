@@ -33,12 +33,12 @@
 int intBlock = 0;
 
 struct volumeCtrlBlock {
-  long signature;   //Marker left behind that can be checked 
-                      // to know if the disk is setup correctly
-  int blockSize;            //The size of each block in bytes
-  long blockCount;	        //The number of blocks in the file system
-  long numFreeBlocks;      //The number of blocks not in use
-  int rootDir;		 //Block number where root starts
+  long signature;      //Marker left behind that can be checked
+                       //to know if the disk is setup correctly 
+  int blockSize;       //The size of each block in bytes
+  long blockCount;	   //The number of blocks in the file system
+  long numFreeBlocks;  //The number of blocks not in use
+  int rootDir;		     //Block number where root starts
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
 
@@ -71,6 +71,40 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   for (int i = freeBlock; i < (freeBlock + blocksAllocated); i++) {
     bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - i));
   }
+}
+
+//Write all directory entries in the hashTable to the disk
+void writeTableData(hashTable* table, int lbaCount, int lbaPosition) {
+  //Create an array whose size is the number of directory entries in table
+  int arrSize = table->numEntries;
+  dirEntry arr[arrSize];
+
+  //j will track indcies for the array
+  int j = 0;
+
+  //iterate through the whole table
+  for (int i = 0; i < SIZE; i++) {
+    node* entry = table->entries[i];
+    if (strcmp(entry->value->filename, "") != 0) {
+      arr[j] = *entry->value;  //add entry
+      j++;
+
+      //add other entries that are at the same hash location
+      while (entry->next != NULL) {
+        entry = entry->next;
+        arr[j] = *entry->value;  //add entry
+        j++;
+      }
+    }
+
+    //Don't bother lookng through rest of table if all entries are found
+    if (j == arrSize - 1) {
+      break;
+    }
+  }
+
+  //Write the array to the disk
+  LBAwrite(arr, lbaCount, lbaPosition);
 }
 
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
@@ -140,7 +174,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     int numofEntries = maxDirSize - (maxDirSize % sizeOfEntry); //53 entries
 
     // Points to an array of directory entries in a free state
-    hashmap* dirEntries = hashmapInit(numofEntries);
+    hashTable* dirEntries = hashTableInit(numofEntries);
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,

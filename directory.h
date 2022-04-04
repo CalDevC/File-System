@@ -10,7 +10,7 @@
 *
 * Description: This file defines the structure of our directory
 * entry, a function to initialize a directory entry, and the
-* implementation of our hashmap which we use to store directory
+* implementation of our hashTable which we use to store directory
 * entries.
 *
 **************************************************************/
@@ -49,22 +49,22 @@ dirEntry* dirEntryInit(char filename[20], int isDir, int location,
   return entry;
 }
 
-// *************************** Hashmap functions *************************** //
+// *************************** Hash Table functions *************************** //
 #define SIZE 512  
 
-//Node objects are used to populate the hashmap
+//Node objects are used to populate the hash table
 typedef struct node {
   char key[20];       //filename 
   dirEntry* value;    //directory entry
   struct node* next;  //points to the next directory entry
 } node;
 
-//Hashmap object that holds all of the node entries
-typedef struct hashmap {
+//Hash Table object that holds all of the node entries
+typedef struct hashTable {
   node* entries[SIZE];
   int numEntries;
   int maxNumEntries;
-} hashmap;
+} hashTable;
 
 //Get the hash value for a given key (filenames are used as keys)
 int hash(const char filename[20]) {
@@ -81,12 +81,12 @@ int hash(const char filename[20]) {
     value *= -1;
   }
 
-  //Return a value that will definitely be a valid index in the map
-  //by using the remainder of (calculated value / map size)
+  //Return a value that will definitely be a valid index in the table
+  //by using the remainder of (calculated value / table size)
   return value % SIZE;
 }
 
-//Initialize an entry for the hashmap
+//Initialize an entry for the hash table
 node* entryInit(char key[20], dirEntry* value) {
   //allocate memory for the entry in the table and 
   //the entry's value (directory entry)
@@ -101,37 +101,37 @@ node* entryInit(char key[20], dirEntry* value) {
   return entry;
 }
 
-//Initialize a new hashmap
-hashmap* hashmapInit(int maxNumEntries) {
-  hashmap* map = malloc(sizeof(node*) * SIZE);
-  map->maxNumEntries = maxNumEntries;
-  //Each node in the map should be set to NULL so that we know if there 
+//Initialize a new hashTable
+hashTable* hashTableInit(int maxNumEntries) {
+  hashTable* table = malloc(sizeof(node*) * SIZE);
+  table->maxNumEntries = maxNumEntries;
+  //Each node in the table should be set to NULL so that we know if there 
   //is a collision or not
   for (int i = 0; i < SIZE; i++) {
     dirEntry* entryVal = dirEntryInit("", 0, 0, 0, time(NULL), time(NULL));
     node* entry = entryInit("", entryVal);
-    map->entries[i] = entry;
+    table->entries[i] = entry;
   }
 
-  map->numEntries = 0;
+  table->numEntries = 0;
 
-  return map;
+  return table;
 }
 
 //Update an existing entry or add a new one
-void setEntry(char key[20], dirEntry* value, hashmap* map) {
+void setEntry(char key[20], dirEntry* value, hashTable* table) {
   //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
-  node* entry = map->entries[hashVal];
-  if (map->numEntries == map->maxNumEntries) {
+  node* entry = table->entries[hashVal];
+  if (table->numEntries == table->maxNumEntries) {
     printf("Directory is full, no directory entry created.\n");
     return;
   }
-  map->numEntries++;
+  table->numEntries++;
 
   //If there is no collision then add a new initialized entry
   if (strcmp(entry->value->filename, "") == 0) {
-    map->entries[hashVal] = entryInit(key, value);
+    table->entries[hashVal] = entryInit(key, value);
     return;
   }
 
@@ -149,24 +149,24 @@ void setEntry(char key[20], dirEntry* value, hashmap* map) {
       return;
     }
 
-    //Move on to check the next entry at the current map location
+    //Move on to check the next entry at the current table location
     prevEntry = entry;
     entry = prevEntry->next;
   }
 
-  //If the key was not found at the map location then add it to 
+  //If the key was not found at the table location then add it to 
   //the end of the list at that location
   prevEntry->next = entryInit(key, value);
 
 }
 
-//Retrieve an entry from a provided hashmap
-dirEntry* getEntry(char key[20], hashmap* map) {
+//Retrieve an entry from a provided hashTable
+dirEntry* getEntry(char key[20], hashTable* table) {
   //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
-  node* entry = map->entries[hashVal];
+  node* entry = table->entries[hashVal];
 
-  //Checks hashmap for matching key and return its value
+  //Checks hashTable for matching key and return its value
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
       return entry->value;
@@ -176,12 +176,12 @@ dirEntry* getEntry(char key[20], hashmap* map) {
   return NULL;
 }
 
-void printMap(hashmap* map) {
-  printf("******** MAP ********");
+void printTable(hashTable* table) {
+  printf("******** table ********");
   for (int i = 0; i < SIZE; i++) {
-    node* entry = map->entries[i];
+    node* entry = table->entries[i];
     if (strcmp(entry->value->filename, "") != 0) {
-      printf("\n[Entry %d] %s", i, map->entries[i]->key);
+      printf("\n[Entry %d] %s", i, table->entries[i]->key);
       while (entry->next != NULL) {
         entry = entry->next;
         printf(", %s", entry->key);
@@ -191,45 +191,11 @@ void printMap(hashmap* map) {
 
 }
 
-//Write all directory entries in the hashmap to the disk
-void writeMapData(hashmap* map, int lbaCount, int lbaPosition) {
-  //Create an array whose size is the number of directory entries in map
-  int arrSize = map->numEntries;
-  dirEntry arr[arrSize];
-
-  //j will track indcies for the array
-  int j = 0;
-
-  //iterate through the whole map
+//Free the memory allocated to the hashTable
+void clean(hashTable* table) {
   for (int i = 0; i < SIZE; i++) {
-    node* entry = map->entries[i];
-    if (strcmp(entry->value->filename, "") != 0) {
-      arr[j] = *entry->value;  //add entry
-      j++;
-
-      //add other entries that are at the same hash location
-      while (entry->next != NULL) {
-        entry = entry->next;
-        arr[j] = *entry->value;  //add entry
-        j++;
-      }
-    }
-
-    //Don't bother lookng through rest of map if all entries are found
-    if (j == arrSize - 1) {
-      break;
-    }
-  }
-
-  //Write the array to the disk
-  LBAwrite(arr, lbaCount, lbaPosition);
-}
-
-//Free the memory allocated to the hashmap
-void clean(hashmap* map) {
-  for (int i = 0; i < SIZE; i++) {
-    node* entry = map->entries[i];
+    node* entry = table->entries[i];
     free(entry);
   }
-  free(map);
+  free(table);
 }
