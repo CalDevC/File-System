@@ -128,9 +128,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       }
     }
 
-    // Points to an array of directory entries in a free state
-    hashmap* dirEntries = hashmapInit();
-
     // Saves starting block of the free space and root directory in the VCB
     int numBlocksWritten = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK);
     int writeRootDirBlocks = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK + numBlocksWritten);
@@ -142,12 +139,15 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     int maxDirSize = (5 * blockSize);	//2560 bytes
     int numofEntries = maxDirSize - (maxDirSize % sizeOfEntry); //53 entries
 
+    // Points to an array of directory entries in a free state
+    hashmap* dirEntries = hashmapInit(numofEntries);
+
     // Initializing the "." current directory and the ".." parent Directory 
-    dirEntry* curDir = dirEntryInit(".", FREE_SPACE_START_BLOCK + numBlocksWritten,
+    dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
       numofEntries, time(0), time(0));
     setEntry(curDir->filename, curDir, dirEntries);
 
-    dirEntry* parentDir = dirEntryInit("..", FREE_SPACE_START_BLOCK + numBlocksWritten,
+    dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
       numofEntries, time(0), time(0));
     setEntry(parentDir->filename, parentDir, dirEntries);
 
@@ -160,7 +160,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     //printf("Free block found at: %d\n", freeBlock);
 
-        //**********Set the allocated blocks to 0***********
+    //**********Set the allocated blocks to 0***********
     setBlocksAsAllocated(freeBlock, 5, bitVector);
 
     freeBlock = getFreeBlockNum(numOfInts, bitVector);
