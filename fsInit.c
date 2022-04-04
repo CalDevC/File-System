@@ -1,8 +1,8 @@
 /**************************************************************
 * Class:  CSC-415-02 Fall 2021
-* Names: Patrick Celedio, Chase Alexander
-* Student IDs: 920457223, 921040156
-* GitHub Name: PatrickCeledio, CalDevC
+* Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
+* Student IDs: 920457223, 921040156, 921369355, 918548844
+* GitHub Name: PatrickCeledio, CalDevC, GurinderS120, jonathanluu0
 * Group Name: Sudoers
 * Project: Basic File System
 *
