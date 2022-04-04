@@ -8,6 +8,7 @@
 #define ENTRIES_PER_BLOCK 16
 
 typedef struct dirEntry {
+  int isDir;              //1 if entry is a directory, 0 if it is a file
   int location;           //The block number where the start of the file is stored
   char filename[20];      //The name of the file (provided by creator)
   unsigned int fileSize;  //Length of file in bytes
@@ -16,12 +17,13 @@ typedef struct dirEntry {
 } dirEntry;
 
 //Initialize a new directory entry
-dirEntry* dirEntryInit(char filename[20], int location, unsigned int fileSize,
-  time_t dateModified, time_t dateCreated) {
+dirEntry* dirEntryInit(char filename[20], int isDir, int location,
+  unsigned int fileSize, time_t dateModified, time_t dateCreated) {
 
   dirEntry* entry = malloc(sizeof(dirEntry));
 
   strcpy(entry->filename, filename);
+  entry->isDir = isDir;
   entry->location = location;
   entry->fileSize = fileSize;
   entry->dateModified = dateModified;
@@ -45,22 +47,6 @@ typedef struct hashmap {
   node* entries[SIZE];
   int numEntries;
 } hashmap;
-
-//Initialize a new hashmap
-hashmap* hashmapInit() {
-  hashmap* newMap = malloc(sizeof(node*) * SIZE);
-
-  //Each node in the map should be set to NULL so that we know if there 
-  //is a collision or not
-  for (int i = 0; i < SIZE; i++) {
-    node* temp = NULL;
-    newMap->entries[i] = temp;
-  }
-
-  newMap->numEntries = 0;
-
-  return newMap;
-}
 
 //Get the hash value for a given key (filenames are used as keys)
 int hash(const char filename[20]) {
@@ -97,6 +83,23 @@ node* entryInit(char key[20], dirEntry* value) {
   return entry;
 }
 
+//Initialize a new hashmap
+hashmap* hashmapInit() {
+  hashmap* map = malloc(sizeof(node*) * SIZE);
+
+  //Each node in the map should be set to NULL so that we know if there 
+  //is a collision or not
+  for (int i = 0; i < SIZE; i++) {
+    dirEntry* entryVal = dirEntryInit("", 0, 0, 0, time(NULL), time(NULL));
+    node* entry = entryInit("", entryVal);
+    map->entries[i] = entry;
+  }
+
+  map->numEntries = 0;
+
+  return map;
+}
+
 //Update an existing entry or add a new one
 void setEntry(char key[20], dirEntry* value, hashmap* map) {
   //Get the entry based on the hash value calculated from the key
@@ -105,7 +108,7 @@ void setEntry(char key[20], dirEntry* value, hashmap* map) {
   map->numEntries++;
 
   //If there is no collision then add a new initialized entry
-  if (entry == NULL) {
+  if (strcmp(entry->value->filename, "") == 0) {
     map->entries[hashVal] = entryInit(key, value);
     return;
   }
@@ -155,15 +158,13 @@ void printMap(hashmap* map) {
   printf("******** MAP ********");
   for (int i = 0; i < SIZE; i++) {
     node* entry = map->entries[i];
-    if (entry != NULL) {
+    if (strcmp(entry->value->filename, "") != 0) {
       printf("\n[Entry %d] %s", i, map->entries[i]->key);
       while (entry->next != NULL) {
         entry = entry->next;
         printf(", %s", entry->key);
       }
-      printf("\n");
     }
-
   }
 
 }
@@ -180,7 +181,7 @@ void writeMapData(hashmap* map, int lbaCount, int lbaPosition) {
   //iterate through the whole map
   for (int i = 0; i < SIZE; i++) {
     node* entry = map->entries[i];
-    if (entry != NULL) {
+    if (strcmp(entry->value->filename, "") != 0) {
       arr[j] = *entry->value;  //add entry
       j++;
 
