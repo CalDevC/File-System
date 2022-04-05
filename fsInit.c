@@ -75,18 +75,16 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 
 //Write all directory entries in the hashTable to the disk
 void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSize) {
-  //Create an array whose size is the number of directory entries in table
-  int arrSize = table->numEntries;
   dirEntry* arr = malloc(lbaCount * blockSize);
 
   //j will track indcies for the array
   int j = 0;
 
-  //iterate through the whole table
+  //iterate through the whole table to find every directory entry that is in use
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
     if (strcmp(entry->value->filename, "") != 0) {
-      arr[j] = *entry->value;  //add entry
+      arr[j] = *entry->value;
       j++;
 
       //add other entries that are at the same hash location
@@ -98,20 +96,22 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
     }
 
     //Don't bother lookng through rest of table if all entries are found
-    if (j == arrSize - 1) {
+    if (j == table->numEntries - 1) {
       break;
     }
   }
 
-  //Write the array to the disk
+  //Group the directory entries into chunks that fit within a single block
   int dirEntNum = 0;
-  const int entriesPerBlock = 10;
+  const int entriesPerBlock = blockSize / sizeof(dirEntry);
 
-  for (int j = 6; j < 6 + 5; j++) {
+  //Assign 1 block at a time starting from the first free block
+  for (int j = lbaPosition; j < lbaPosition + lbaCount; j++) {
 
+    //Create a temporary array that will hold each chunk of directory entries
     dirEntry* tempArr = malloc(blockSize);
     int k = dirEntNum;
-    for (k; k < dirEntNum + entriesPerBlock && k < arrSize; k++) {
+    for (k; k < dirEntNum + entriesPerBlock; k++) {
       tempArr[k - dirEntNum] = arr[k];
     }
 
@@ -122,7 +122,8 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
 }
 
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
-  printf("Initializing File System with %ld blocks with a block size of %ld\n", numberOfBlocks, blockSize);
+  printf("Initializing File System with %ld blocks with a block size of %ld\n",
+    numberOfBlocks, blockSize);
   /* TODO: Add any code you need to initialize your file system. */
   printf("Allocating resources for VCB pointer\n");
 
@@ -146,15 +147,26 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
 
-    // We need to add one byte so that we can allocate 2444 bytes
+    // We will be dealing with free space using 32 bits at a time
+    // represented by 1 int that's why we need to determine how
+    // many such ints we need, so we need: 19531 / 32 = 610 + 1 = 611 
+    // ints, because 611 * 32 = 19552 bits which are enough to
+    // represent 19531 blocks. The reason why we add 1 to the 610
+    // is because 610 * 32 = 19520 bits which are not enough to
+    // represent 19531 blocks
     int numOfInts = (numberOfBlocks / 32) + 1;
+
+    // Since we can only read and write data to and from LBA in
+    // blocks we need to malloc memory for our bitVector in
+    // block sizes as well
     int* bitVector = malloc(5 * blockSize);
 
     // 0 = occupied
     // 1 = free
 
-    // Set first 6 bits to 0 and the rest of
-    // 25 bits of 1st integer to 1
+    // Set first 6 bits to 0 and the rest of 25 bits of 1st integer to 1, 
+    // because block 0 of LBA is the VCB, and 1 to 5 blocks will be taken 
+    // by the bitVector itself
     int totalBits = 0;
     for (int i = 31; i >= 0; i--) {
       totalBits++;
@@ -199,41 +211,41 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       numBlocksWritten, numofEntries, time(0), time(0));
     setEntry(parentDir->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir1 = dirEntryInit("NAMES", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir1->filename, parentDir1, dirEntries);
+    dirEntry* parentDir1 = dirEntryInit("NAMES", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir1->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir2 = dirEntryInit("SecjdoneName", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir2->filename, parentDir2, dirEntries);
+    dirEntry* parentDir2 = dirEntryInit("SecjdoneName", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir2->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir3 = dirEntryInit("SecondfiledfdName", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir3->filename, parentDir, dirEntries);
+    dirEntry* parentDir3 = dirEntryInit("SecondfiledfdName", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir3->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir4 = dirEntryInit("SecondjkName", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir4->filename, parentDir, dirEntries);
+    dirEntry* parentDir4 = dirEntryInit("SecondjkName", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir4->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir5 = dirEntryInit("Secosadame", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir5->filename, parentDir, dirEntries);
+    dirEntry* parentDir5 = dirEntryInit("Secosadame", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir5->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir6 = dirEntryInit("Secondfilame", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir6->filename, parentDir, dirEntries);
+    dirEntry* parentDir6 = dirEntryInit("Secondfilame", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir6->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir7 = dirEntryInit("SecdndfileName", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir7->filename, parentDir, dirEntries);
+    dirEntry* parentDir7 = dirEntryInit("SecdndfileName", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir7->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir8 = dirEntryInit("Secondfsdfgme", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir8->filename, parentDir, dirEntries);
+    dirEntry* parentDir8 = dirEntryInit("Secondfsdfgme", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir8->filename, parentDir, dirEntries);
 
-    // dirEntry* parentDir9 = dirEntryInit("SecdfileName", 1, FREE_SPACE_START_BLOCK +
-    //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir9->filename, parentDir, dirEntries);
+    dirEntry* parentDir9 = dirEntryInit("SecdfileName", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir9->filename, parentDir, dirEntries);
 
 
     // Writes VCB to block 0
