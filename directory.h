@@ -105,6 +105,7 @@ node* entryInit(char key[20], dirEntry* value) {
 hashTable* hashTableInit(int maxNumEntries) {
   hashTable* table = malloc(sizeof(node*) * SIZE);
   table->maxNumEntries = maxNumEntries;
+
   //Each node in the table should be set to a directory entry with a filename
   //of "" so that we know if there is a collision or not
   for (int i = 0; i < SIZE; i++) {
@@ -130,6 +131,7 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
     printf("Directory is full, no directory entry created.\n");
     return;
   }
+
   table->numEntries++;
 
   //If there is no collision then add a new initialized entry
@@ -179,6 +181,7 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   return NULL;
 }
 
+//Write out the hash table contents to the console for debug
 void printTable(hashTable* table) {
   printf("******** table ********");
   for (int i = 0; i < SIZE; i++) {

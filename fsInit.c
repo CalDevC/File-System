@@ -77,8 +77,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSize) {
   dirEntry* arr = malloc(lbaCount * blockSize);
 
-  //j will track indcies for the array
-  int j = 0;
+  int j = 0;  //j will track indcies for the array
 
   //iterate through the whole table to find every directory entry that is in use
   for (int i = 0; i < SIZE; i++) {
@@ -101,38 +100,19 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
     }
   }
 
-  //Group the directory entries into chunks that fit within a single block
-  int dirEntNum = 0;
-  const int entriesPerBlock = blockSize / sizeof(dirEntry);
-
-  //Write to the array 1 block at a time starting from the first provided 
-  //block number. Use a temporary array to store/write entriesPerBlock (10) entries
-  //at a time until it has written the entire array
-  for (int j = lbaPosition; j < lbaPosition + lbaCount; j++) {
-    dirEntry* tempArr = malloc(blockSize);
-    int k = dirEntNum;
-    for (k; k < dirEntNum + entriesPerBlock; k++) {
-      tempArr[k - dirEntNum] = arr[k];
-    }
-
-    dirEntNum = dirEntNum + entriesPerBlock;
-
-    LBAwrite(tempArr, 1, j);
-  }
+  //Write to the array out to the specified block numbers
+  LBAwrite(arr, lbaCount, lbaPosition);
 }
 
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
     numberOfBlocks, blockSize);
-  printf("Allocating resources for VCB pointer\n");
 
   struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
 
   // Reads data into VCB to check signature
   LBAread(vcbPtr, 1, 0);
-
-
 
   if (vcbPtr->signature == SIG) {
     //Volume was already formatted
@@ -194,8 +174,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSize = (5 * blockSize);	//2560 bytes
-    int numofEntries = 5 * (blockSize / sizeOfEntry); //50 entries
-    printf("NUM ENTRIES: %d\n", numofEntries);
+    int numofEntries = dirSize / sizeOfEntry; //53 entries
 
     // Points to an array of directory entries in a free state
     hashTable* dirEntries = hashTableInit(numofEntries);
@@ -214,12 +193,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     //Get the number of the next free block
     int freeBlock = getFreeBlockNum(numOfInts, bitVector);
-    printf("Freeblock: %d\n", freeBlock);
+
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
     setBlocksAsAllocated(freeBlock, 5, bitVector);
     writeTableData(dirEntries, 5, freeBlock - 1, blockSize);
 
+    //Update the bitvector
     LBAwrite(bitVector, 5, 1);
   }
 
