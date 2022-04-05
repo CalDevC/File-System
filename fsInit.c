@@ -74,10 +74,10 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 }
 
 //Write all directory entries in the hashTable to the disk
-void writeTableData(hashTable* table, int lbaCount, int lbaPosition) {
+void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSize) {
   //Create an array whose size is the number of directory entries in table
   int arrSize = table->numEntries;
-  dirEntry arr[arrSize];
+  dirEntry* arr = malloc(lbaCount * blockSize);
 
   //j will track indcies for the array
   int j = 0;
@@ -92,7 +92,7 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition) {
       //add other entries that are at the same hash location
       while (entry->next != NULL) {
         entry = entry->next;
-        arr[j] = *entry->value;  //add entry
+        arr[j] = *entry->value;
         j++;
       }
     }
@@ -104,7 +104,21 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition) {
   }
 
   //Write the array to the disk
-  LBAwrite(arr, lbaCount, lbaPosition);
+  int dirEntNum = 0;
+  const int entriesPerBlock = 10;
+
+  for (int j = 6; j < 6 + 5; j++) {
+
+    dirEntry* tempArr = malloc(blockSize);
+    int k = dirEntNum;
+    for (k; k < dirEntNum + entriesPerBlock && k < arrSize; k++) {
+      tempArr[k - dirEntNum] = arr[k];
+    }
+
+    dirEntNum = dirEntNum + entriesPerBlock;
+
+    int val = LBAwrite(tempArr, 1, j);
+  }
 }
 
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
@@ -144,7 +158,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     int totalBits = 0;
     for (int i = 31; i >= 0; i--) {
       totalBits++;
-      if (i >= 26) {
+      if (i >= 27) {
         // Set bit to 0
         bitVector[0] = bitVector[0] & ~(1 << i);
       } else {
@@ -164,7 +178,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     // Saves starting block of the free space and root directory in the VCB
     int numBlocksWritten = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK);
-    int writeRootDirBlocks = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK + numBlocksWritten);
+    // int writeRootDirBlocks = LBAwrite(bitVector, 5, FREE_SPACE_START_BLOCK + numBlocksWritten);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
     vcbPtr->rootDir = getFreeBlockNum(numOfInts, bitVector);
@@ -181,25 +195,57 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       numofEntries, time(0), time(0));
     setEntry(curDir->filename, curDir, dirEntries);
 
-    dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
-      numofEntries, time(0), time(0));
+    dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
     setEntry(parentDir->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir1 = dirEntryInit("NAMES", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir1->filename, parentDir1, dirEntries);
+
+    // dirEntry* parentDir2 = dirEntryInit("SecjdoneName", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir2->filename, parentDir2, dirEntries);
+
+    // dirEntry* parentDir3 = dirEntryInit("SecondfiledfdName", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir3->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir4 = dirEntryInit("SecondjkName", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir4->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir5 = dirEntryInit("Secosadame", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir5->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir6 = dirEntryInit("Secondfilame", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir6->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir7 = dirEntryInit("SecdndfileName", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir7->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir8 = dirEntryInit("Secondfsdfgme", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir8->filename, parentDir, dirEntries);
+
+    // dirEntry* parentDir9 = dirEntryInit("SecdfileName", 1, FREE_SPACE_START_BLOCK +
+    //   numBlocksWritten, numofEntries, time(0), time(0));
+    // setEntry(parentDir9->filename, parentDir, dirEntries);
 
 
     // Writes VCB to block 0
-    int writeVCB = LBAwrite(bitVector, 1, 0);
+    int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
-    //**********Get the free block number ***********
+    //Get the number of the next free block
     int freeBlock = getFreeBlockNum(numOfInts, bitVector);
 
-    //printf("Free block found at: %d\n", freeBlock);
-
-    //**********Set the allocated blocks to 0***********
+    //Set the allocated blocks to 0 and the directory entry data 
+    //stored in the hash table
     setBlocksAsAllocated(freeBlock, 5, bitVector);
-
-    freeBlock = getFreeBlockNum(numOfInts, bitVector);
-
-    //printf("Free block found at: %d\n", freeBlock);
+    writeTableData(dirEntries, 5, freeBlock, blockSize);
   }
 
   return 0;
