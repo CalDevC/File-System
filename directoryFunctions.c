@@ -9,16 +9,22 @@
 #include "mfs.h"
 int fs_mkdir(const char *pathname, mode_t mode){
     //validate if directory
-    //check if each pathname[] index 
-    //if pathname exists in directory, return -1
-    //else hashmap* newDir = hashmapInit();
-    char* dir[100];
+    //check for unique pathname
+    //if pathname exists in directory, return error
+    //else create new hashmap directory
 
+    char* dir[100]; //test parsed pathname array
+
+    //returns an error if directory names match
     for(int i = 0; i < dir.length; i++){
         if(strcmp(dir[i], pathname) == 0){
             return -1;
         }
+        //validate if each dir[i] = 1
     }
-    hashmap* newDir = hashmapInit();
+    //create new directory
+    dirEntryInit(pathname, 1, dirSize, time(0), time(0));
+
+    
 
 }
