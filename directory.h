@@ -24,7 +24,7 @@
 #include "fsLow.h"
 
 #define ENTRIES_PER_BLOCK 16
-#define SIZE 512  
+#define SIZE 53  
 
 typedef struct dirEntry {
   int isDir;              //1 if entry is a directory, 0 if it is a file
