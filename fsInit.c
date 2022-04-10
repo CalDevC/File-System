@@ -36,6 +36,7 @@ int intBlock = 0;
 hashTable* rootDir;
 
 int blockSize;
+int numOfInts;
 
 struct volumeCtrlBlock {
   long signature;      //Marker left behind that can be checked
@@ -142,6 +143,15 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     numberOfBlocks, blockSize);
 
   blockSize = blockSize;
+  // We will be dealing with free space using 32 bits at a time
+  // represented by 1 int that's why we need to determine how
+  // many such ints we need, so we need: 19531 / 32 = 610 + 1 = 611
+  // ints, because 611 * 32 = 19552 bits which are enough to
+  // represent 19531 blocks. The reason why we add 1 to the 610
+  // is because 610 * 32 = 19520 bits which are not enough to
+  // represent 19531 blocks
+  numOfInts = (numberOfBlocks / 32) + 1;
+
   struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
 
   // Reads data into VCB to check signature
@@ -158,15 +168,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     vcbPtr->blockCount = numberOfBlocks;
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
-
-    // We will be dealing with free space using 32 bits at a time
-    // represented by 1 int that's why we need to determine how
-    // many such ints we need, so we need: 19531 / 32 = 610 + 1 = 611 
-    // ints, because 611 * 32 = 19552 bits which are enough to
-    // represent 19531 blocks. The reason why we add 1 to the 610
-    // is because 610 * 32 = 19520 bits which are not enough to
-    // represent 19531 blocks
-    int numOfInts = (numberOfBlocks / 32) + 1;
 
     // Test
     printf("Number of ints: %d\n", numOfInts);
@@ -327,26 +328,37 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   }
 
   // Reads data into VCB
-  struct volumeCtrlBlock* vcbPtr = malloc(512);
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
   LBAread(vcbPtr, 1, 0);
 
-  // Get the root directory out of the volume and into
-  // memory
-  dirEntry* rootDir = malloc(5 * 512);
-  LBAread(rootDir, 5, 6);
+
+  hashTable* rootDir = readTableData(5, vcbPtr->rootDir, blockSize);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSize = (5 * 512);	//2560 bytes
+  int dirSize = (5 * blockSize);	//2560 bytes
   int numofEntries = dirSize / sizeOfEntry; //53 entries
 
 
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
   // there
-  int* bitVector = malloc(5 * 512);
+  int* bitVector = malloc(5 * blockSize);
 
   // Read the bitvector
   LBAread(bitVector, 5, 1);
+
+  // Create home directory entry
+  dirEntry* newEntry = malloc(sizeof(dirEntry));
+  int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+  strcpy(newEntry->filename, "home");
+  newEntry->isDir = 1;
+  newEntry->location = freeBlock;
+  newEntry->fileSize = 5 * 512;
+  newEntry->dateModified = time(0);
+  newEntry->dateCreated = time(0);
+
+  setEntry("home", )
 
   for (int i = 0; i < SIZE; i++) {
     int index = i;
@@ -362,6 +374,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
       rootDir[index].dateCreated = time(0);
 
       // Initialize the home directory
+
       // Points to an array of directory entries in a free state
       hashTable* dirEntries = hashTableInit(numofEntries);
 
@@ -390,40 +403,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   }
 
-  //int index = hash("home");
-
-  // if (strcmp(rootDir[index].filename, "") == 0) {
-  //     // dirEntry* testDir = dirEntryInit("home", 1, 6, 
-  //     // numofEntries, time(0), time(0));
-
-  //     strcpy(rootDir[index].filename, "home");
-  //     rootDir[index].isDir = 1;
-  //     rootDir[index].location = 11;
-  //     rootDir[index].fileSize = 5 * 512;
-  //     rootDir[index].dateModified = time(0);
-  //     rootDir[index].dateCreated = time(0);
-
-  //     LBAwrite(rootDir, 5, 6);
-  // }
-
-
-
-
-  // Create and initialize a new directory as a directory
-  // entry within the root directory
-  // int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  // int dirSize = (5 * 512);	//2560 bytes
-  // int numofEntries = dirSize / sizeOfEntry; //53 entries
-
-  // dirEntry* curDir = dirEntryInit(".", 1, vcbPtr->rootDir,
-  // numofEntries, time(0), time(0));
-  // setEntry(curDir->filename, curDir, rootDir);
-
-  // dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
-  // numBlocksWritten, numofEntries, time(0), time(0));
-  // setEntry(parentDir->filename, parentDir, dirEntries);
-
-  // Write the updated root directory to the volume
-
+ 
   return 0001;
 }
