@@ -69,7 +69,7 @@ node* entryInit(char key[20], dirEntry* value) {
 
 //Initialize a new hashTable
 hashTable* hashTableInit(int maxNumEntries) {
-  hashTable* table = malloc(sizeof(node*) * SIZE);
+  hashTable* table = malloc(sizeof(node) * SIZE);
   table->maxNumEntries = maxNumEntries;
 
   //Each node in the table should be set to a directory entry with a filename
