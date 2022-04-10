@@ -32,6 +32,9 @@
 // found a bit of value 1 representing free block
 int intBlock = 0;
 
+// Pointer to our root directory (hash table of directory entries)
+hashTable* rootDir;
+
 struct volumeCtrlBlock {
   long signature;      //Marker left behind that can be checked
                        //to know if the disk is setup correctly 
@@ -176,17 +179,17 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     int dirSize = (5 * blockSize);	//2560 bytes
     int numofEntries = dirSize / sizeOfEntry; //53 entries
 
-    // Points to an array of directory entries in a free state
-    hashTable* dirEntries = hashTableInit(numofEntries);
+    // Initialize our root directory to be a new hash table of directory entries
+    rootDir = hashTableInit(numofEntries);
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
       numofEntries, time(0), time(0));
-    setEntry(curDir->filename, curDir, dirEntries);
+    setEntry(curDir->filename, curDir, rootDir);
 
     dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
       numBlocksWritten, numofEntries, time(0), time(0));
-    setEntry(parentDir->filename, parentDir, dirEntries);
+    setEntry(parentDir->filename, parentDir, rootDir);
 
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
@@ -197,7 +200,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
     setBlocksAsAllocated(freeBlock, 5, bitVector);
-    writeTableData(dirEntries, 5, freeBlock - 1, blockSize);
+    writeTableData(rootDir, 5, freeBlock - 1, blockSize);
 
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
@@ -209,4 +212,14 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
 void exitFileSystem() {
   printf("System exiting\n");
+}
+
+
+int fs_isDir(char* path) {
+  //Parse path
+  char** pathParts;
+  pathParts[0] = "home";
+  pathParts[1] = "chase";
+
+  hashTable* currDir = rootDir;
 }
