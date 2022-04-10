@@ -50,7 +50,8 @@ dirEntry* dirEntryInit(char filename[20], int isDir, int location,
 }
 
 // *************************** Hash Table functions *************************** //
-#define SIZE 512  
+#define SIZE 53 // To represent the maximum number of entries a directory
+                // can have  
 
 //Node objects are used to populate the hash table
 typedef struct node {
@@ -103,7 +104,7 @@ node* entryInit(char key[20], dirEntry* value) {
 
 //Initialize a new hashTable
 hashTable* hashTableInit(int maxNumEntries) {
-  hashTable* table = malloc(sizeof(node*) * SIZE);
+  hashTable* table = malloc(sizeof(node) * SIZE);
   table->maxNumEntries = maxNumEntries;
 
   //Each node in the table should be set to a directory entry with a filename
