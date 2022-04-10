@@ -42,6 +42,28 @@ struct volumeCtrlBlock {
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
 
+char ** stringSplit(char * pathName){
+    char ** tokens = malloc(100);
+    char * token;
+    char * savePtr;
+    char *delim = "/";
+    int length = strlen(pathName);
+    int stringCount = 0;
+
+    token = strtok_r(pathName, delim, &savePtr);
+    
+    while (token != NULL){
+      tokens[stringCount] = token;
+      stringCount++;
+      printf("Directory entry is: %s\n", token);
+      token = strtok_r(NULL, delim, &savePtr);
+    }
+
+    tokens[stringCount] = token;
+
+    return tokens;
+  }
+
 int getFreeBlockNum(int numOfInts, int* bitVector) {
   //**********Get the free block number ***********
   // This will help determine the first block number that is
