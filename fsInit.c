@@ -32,6 +32,7 @@
 // found a bit of value 1 representing free block
 int intBlock = 0;
 
+
 struct volumeCtrlBlock {
   long signature;      //Marker left behind that can be checked
                        //to know if the disk is setup correctly 
@@ -96,8 +97,8 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
       }
     }
 
-    //Don't bother lookng through rest of table if all entries are found
-    if (j == table->numEntries - 1) {
+    // Don't bother lookng through rest of table if all entries are found
+    if (j == table->numEntries) {
       break;
     }
   }
@@ -138,6 +139,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     // is because 610 * 32 = 19520 bits which are not enough to
     // represent 19531 blocks
     int numOfInts = (numberOfBlocks / 32) + 1;
+
+    // Test
+    printf("Number of ints: %d\n", numOfInts);
 
     // Since we can only read and write data to and from LBA in
     // blocks we need to malloc memory for our bitVector in
@@ -186,13 +190,17 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     hashTable* dirEntries = hashTableInit(numofEntries);
 
     // Initializing the "." current directory and the ".." parent Directory 
-    dirEntry* curDir = dirEntryInit(".*", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
+    dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
       numofEntries, time(0), time(0));
     setEntry(curDir->filename, curDir, dirEntries);
 
-    // dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
+    dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
+      numBlocksWritten, numofEntries, time(0), time(0));
+    setEntry(parentDir->filename, parentDir, dirEntries);
+
+    // dirEntry* testDir = dirEntryInit("..*", 1, FREE_SPACE_START_BLOCK +
     //   numBlocksWritten, numofEntries, time(0), time(0));
-    // setEntry(parentDir->filename, parentDir, dirEntries);
+    // setEntry(testDir->filename, testDir, dirEntries);
 
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
@@ -221,10 +229,40 @@ void exitFileSystem() {
   printf("System exiting\n");
 }
 
+
+// Helper functions
+char ** stringParser(char * stringToParse) {
+  // Divide the path provided by the user into
+  // several sub paths
+  char ** subStrings;
+  char *subString;
+  char *savePtr;
+  char *delim = "/";
+
+  int stringCount = 0;
+  subString = strtok_r(stringToParse, delim, &savePtr);
+
+  while (subString != NULL) {
+    subStrings[stringCount] = subString;
+    stringCount++;
+    printf("Directory entry is: %s\n", subString);
+    subString = strtok_r(NULL, delim, &savePtr);
+  }
+
+  
+  return subStrings;
+}
+
 // Implementation of directory functions
 
 int fs_mkdir(const char *pathname, mode_t mode) {
   puts(pathname);
+
+  //char ** dirEnt = stringParser((char *)pathname);
+
+  // for (int i = 0; i < 1; i++) {
+  //   printf("In the fs_mkdir, directory entry is: %s\n", dirEnt[i]);
+  // }
 
   // Reads data into VCB
   struct volumeCtrlBlock* vcbPtr = malloc(512);
@@ -235,27 +273,79 @@ int fs_mkdir(const char *pathname, mode_t mode) {
   dirEntry* rootDir = malloc(5 * 512);
   LBAread(rootDir, 5, 6);
 
-  for (int i = 0; i < SIZE; i++) {
-    // node* entry = malloc(sizeof(node));
-    // entry = rootDir->entries[i];
-
-    // dirEntry* dirE = malloc(sizeof(dirEntry));
-    // dirE = entry->value;
-
-    printf("Directory entries' location: %s\n", rootDir[i].filename);
-    // // char* fileName = dirE->filename;
-    // printf("%d: Directory entry name is: ", (i + 1));
-    // for (int j = 0; j < 20; j++) {
-    //   printf("%c", dirE->filename[j]);
-    // }
-    
-  }
+  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  int dirSize = (5 * 512);	//2560 bytes
+  int numofEntries = dirSize / sizeOfEntry; //53 entries
 
 
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
   // there
   int* bitVector = malloc(5 * 512);
+
+  // Read the bitvector
+  LBAread(bitVector, 5, 1);
+
+  for (int i = 0; i < SIZE; i++) {
+    int index = i;
+    if (strcmp(rootDir[index].filename, "") == 0) {
+      int freeBlock = getFreeBlockNum(611, bitVector);
+
+      // Create home directory entry
+      strcpy(rootDir[index].filename, "home");
+      rootDir[index].isDir = 1;
+      rootDir[index].location = freeBlock;
+      rootDir[index].fileSize = 5 * 512;
+      rootDir[index].dateModified = time(0);
+      rootDir[index].dateCreated = time(0);
+
+      // Initialize the home directory
+      // Points to an array of directory entries in a free state
+      hashTable* dirEntries = hashTableInit(numofEntries);
+
+      // Initializing the "." current directory and the ".." parent Directory 
+      dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
+      numofEntries, time(0), time(0));
+      setEntry(curDir->filename, curDir, dirEntries);
+
+      dirEntry* parentDir = dirEntryInit("..", 1, freeBlock,
+      numofEntries, time(0), time(0));
+      setEntry(parentDir->filename, parentDir, dirEntries);
+
+      // Write the updated root directory to contain the home
+      // directory entry
+      LBAwrite(rootDir, 5, 6);
+
+      printf("Free block found at: %d\n", freeBlock);
+      writeTableData(dirEntries, 5, freeBlock, 512);
+
+      // Update the bit vector
+      setBlocksAsAllocated(freeBlock, 5, bitVector);
+      LBAwrite(bitVector, 5, 1);
+      break;
+  }
+    
+    
+}
+
+  //int index = hash("home");
+
+  // if (strcmp(rootDir[index].filename, "") == 0) {
+  //     // dirEntry* testDir = dirEntryInit("home", 1, 6, 
+  //     // numofEntries, time(0), time(0));
+
+  //     strcpy(rootDir[index].filename, "home");
+  //     rootDir[index].isDir = 1;
+  //     rootDir[index].location = 11;
+  //     rootDir[index].fileSize = 5 * 512;
+  //     rootDir[index].dateModified = time(0);
+  //     rootDir[index].dateCreated = time(0);
+
+  //     LBAwrite(rootDir, 5, 6);
+  // }
+
+
+
 
   // Create and initialize a new directory as a directory
   // entry within the root directory
@@ -275,3 +365,4 @@ int fs_mkdir(const char *pathname, mode_t mode) {
 
   return 0001;
 }
+
