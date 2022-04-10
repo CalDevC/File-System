@@ -234,7 +234,7 @@ void exitFileSystem() {
 char ** stringParser(char * stringToParse) {
   // Divide the path provided by the user into
   // several sub paths
-  char ** subStrings;
+  char ** subStrings = malloc(100);
   char *subString;
   char *savePtr;
   char *delim = "/";
@@ -249,6 +249,8 @@ char ** stringParser(char * stringToParse) {
     subString = strtok_r(NULL, delim, &savePtr);
   }
 
+  subStrings[stringCount] = subString;
+
   
   return subStrings;
 }
@@ -258,11 +260,11 @@ char ** stringParser(char * stringToParse) {
 int fs_mkdir(const char *pathname, mode_t mode) {
   puts(pathname);
 
-  //char ** dirEnt = stringParser((char *)pathname);
+  char ** dirEnt = stringParser((char *)pathname);
 
-  // for (int i = 0; i < 1; i++) {
-  //   printf("In the fs_mkdir, directory entry is: %s\n", dirEnt[i]);
-  // }
+  for (int i = 0; dirEnt[i] != NULL; i++) {
+    printf("In the fs_mkdir, directory entry is: %s\n", dirEnt[i]);
+  }
 
   // Reads data into VCB
   struct volumeCtrlBlock* vcbPtr = malloc(512);
