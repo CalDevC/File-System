@@ -98,7 +98,7 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
     }
 
     //Don't bother lookng through rest of table if all entries are found
-    if (j == table->numEntries - 1) {
+    if (j == table->numEntries) {
       break;
     }
   }
@@ -106,6 +106,15 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
   //Write to the array out to the specified block numbers
   LBAwrite(arr, lbaCount, lbaPosition);
 }
+
+//Read all directory entries from a certain disk location into a new hashmap
+// hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
+//   //Read all of the entries into an array
+//   dirEntry* arr = malloc(lbaCount * blockSize);
+//   LBAread(arr, lbaCount, lbaPosition);
+
+
+// }
 
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
@@ -183,13 +192,15 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     rootDir = hashTableInit(numofEntries);
 
     // Initializing the "." current directory and the ".." parent Directory 
-    dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
+    dirEntry* curDir = dirEntryInit("file", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
       numofEntries, time(0), time(0));
     setEntry(curDir->filename, curDir, rootDir);
 
-    dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
+    dirEntry* parentDir = dirEntryInit("file2", 1, FREE_SPACE_START_BLOCK +
       numBlocksWritten, numofEntries, time(0), time(0));
     setEntry(parentDir->filename, parentDir, rootDir);
+
+    printTable(rootDir);
 
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
