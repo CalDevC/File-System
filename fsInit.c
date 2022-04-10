@@ -224,13 +224,20 @@ int fs_isDir(char* path) {
 
   hashTable* currDir = rootDir;
   char* nextDirName = pathParts[0];
+  int i = 1;
 
   //For each path part
   while (strcmp(nextDirName, "\0") != 0) {
-    //Check if it exists in current directory
-    getEntry(nextDirName, currDir);
-    //Check that it is a directory
+    //Check if it exists in current directory and that it is a directory
+    dirEntry* entry = getEntry(nextDirName, currDir);
+    if (entry == NULL || entry->isDir == 0) {
+      return 0;
+    }
     //set currDir to its hash table if so
+
     //increment nextDirName
+    nextDirName = pathParts[i];
   }
+
+  return 1;
 }
