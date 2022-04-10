@@ -49,6 +49,9 @@ int hash(const char filename[20]) {
 
   //Return a value that will definitely be a valid index in the table
   //by using the remainder of (calculated value / table size)
+
+  // Test
+  printf("The hashed index is: %d for %s\n", value % SIZE, filename);
   return value % SIZE;
 }
 
