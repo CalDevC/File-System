@@ -108,13 +108,25 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
 }
 
 //Read all directory entries from a certain disk location into a new hashmap
-// hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
-//   //Read all of the entries into an array
-//   dirEntry* arr = malloc(lbaCount * blockSize);
-//   LBAread(arr, lbaCount, lbaPosition);
+hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
+  //Read all of the entries into an array
+  dirEntry* arr = malloc(lbaCount * blockSize);
+  LBAread(arr, lbaCount, lbaPosition);
 
+  hashTable* dirPtr = hashTableInit((lbaCount * blockSize) / sizeof(dirEntry));
 
-// }
+  int i = 0;
+  dirEntry* currDirEntry = malloc(sizeof(dirEntry));
+  currDirEntry = &arr[0];
+
+  while (strcmp(currDirEntry->filename, "") != 0) {
+    setEntry(currDirEntry->filename, currDirEntry, dirPtr);
+    i++;
+    currDirEntry = &arr[i];
+  }
+
+  return dirPtr;
+}
 
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
@@ -192,11 +204,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     rootDir = hashTableInit(numofEntries);
 
     // Initializing the "." current directory and the ".." parent Directory 
-    dirEntry* curDir = dirEntryInit("file", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
+    dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
       numofEntries, time(0), time(0));
     setEntry(curDir->filename, curDir, rootDir);
 
-    dirEntry* parentDir = dirEntryInit("file2", 1, FREE_SPACE_START_BLOCK +
+    dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
       numBlocksWritten, numofEntries, time(0), time(0));
     setEntry(parentDir->filename, parentDir, rootDir);
 
@@ -215,6 +227,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
+
   }
 
   return 0;

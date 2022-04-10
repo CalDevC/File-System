@@ -149,11 +149,11 @@ dirEntry* getEntry(char key[20], hashTable* table) {
 
 //Write out the hash table contents to the console for debug
 void printTable(hashTable* table) {
-  printf("******** table ********");
+  printf("\n******** table ********\n");
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
     if (strcmp(entry->value->filename, "") != 0) {
-      printf("\n[Entry %d] %s", i, table->entries[i]->key);
+      printf("[Entry %d] %s\n", i, table->entries[i]->key);
       while (entry->next != NULL) {
         entry = entry->next;
         printf(", %s", entry->key);
