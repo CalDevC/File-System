@@ -107,14 +107,16 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
   LBAwrite(arr, lbaCount, lbaPosition);
 }
 
-//Read all directory entries from a certain disk location into a new hashmap
+//Read all directory entries from a certain disk location into a new hash table
 hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
-  //Read all of the entries into an array
+  //Read all of the entries from disk into an array
   dirEntry* arr = malloc(lbaCount * blockSize);
   LBAread(arr, lbaCount, lbaPosition);
 
+  //Create a new hash table to be populated
   hashTable* dirPtr = hashTableInit((lbaCount * blockSize) / sizeof(dirEntry));
 
+  //Add each directory entry from the array into the hash table
   int i = 0;
   dirEntry* currDirEntry = malloc(sizeof(dirEntry));
   currDirEntry = &arr[0];
