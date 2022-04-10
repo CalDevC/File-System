@@ -35,6 +35,8 @@ int intBlock = 0;
 // Pointer to our root directory (hash table of directory entries)
 hashTable* rootDir;
 
+int blockSize;
+
 struct volumeCtrlBlock {
   long signature;      //Marker left behind that can be checked
                        //to know if the disk is setup correctly 
@@ -135,6 +137,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
     numberOfBlocks, blockSize);
 
+  blockSize = blockSize;
   struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
 
   // Reads data into VCB to check signature
@@ -214,8 +217,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       numBlocksWritten, numofEntries, time(0), time(0));
     setEntry(parentDir->filename, parentDir, rootDir);
 
-    printTable(rootDir);
-
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
@@ -240,30 +241,37 @@ void exitFileSystem() {
   printf("System exiting\n");
 }
 
-
+//Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
   //Parse path
   char** pathParts;
-  pathParts[0] = "home";
-  pathParts[1] = "chase";
-  pathParts[2] = "\0";
 
+  //Traverse the path one component at a time starting from the root directory
   hashTable* currDir = rootDir;
   char* nextDirName = pathParts[0];
   int i = 1;
 
-  //For each path part
+  //Continue until we have processed each component in the path
   while (strcmp(nextDirName, "\0") != 0) {
-    //Check if it exists in current directory and that it is a directory
+
+    //check that the location exists and that it is a directory
     dirEntry* entry = getEntry(nextDirName, currDir);
     if (entry == NULL || entry->isDir == 0) {
       return 0;
     }
-    //set currDir to its hash table if so
 
-    //increment nextDirName
+    //Move the current directory to the current component's directory
+    //now that it has been verified
+    currDir = readTableData(5, entry->location, blockSize);
+
+    //Move on to the next component of the path
     nextDirName = pathParts[i];
   }
 
   return 1;
+}
+
+//Check is a path is a file (1 = yes, 0 = no)
+int fs_isFile(char* path) {
+  return !fs_isDir(path);
 }
