@@ -220,6 +220,17 @@ int fs_isDir(char* path) {
   char** pathParts;
   pathParts[0] = "home";
   pathParts[1] = "chase";
+  pathParts[2] = "\0";
 
   hashTable* currDir = rootDir;
+  char* nextDirName = pathParts[0];
+
+  //For each path part
+  while (strcmp(nextDirName, "\0") != 0) {
+    //Check if it exists in current directory
+    getEntry(nextDirName, currDir);
+    //Check that it is a directory
+    //set currDir to its hash table if so
+    //increment nextDirName
+  }
 }
