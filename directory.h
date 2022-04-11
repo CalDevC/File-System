@@ -47,6 +47,7 @@ typedef struct hashTable {
   node* entries[SIZE];
   int numEntries;
   int maxNumEntries;
+  int location;
 } hashTable;
 
 //Initialize a new directory entry
@@ -60,7 +61,7 @@ int hash(const char filename[20]);
 node* entryInit(char key[20], dirEntry* value);
 
 //Initialize a new hashTable
-hashTable* hashTableInit(int maxNumEntries);
+hashTable* hashTableInit(int maxNumEntries, int location);
 
 //Update an existing entry or add a new one
 void setEntry(char key[20], dirEntry* value, hashTable* table);
