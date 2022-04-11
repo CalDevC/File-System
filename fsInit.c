@@ -109,7 +109,7 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
   }
 
   //Write to the array out to the specified block numbers
-  printf("Write root directory to: %d, for number of blocks: %d\n",
+  printf("Write directory to: %d, for number of blocks: %d\n",
     lbaPosition, lbaCount);
   LBAwrite(arr, lbaCount, lbaPosition);
 }
@@ -253,8 +253,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     LBAwrite(bitVector, 5, 1);
 
 
-    hashTable* table2 = readTableData(5, 6, blockSize);
-    printTable(table2);
+    // hashTable* table2 = readTableData(5, 6, blockSize);
+    // printTable(table2);
 
   }
 
@@ -280,6 +280,8 @@ char** stringParser(char* stringToParse) {
 
   while (subString != NULL) {
     subStrings[stringCount] = subString;
+    printf("strlen(%s) is : %ld\n", subString, strlen(subString));
+    // printf("strlen(%s) is : %ld\n", "home", strlen("home"));
     stringCount++;
    // printf("Directory entry is: %s\n", subString);
     subString = strtok_r(NULL, delim, &savePtr);
@@ -293,6 +295,7 @@ char** stringParser(char* stringToParse) {
 
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
+  printf("\nPath in fs_isDir passed by fs_mkdir(): %s\n", path);
   //Parse path
   char * pathnameCopy = malloc(strlen(path));
   strcpy(pathnameCopy, path);
@@ -309,7 +312,7 @@ int fs_isDir(char* path) {
   hashTable* currDir = readTableData(5, 6, blockSizeG);
   // char* nextDirName = pathParts[0];
 
-  printTable(currDir);
+  // printTable(currDir);
 
   //Continue until we have processed each component in the path
   for (int i = 0; pathParts[i] != NULL; i++) {
@@ -386,19 +389,19 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   }
 
   parentPath[k] = '\0';
-  // printf("Parent path: %s\n", parentPath);
+  printf("Parent path: %s\n", parentPath);
 
-  // if (!fs_isDir(parentPath)) {
-  //   printf("exiting fs_mkdir()\n");
-  //   return -1;
-  // }
+  if (!fs_isDir(parentPath)) {
+    printf("Parent path is invalid fs_mkdir()\n");
+    return -1;
+  }
 
-  // printf("Before the second check path name is: %s\n", (char *)pathname);
-  // if (fs_isDir((char *)pathname)) {
-  //   printf("\npathname in fs_mkdir(): %s\n", pathname);
-  //   printf("2 exiting fs_mkdir()\n");
-  //   return -1;
-  // }
+  printf("Before the second check path name is: %s\n", (char *)pathname);
+  if (fs_isDir((char *)pathname)) {
+    printf("\npathname in fs_mkdir(): %s\n", pathname);
+    printf("2 exiting fs_mkdir()\n");
+    return -1;
+  }
 
   // Reads data into VCB
   struct volumeCtrlBlock* vcbPtr = malloc(blockSizeG);
@@ -413,7 +416,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   //Continue until we have processed each component in the path
   hashTable * currDir = readTableData(5, vcbPtr->rootDir, blockSizeG);
 
-  printf("CUrr Dir is: \n");
+  printf("Curr Dir is: \n");
   printTable(currDir);
 
   int i = 0;
@@ -428,6 +431,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     if (entry == NULL) {
       printf("entry is null in fs_mkdir() with parsedPath: %s\n", 
       parsedPath[i]);
+      // break;
     }
     // printf("path at %d is: %s\n", i, parsedPath[i]);
     // printf("entry location at : %d", entry->location);
@@ -452,9 +456,12 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Create home directory entry
   char * newDirName = parsedPath[i];
+  printf("strlen(%s) is : %ld\n", newDirName, strlen(newDirName));
+  
   dirEntry* newEntry = malloc(sizeof(dirEntry));
   int freeBlock = getFreeBlockNum(numOfInts, bitVector);
 
+  printf("\n\nNext free space for %s directory is: %d\n\n", newDirName, freeBlock);
   strcpy(newEntry->filename, newDirName);
   newEntry->isDir = 1;
   newEntry->location = freeBlock;
@@ -470,6 +477,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // printTable(currDir);
 
   int startBlock = getEntry(newDirName, currDir)->location;
+  printf("Start free space for %s directory is: %d\n\n", newDirName, startBlock);
   hashTable* dirEntries = hashTableInit(numofEntries, startBlock);
 
   // Initializing the "." current directory and the ".." parent Directory
@@ -499,5 +507,5 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
    
   // free(pathnameCopy); 
-  return 0001;
+  return 0;
 }

@@ -38,7 +38,7 @@ int hash(const char filename[20]) {
 
   //Alter the hash value based on each char in 
   //the name to try to get a unique value
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < strlen(filename); i++) {
     value *= 2 + filename[i];
   }
 
@@ -140,6 +140,10 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   //Get the entry based on the hash value calculated from the key
   int hashVal = hash(key);
   node* entry = table->entries[hashVal];
+
+  // TEST
+  printf("\nHash key for %s is: %d\n", key, hashVal);
+
 
   //Checks hashTable for matching key and return its value
   while (entry != NULL) {
