@@ -51,7 +51,7 @@ int hash(const char filename[20]) {
   //by using the remainder of (calculated value / table size)
 
   // Test
-  printf("The hashed index is: %d for %s\n", value % SIZE, filename);
+  // printf("The hashed index is: %d for %s\n", value % SIZE, filename);
   return value % SIZE;
 }
 
@@ -71,9 +71,10 @@ node* entryInit(char key[20], dirEntry* value) {
 }
 
 //Initialize a new hashTable
-hashTable* hashTableInit(int maxNumEntries) {
+hashTable* hashTableInit(int maxNumEntries, int location) {
   hashTable* table = malloc(sizeof(node) * SIZE);
   table->maxNumEntries = maxNumEntries;
+  table->location = location;
 
   //Each node in the table should be set to a directory entry with a filename
   //of "" so that we know if there is a collision or not
@@ -156,11 +157,12 @@ void printTable(hashTable* table) {
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
     if (strcmp(entry->value->filename, "") != 0) {
-      printf("[Entry %d] %s\n", i, table->entries[i]->key);
+      printf("[Entry %d] %s", i, table->entries[i]->key);
       while (entry->next != NULL) {
         entry = entry->next;
         printf(", %s", entry->key);
       }
+      printf("\n");
     }
   }
 
