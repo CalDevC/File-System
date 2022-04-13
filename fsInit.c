@@ -129,6 +129,7 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
 
   //Write to the array out to the specified block numbers
   LBAwrite(arr, lbaCount, lbaPosition);
+  free(arr);
 }
 
 //Read all directory entries from a certain disk location into a new hash table
@@ -252,9 +253,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
-
+    free(bitVector);
   }
 
+  free(vcbPtr);
   return 0;
 }
 
@@ -316,7 +318,10 @@ int fs_isDir(char* path) {
     //now that it has been verified
     currDir = readTableData(5, entry->location, blockSizeG);
   }
-
+  
+  free(pathnameCopy);
+  free(pathParts);
+  
   return 1;
 }
 
@@ -429,7 +434,12 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   setBlocksAsAllocated(freeBlock, 5, bitVector);
   LBAwrite(bitVector, 5, 1);
 
-   
-  // free(pathnameCopy); 
+  free(bitVector);
+  free(newEntry); 
+  free(vcbPtr);
+  free(pathnameCopy); 
+  free(parsedPath);
+  free(parentPath);
+
   return 0;
 }
