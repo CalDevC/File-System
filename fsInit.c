@@ -20,7 +20,6 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-#include "directory.h"
 #include "fsLow.h"
 #include "mfs.h"
 
