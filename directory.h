@@ -14,6 +14,8 @@
 * functions related to our hashTable.
 *
 **************************************************************/
+#ifndef DIRECTORY_H
+#define DIRECTORY_H
 
 #include <time.h>
 #include <stdlib.h>
@@ -74,3 +76,5 @@ void printTable(hashTable* table);
 
 //Free the memory allocated to the hashTable
 void clean(hashTable* table);
+
+#endif
