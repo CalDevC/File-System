@@ -75,9 +75,28 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   // Set the number of bits specified in the blocksAllocated
   // to 0 starting from freeBlock
   freeBlock += 1;
+  
+  int bitNum = freeBlock - ((intBlock * 32) + 32);
 
-  for (int i = freeBlock; i < (freeBlock + blocksAllocated); i++) {
-    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - i));
+  if (bitNum < 0) {
+    bitNum *= -1;
+  }
+
+  // This will give us the specific bit where
+  // we found the free block in the specific
+  // int block
+  bitNum = 32 - bitNum;
+
+  int index = bitNum;
+  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
+
+  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
+    if (index > 32) {
+      intBlock += 1;
+      index = 1;
+      sumOfFreeBlAndBlocksAlloc -= 32;
+    }
+    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
   }
 }
 
@@ -109,8 +128,6 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
   }
 
   //Write to the array out to the specified block numbers
-  printf("Write directory to: %d, for number of blocks: %d\n",
-    lbaPosition, lbaCount);
   LBAwrite(arr, lbaCount, lbaPosition);
 }
 
@@ -250,7 +267,7 @@ void exitFileSystem() {
 char** stringParser(char* stringToParse) {
   // Divide the path provided by the user into
   // several sub paths
-  char ** subStrings = malloc(100);
+  char ** subStrings = (char**)malloc(sizeof(char*)*(strlen(stringToParse)+1));
   char *subString;
   char *savePtr;
   char *delim = "/";
@@ -273,11 +290,12 @@ char** stringParser(char* stringToParse) {
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
   //Parse path
-  char * pathnameCopy = malloc(strlen(path));
+  char * pathnameCopy = malloc(strlen(path)+1);
+
   strcpy(pathnameCopy, path);
 
   char ** pathParts = stringParser(pathnameCopy);
- 
+
   //Traverse the path one component at a time starting from the root directory
   hashTable* currDir = readTableData(5, 6, blockSizeG);
  
@@ -285,7 +303,6 @@ int fs_isDir(char* path) {
   for (int i = 0; pathParts[i] != NULL; i++) {
     //check that the location exists and that it is a directory
     dirEntry* entry = getEntry(pathParts[i], currDir);
-
     if (entry == NULL) {
       return 0;
     }
@@ -312,12 +329,12 @@ int fs_isFile(char* path) {
 
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
-  char * pathnameCopy = malloc(strlen(pathname));
+  char * pathnameCopy = malloc(strlen(pathname)+1);
   strcpy(pathnameCopy, pathname);
 
   char ** parsedPath = stringParser(pathnameCopy);
 
-  char * parentPath = malloc(strlen(pathname));
+  char * parentPath = malloc(strlen(pathname)+1);
 
   int k = 0;
   for (int i = 0; parsedPath[i+1] != NULL; i++) {    
@@ -362,7 +379,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSize = (5 * blockSizeG);	//2560 bytes
   int numofEntries = dirSize / sizeOfEntry; //53 entries
-
 
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
