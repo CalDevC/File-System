@@ -232,11 +232,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
 
-    hashTable* newPtr = readTableData(5, freeBlock, blockSize);
-    printTable(newPtr);
-    printf("WORKING DIR\n");
-    printTable(workingDir);
-
     fdDir* myDirPtr = fs_opendir(".");
 
     struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
