@@ -306,7 +306,7 @@ int fs_isDir(char* path) {
 char* fs_getcwd(char* buf, size_t size) {
 
 }
-//Check is a path is a file (1 = yes, 0 = no)
+// Check is a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
   // CHANGE this
   return !fs_isDir(path);
@@ -419,4 +419,19 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // free(pathnameCopy); 
   return 0;
+}
+
+// Opens a directory stream corresponding to 'name', and returns
+// a pointer to the directory stream
+fdDir* fs_opendir(const char* name) {
+  fdDir* fdDir = malloc(sizeof(fdDir));
+  dirEntry* reqDir = getEntry((char*)name, workingDir);
+  hashTable* reqDirTable = readTableData(5, reqDir->location, blockSizeG);
+
+  fdDir->dirTable = reqDirTable;
+  fdDir->d_reclen = reqDirTable->numEntries;
+  fdDir->directoryStartLocation = reqDir->location;
+  fdDir->dirEntryPosition = getNextIdx(-1, reqDirTable);
+
+  return fdDir;
 }
