@@ -349,7 +349,22 @@ int fs_isFile(char* path) {
   // CHANGE this
   return !fs_isDir(path);
 }
+// Implementation of ls
+char * fs_getcwd(char* path, size_t size){
+  //parse path
+  char * pathnameCopy = malloc(strlen(path));
+  strcpy(pathnameCopy, path);
+  char ** pathParts = stringParser(pathnameCopy);
 
+  if(fs_isDir(path) == 0){
+    printf("path is not a directory");
+  }else{
+    for (int i = 0; pathParts[i] != NULL; i++) {
+      puts(pathParts[i]);
+    }
+  }
+  
+};
 
 // Implementation of directory functions
 
