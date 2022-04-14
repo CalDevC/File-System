@@ -471,7 +471,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     dirSizeInBytes, time(0), time(0));
   setEntry(curDir->filename, curDir, dirEntries);
 
-  dirEntry* parentDir = dirEntryInit("..", 1, freeBlock,
+  dirEntry* parentDir = dirEntryInit("..", 1, currDir->location,
     dirSizeInBytes, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
 
