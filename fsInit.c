@@ -267,6 +267,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
     writeTableData(rootDir, freeBlock);
 
+
+    ////////////// TEST CODE FOR OPR/CLOSE/READ DIR //////////////
     // printf("\n\n\n");
 
     // fdDir* myDirPtr = fs_opendir(".");
@@ -294,6 +296,19 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // }
 
     // fs_closedir(myDirPtr);
+    ////////////// END TEST CODE FOR OPR/CLOSE/READ DIR //////////////
+
+    ///////////// TEST CODE FOR SETCWD /////////////
+    // fs_mkdir("/home", 0777);
+    // fs_mkdir("/home/test", 0777);
+    // fs_mkdir("/home/test/succes", 0777);
+    // fs_mkdir("/home/test/done", 0777);
+    // printf("Set current working directory:\n");
+    // fs_setcwd("/home/test");
+
+    // printTable(workingDir);
+    ///////////// END TEST CODE FOR SETCWD /////////////
+
 
     free(bitVector);
     bitVector = NULL;
@@ -552,4 +567,41 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   return dirItemInfo;
 
+}
+
+int fs_setcwd(char* buf) {
+  //Parse path
+  char* pathnameCopy = malloc(strlen(buf) + 1);
+  strcpy(pathnameCopy, buf);
+
+  char** pathParts = stringParser(pathnameCopy);
+
+  //Traverse the path one component at a time starting from the root directory
+  // Reads data into VCB
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  LBAread(vcbPtr, 1, 0);
+
+  //Continue until we have processed each component in the path
+  hashTable* currDir = readTableData(vcbPtr->rootDir);
+
+  //Continue until we have processed each component in the path
+  for (int i = 0; pathParts[i] != NULL; i++) {
+    //check that the location exists and that it is a directory
+    dirEntry* entry = getEntry(pathParts[i], currDir);
+    if (entry == NULL) {  //Not found
+      return -1;
+    }
+
+    if (entry->isDir == 0) {  //Not a directory
+      printf("Error: Directory entry is not a directory\n");
+      return -1;
+    }
+
+    //Move the current directory to the current component's directory
+    //now that it has been verified
+    currDir = readTableData(entry->location);
+  }
+
+  workingDir = currDir;
+  return 0;
 }
