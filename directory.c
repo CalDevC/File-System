@@ -38,7 +38,9 @@ int hash(const char filename[20]) {
 
   //Alter the hash value based on each char in 
   //the name to try to get a unique value
-  for (int i = 0; i < strlen(filename); i++) {
+  int length = strlen(filename);
+
+  for (int i = 0; i < length; i++) {
     value *= 2 + filename[i];
   }
 
@@ -49,9 +51,6 @@ int hash(const char filename[20]) {
 
   //Return a value that will definitely be a valid index in the table
   //by using the remainder of (calculated value / table size)
-
-  // Test
-  // printf("The hashed index is: %d for %s\n", value % SIZE, filename);
   return value % SIZE;
 }
 
@@ -102,11 +101,10 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
     return;
   }
 
-  table->numEntries++;
-
   //If there is no collision then add a new initialized entry
   if (strcmp(entry->value->filename, "") == 0) {
     table->entries[hashVal] = entryInit(key, value);
+    table->numEntries++;
     return;
   }
 
@@ -132,6 +130,7 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
   //If the key was not found at the table location then add it to 
   //the end of the list at that location
   prevEntry->next = entryInit(key, value);
+  table->numEntries++;
 
 }
 
@@ -141,10 +140,6 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   int hashVal = hash(key);
   node* entry = table->entries[hashVal];
 
-  // TEST
-  printf("\nHash key for %s is: %d\n", key, hashVal);
-
-
   //Checks hashTable for matching key and return its value
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
@@ -153,6 +148,36 @@ dirEntry* getEntry(char key[20], hashTable* table) {
     entry = entry->next;
   }
   return NULL;
+}
+
+//Given an index, find the index of the next entry in the table
+int getNextIdx(int currIdx, hashTable* table) {
+  //If we are looking for the first index in the list, start at entry 0
+  int max = table->maxNumEntries;
+
+  if (currIdx == max && strcmp(table->entries[0]->key, "") != 0) {
+    return 0;
+  } else if (currIdx == max) {
+    currIdx = 0;
+  }
+
+  node* currNode = table->entries[currIdx];
+
+  //Return the same index is there is another element hashed to that location
+  if (currNode->next != NULL) {
+    return currIdx;
+  }
+
+  //Otherwise continue through the table looking for the next non-free entry
+  for (int i = currIdx + 1; i < SIZE; i++) {
+    currNode = table->entries[i];
+    // printf("index: %d, currNode filename: %s\n", i, currNode->value->filename);
+    if (strcmp(currNode->value->filename, "") != 0) {
+      return i;
+    }
+  }
+
+  return max;
 }
 
 //Write out the hash table contents to the console for debug
