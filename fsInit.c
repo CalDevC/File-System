@@ -75,9 +75,32 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   // Set the number of bits specified in the blocksAllocated
   // to 0 starting from freeBlock
-  for (int i = freeBlock; i < (freeBlock + blocksAllocated); i++) {
-    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - i));
+  freeBlock += 1;
+
+  int bitNum = freeBlock - ((intBlock * 32) + 32);
+
+  if (bitNum < 0) {
+    bitNum *= -1;
   }
+
+  // This will give us the specific bit where
+  // we found the free block in the specific
+  // int block
+  bitNum = 32 - bitNum;
+
+  int index = bitNum;
+  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
+
+  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
+    if (index > 32) {
+      intBlock += 1;
+      index = 1;
+      sumOfFreeBlAndBlocksAlloc -= 32;
+    }
+    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
+  }
+
+  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 }
 
 //Write all directory entries in the hashTable to the disk
@@ -228,11 +251,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
-    setBlocksAsAllocated(freeBlock, NUM_FREE_SPACE_BLOCKS, bitVector);
+    printf("\n\nFree block is %d\n", freeBlock);
+    setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
     writeTableData(rootDir, freeBlock);
-
-    //Update the bitvector
-    LBAwrite(bitVector, DIR_SIZE, 1);
 
     // printf("\n\n\n");
 
@@ -440,8 +461,8 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   writeTableData(dirEntries, dirEntries->location);
 
   // Update the bit vector
-  setBlocksAsAllocated(freeBlock, NUM_FREE_SPACE_BLOCKS, bitVector);
-  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  printf("NEW FREE BLOCK: %d\n", freeBlock);
+  setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
 
 
   // free(pathnameCopy); 
