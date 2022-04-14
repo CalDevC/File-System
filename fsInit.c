@@ -210,7 +210,19 @@ void writeTableData(hashTable* table, int lbaPosition) {
   //Write to the array out to the specified block numbers
   printf("Write directory to: %d, for number of blocks: %d\n",
     lbaPosition, DIR_SIZE);
-  LBAwrite(arr, DIR_SIZE, lbaPosition);
+
+  int val = LBAwrite(arr, DIR_SIZE, lbaPosition);
+
+  // printf("val is: %d\n", val);
+  // if (val == DIR_SIZE) {
+  //   printf("Freeing arr\n");
+  //   free(arr);
+  //   arr = NULL;
+  //   if (arr == NULL) {
+  //     printf("arr is NULL\n");
+  //   }
+  // }
+
 }
 
 /****************************************************
@@ -366,7 +378,12 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // fs_closedir(myDirPtr);
 
+    free(bitVector);
+    bitVector = NULL;
   }
+
+  free(vcbPtr);
+  vcbPtr = NULL;
 
   return 0;
 }
@@ -423,7 +440,6 @@ int fs_isDir(char* path) {
   for (int i = 0; pathParts[i] != NULL; i++) {
     //check that the location exists and that it is a directory
     dirEntry* entry = getEntry(pathParts[i], currDir);
-
     if (entry == NULL) {
       return 0;
     }
@@ -438,6 +454,11 @@ int fs_isDir(char* path) {
     //now that it has been verified
     currDir = readTableData(entry->location);
   }
+
+  free(pathnameCopy);
+  pathnameCopy = NULL;
+  free(pathParts);
+  pathParts = NULL;
 
   return 1;
 }
@@ -529,7 +550,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   int maxNumEntries = dirSizeInBytes / sizeOfEntry; //53 entries
 
-
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
   // there
@@ -566,7 +586,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     dirSizeInBytes, time(0), time(0));
   setEntry(curDir->filename, curDir, dirEntries);
 
-  dirEntry* parentDir = dirEntryInit("..", 1, freeBlock,
+  dirEntry* parentDir = dirEntryInit("..", 1, currDir->location,
     dirSizeInBytes, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
 
@@ -578,9 +598,22 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // Update the bit vector
   printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+  printTable(currDir);
 
 
-  // free(pathnameCopy); 
+  free(bitVector);
+  bitVector = NULL;
+  free(newEntry);
+  newEntry = NULL;
+  free(vcbPtr);
+  vcbPtr = NULL;
+  free(pathnameCopy);
+  pathnameCopy = NULL;
+  free(parsedPath);
+  parsedPath = NULL;
+  free(parentPath);
+  parentPath = NULL;
+
   return 0;
 }
 
@@ -618,7 +651,9 @@ fdDir* fs_opendir(const char* name) {
 // Closes the directory stream associated with dirp
 int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
+  dirp->dirTable = NULL;
   free(dirp);
+  dirp = NULL;
   return 0;
 }
 
