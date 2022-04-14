@@ -152,12 +152,10 @@ dirEntry* getEntry(char key[20], hashTable* table) {
 
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table) {
-  printTable(table);
   //If we are looking for the first index in the list, start at entry 0
-  if (currIdx == -1 && strcmp(table->entries[0]->key, "") != 0) {
-    printf("Returning 0\n");
+  if (currIdx == NULL && strcmp(table->entries[0]->key, "") != 0) {
     return 0;
-  } else {
+  } else if (currIdx == NULL) {
     currIdx = 0;
   }
 
@@ -165,7 +163,6 @@ int getNextIdx(int currIdx, hashTable* table) {
 
   //Return the same index is there is another element hashed to that location
   if (currNode->next != NULL) {
-    printf("Returning next\n");
     return currIdx;
   }
 

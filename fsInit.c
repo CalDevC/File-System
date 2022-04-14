@@ -57,13 +57,13 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
   // We can use the following formula to calculate the block
   // number => (32 * i) + (32 - j), where (32 * i) will give us 
   // the number of 32 bit blocks where we found a bit of value 1
-  // and we add (32 - j) which is a offset to get the block number 
+  // and we add (31 - j) which is a offset to get the block number 
   // it represents within that 32 bit block
   for (int i = 0; i < numOfInts; i++) {
     for (int j = 31; j >= 0; j--) {
       if (bitVector[i] & (1 << j)) {
         intBlock = i;
-        freeBlock = (intBlock * 32) + (32 - j);
+        freeBlock = (intBlock * 32) + (31 - j);
         return freeBlock;
       }
     }
@@ -238,19 +238,29 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     printTable(workingDir);
 
     fdDir* myDirPtr = fs_opendir(".");
-    printf("OPEN DIR\n");
-    printTable(myDirPtr->dirTable);
-    printf("Dir ptr start loc: %d\n", myDirPtr->dirTable->location);
+
     struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
-    printf("DONE WITH READ\n");
-    // printf("Dir entry name: %s\n", myInfo->d_name);
-    printf("Dir entry len: %d\n", myInfo->d_reclen);
-    // myInfo = fs_readdir(myDirPtr);
-    // printf("Dir entry name: %s\n", myInfo->d_name);
-    // printf("Dir entry len: %d\n", myInfo->d_reclen);
-    // myInfo = fs_readdir(myDirPtr);
-    // printf("Dir entry name: %s\n", myInfo->d_name);
-    // printf("Dir entry len: %d\n", myInfo->d_reclen);
+    if (myInfo == NULL) {
+      printf("END of directory\n");
+    } else {
+      printf("Dir entry name: %s\n", myInfo->d_name);
+    }
+
+    myInfo = fs_readdir(myDirPtr);
+    if (myInfo == NULL) {
+      printf("END of directory\n");
+    } else {
+      printf("Dir entry name: %s\n", myInfo->d_name);
+    }
+
+
+    myInfo = fs_readdir(myDirPtr);
+    if (myInfo == NULL) {
+      printf("END of directory\n");
+    } else {
+      printf("Dir entry name: %s\n", myInfo->d_name);
+    }
+
     fs_closedir(myDirPtr);
 
   }
@@ -449,7 +459,7 @@ fdDir* fs_opendir(const char* name) {
   fdDir->dirTable = reqDirTable;
   fdDir->d_reclen = reqDirTable->numEntries;
   fdDir->directoryStartLocation = reqDir->location;
-  fdDir->dirEntryPosition = -1;
+  fdDir->dirEntryPosition = NULL;
 
   return fdDir;
 }
@@ -467,11 +477,9 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
   if (dirEntIdx == NULL) {
-    printf("INDEX was NULL\n");
     return NULL;
   }
-
-  printf("INDEX: %d\n", dirEntIdx);
+  printf("FOUND INDEX: %d\n", dirEntIdx);
 
   dirp->dirEntryPosition = dirEntIdx;
 
@@ -484,8 +492,6 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   strcpy(dirItemInfo->d_name, dirEnt->filename);
   dirItemInfo->d_reclen = dirEnt->fileSize;
   dirItemInfo->fileType = dirEnt->isDir ? 'd' : 'f';
-
-  printf("dirItemInfo (inside): %d\n", dirItemInfo->d_reclen);
 
   return dirItemInfo;
 
