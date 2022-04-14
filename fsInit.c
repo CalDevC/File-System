@@ -34,7 +34,7 @@ int intBlock = 0;
 // Pointer to our root directory (hash table of directory entries)
 hashTable* workingDir;
 
-int blockSizeG;
+int blockSize;
 int numOfInts;
 
 struct volumeCtrlBlock {
@@ -79,7 +79,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 }
 
 //Write all directory entries in the hashTable to the disk
-void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSize) {
+void writeTableData(hashTable* table, int lbaCount, int lbaPosition) {
   dirEntry* arr = malloc(lbaCount * blockSize);
 
   int j = 0;  //j will track indcies for the array
@@ -112,7 +112,7 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
 }
 
 //Read all directory entries from a certain disk location into a new hashmap
-hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
+hashTable* readTableData(int lbaCount, int lbaPosition) {
   //Read all of the entries into an array
   dirEntry* arr = malloc(lbaCount * blockSize);
   LBAread(arr, lbaCount, lbaPosition);
@@ -135,11 +135,11 @@ hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
 }
 
 //Initialize the file system
-int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
+int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
-    numberOfBlocks, blockSize);
+    numberOfBlocks, definedBlockSize);
 
-  blockSizeG = blockSize;
+  blockSize = definedBlockSize;
   // We will be dealing with free space using 32 bits at a time
   // represented by 1 int that's why we need to determine how
   // many such ints we need, so we need: 19531 / 32 = 610 + 1 = 611
@@ -149,7 +149,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   // represent 19531 blocks
   numOfInts = (numberOfBlocks / 32) + 1;
 
-  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  struct volumeCtrlBlock* vcbPtr = malloc(definedBlockSize);
 
   // Reads data into VCB to check signature
   LBAread(vcbPtr, 1, 0);
@@ -159,14 +159,14 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   } else {
     //Volume was not properly formatted
     vcbPtr->signature = SIG;
-    vcbPtr->blockSize = blockSize;
+    vcbPtr->blockSize = definedBlockSize;
     vcbPtr->blockCount = numberOfBlocks;
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
 
     // Since we can only read and write data to and from LBA in
     // blocks we need to malloc memory for our bitVector in
     // block sizes as well
-    int* bitVector = malloc(5 * blockSize);
+    int* bitVector = malloc(5 * definedBlockSize);
 
     // 0 = occupied
     // 1 = free
@@ -202,7 +202,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     vcbPtr->rootDir = getFreeBlockNum(numOfInts, bitVector);
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-    int dirSize = (5 * blockSize);	//2560 bytes
+    int dirSize = (5 * definedBlockSize);	//2560 bytes
     int maxNumEntries = dirSize / sizeOfEntry; //53 entries
 
     // Initialize our root directory to be a new hash table of directory entries
@@ -211,11 +211,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
-      5 * blockSize, time(0), time(0));
+      5 * definedBlockSize, time(0), time(0));
     setEntry(curDir->filename, curDir, rootDir);
 
     dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
-      numBlocksWritten, 5 * blockSize, time(0), time(0));
+      numBlocksWritten, 5 * definedBlockSize, time(0), time(0));
     setEntry(parentDir->filename, parentDir, rootDir);
 
     // Writes VCB to block 0
@@ -227,7 +227,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
     setBlocksAsAllocated(freeBlock, 5, bitVector);
-    writeTableData(rootDir, 5, freeBlock, blockSize);
+    writeTableData(rootDir, 5, freeBlock);
 
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
@@ -259,8 +259,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     // }
 
     fs_closedir(myDirPtr);
-
-    printf("Root dir numEntries: %d\n", rootDir->numEntries);
 
   }
 
@@ -305,7 +303,7 @@ int fs_isDir(char* path) {
   char** pathParts = stringParser(pathnameCopy);
 
   //Traverse the path one component at a time starting from the root directory
-  hashTable* currDir = readTableData(5, 6, blockSizeG);
+  hashTable* currDir = readTableData(5, 6);
 
   //Continue until we have processed each component in the path
   for (int i = 0; pathParts[i] != NULL; i++) {
@@ -324,7 +322,7 @@ int fs_isDir(char* path) {
 
     //Move the current directory to the current component's directory
     //now that it has been verified
-    currDir = readTableData(5, entry->location, blockSizeG);
+    currDir = readTableData(5, entry->location);
   }
 
   return 1;
@@ -373,12 +371,12 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   }
 
   // Reads data into VCB
-  struct volumeCtrlBlock* vcbPtr = malloc(blockSizeG);
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
   LBAread(vcbPtr, 1, 0);
 
 
   //Continue until we have processed each component in the path
-  hashTable* currDir = readTableData(5, vcbPtr->rootDir, blockSizeG);
+  hashTable* currDir = readTableData(5, vcbPtr->rootDir);
 
   int i = 0;
   for (; parsedPath[i + 1] != NULL; i++) {
@@ -386,18 +384,18 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     dirEntry* entry = getEntry(parsedPath[i], currDir);
     //Move the current directory to the current component's directory
     //now that it has been verified
-    currDir = readTableData(5, entry->location, blockSizeG);
+    currDir = readTableData(5, entry->location);
   }
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSize = (5 * blockSizeG);	//2560 bytes
+  int dirSize = (5 * blockSize);	//2560 bytes
   int maxNumEntries = dirSize / sizeOfEntry; //53 entries
 
 
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
   // there
-  int* bitVector = malloc(5 * blockSizeG);
+  int* bitVector = malloc(5 * blockSize);
 
   // Read the bitvector
   LBAread(bitVector, 5, 1);
@@ -412,7 +410,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   strcpy(newEntry->filename, newDirName);
   newEntry->isDir = 1;
   newEntry->location = freeBlock;
-  newEntry->fileSize = 5 * blockSizeG;
+  newEntry->fileSize = 5 * blockSize;
   newEntry->dateModified = time(0);
   newEntry->dateCreated = time(0);
 
@@ -427,17 +425,17 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
-    5 * blockSizeG, time(0), time(0));
+    5 * blockSize, time(0), time(0));
   setEntry(curDir->filename, curDir, dirEntries);
 
   dirEntry* parentDir = dirEntryInit("..", 1, freeBlock,
-    5 * blockSizeG, time(0), time(0));
+    5 * blockSize, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
 
   // Write parent directory
-  writeTableData(currDir, 5, currDir->location, blockSizeG);
+  writeTableData(currDir, 5, currDir->location);
   // Write new directory
-  writeTableData(dirEntries, 5, dirEntries->location, blockSizeG);
+  writeTableData(dirEntries, 5, dirEntries->location);
 
   // Update the bit vector
   setBlocksAsAllocated(freeBlock, 5, bitVector);
@@ -453,7 +451,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 fdDir* fs_opendir(const char* name) {
   fdDir* fdDir = malloc(sizeof(fdDir));
   dirEntry* reqDir = getEntry((char*)name, workingDir);
-  hashTable* reqDirTable = readTableData(5, reqDir->location, blockSizeG);
+  hashTable* reqDirTable = readTableData(5, reqDir->location);
 
   fdDir->dirTable = reqDirTable;
   fdDir->d_reclen = reqDirTable->numEntries;
