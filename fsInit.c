@@ -390,6 +390,8 @@ int fs_isDir(char* path) {
 char* fs_getcwd(char* buf, size_t size) {
 
 }
+
+
 // Check is a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
   // CHANGE this
@@ -603,5 +605,9 @@ int fs_setcwd(char* buf) {
   }
 
   workingDir = currDir;
+
+  free(vcbPtr);
+  vcbPtr = NULL;
+
   return 0;
 }
