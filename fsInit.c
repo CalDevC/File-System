@@ -134,6 +134,7 @@ void writeTableData(hashTable* table, int lbaPosition) {
   printf("Write directory to: %d, for number of blocks: %d\n",
     lbaPosition, DIR_SIZE);
   LBAwrite(arr, DIR_SIZE, lbaPosition);
+  free(arr);
 }
 
 //Read all directory entries from a certain disk location into a new hashmap
@@ -283,8 +284,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // fs_closedir(myDirPtr);
 
+    free(bitVector);
   }
 
+  free(vcbPtr);
   return 0;
 }
 
@@ -332,7 +335,6 @@ int fs_isDir(char* path) {
   for (int i = 0; pathParts[i] != NULL; i++) {
     //check that the location exists and that it is a directory
     dirEntry* entry = getEntry(pathParts[i], currDir);
-
     if (entry == NULL) {
       return 0;
     }
@@ -347,6 +349,9 @@ int fs_isDir(char* path) {
     //now that it has been verified
     currDir = readTableData(entry->location);
   }
+
+  free(pathnameCopy);
+  free(pathParts);
 
   return 1;
 }
@@ -414,7 +419,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   int maxNumEntries = dirSizeInBytes / sizeOfEntry; //53 entries
 
-
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
   // there
@@ -465,7 +469,13 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
 
 
+  // free(bitVector);
+  // free(newEntry); 
+  // free(vcbPtr);
   // free(pathnameCopy); 
+  // free(parsedPath);
+  // free(parentPath);
+
   return 0;
 }
 
