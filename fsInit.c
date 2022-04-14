@@ -235,6 +235,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     hashTable* newPtr = readTableData(5, 6, blockSize);
     printTable(newPtr);
 
+    fdDir* myDirPtr = fs_opendir(".");
+    printf("Dir ptr start loc: %d\n", myDirPtr->dirTable->location);
+    fs_closedir(myDirPtr);
+
   }
 
   return 0;
@@ -434,4 +438,11 @@ fdDir* fs_opendir(const char* name) {
   fdDir->dirEntryPosition = getNextIdx(-1, reqDirTable);
 
   return fdDir;
+}
+
+// Closes the directory stream associated with dirp
+int fs_closedir(fdDir* dirp) {
+  free(dirp->dirTable);
+  free(dirp);
+  return 0;
 }
