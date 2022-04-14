@@ -133,8 +133,19 @@ void writeTableData(hashTable* table, int lbaPosition) {
   //Write to the array out to the specified block numbers
   printf("Write directory to: %d, for number of blocks: %d\n",
     lbaPosition, DIR_SIZE);
-  LBAwrite(arr, DIR_SIZE, lbaPosition);
-  free(arr);
+
+  int val = LBAwrite(arr, DIR_SIZE, lbaPosition);
+
+  // printf("val is: %d\n", val);
+  // if (val == DIR_SIZE) {
+  //   printf("Freeing arr\n");
+  //   free(arr);
+  //   arr = NULL;
+  //   if (arr == NULL) {
+  //     printf("arr is NULL\n");
+  //   }
+  // }
+
 }
 
 //Read all directory entries from a certain disk location into a new hashmap
@@ -285,9 +296,12 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // fs_closedir(myDirPtr);
 
     free(bitVector);
+    bitVector = NULL;
   }
 
   free(vcbPtr);
+  vcbPtr = NULL;
+
   return 0;
 }
 
@@ -351,7 +365,9 @@ int fs_isDir(char* path) {
   }
 
   free(pathnameCopy);
+  pathnameCopy = NULL;
   free(pathParts);
+  pathParts = NULL;
 
   return 1;
 }
@@ -467,14 +483,21 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // Update the bit vector
   printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+  printTable(currDir);
 
 
-  // free(bitVector);
-  // free(newEntry); 
-  // free(vcbPtr);
-  // free(pathnameCopy); 
-  // free(parsedPath);
-  // free(parentPath);
+  free(bitVector);
+  bitVector = NULL;
+  free(newEntry);
+  newEntry = NULL;
+  free(vcbPtr);
+  vcbPtr = NULL;
+  free(pathnameCopy);
+  pathnameCopy = NULL;
+  free(parsedPath);
+  parsedPath = NULL;
+  free(parentPath);
+  parentPath = NULL;
 
   return 0;
 }
@@ -498,7 +521,9 @@ fdDir* fs_opendir(const char* name) {
 // Closes the directory stream associated with dirp
 int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
+  dirp->dirTable = NULL;
   free(dirp);
+  dirp = NULL;
   return 0;
 }
 
