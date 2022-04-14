@@ -152,28 +152,33 @@ dirEntry* getEntry(char key[20], hashTable* table) {
 
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table) {
-
+  printTable(table);
   //If we are looking for the first index in the list, start at entry 0
-  if (currIdx == -1 && table->entries[0]->key != "") {
+  if (currIdx == -1 && strcmp(table->entries[0]->key, "") != 0) {
+    printf("Returning 0\n");
     return 0;
   } else {
-    currIdx = 1;
+    currIdx = 0;
   }
 
   node* currNode = table->entries[currIdx];
 
   //Return the same index is there is another element hashed to that location
   if (currNode->next != NULL) {
+    printf("Returning next\n");
     return currIdx;
   }
 
   //Otherwise continue through the table looking for the next non-free entry
   for (int i = currIdx + 1; i < SIZE; i++) {
     currNode = table->entries[i];
-    if (currNode->key != "") {
+    // printf("index: %d, currNode filename: %s\n", i, currNode->value->filename);
+    if (strcmp(currNode->value->filename, "") != 0) {
       return i;
     }
   }
+
+  return NULL;
 }
 
 //Write out the hash table contents to the console for debug

@@ -232,11 +232,25 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
 
-    hashTable* newPtr = readTableData(5, 6, blockSize);
+    hashTable* newPtr = readTableData(5, freeBlock, blockSize);
     printTable(newPtr);
+    printf("WORKING DIR\n");
+    printTable(workingDir);
 
     fdDir* myDirPtr = fs_opendir(".");
+    printf("OPEN DIR\n");
+    printTable(myDirPtr->dirTable);
     printf("Dir ptr start loc: %d\n", myDirPtr->dirTable->location);
+    struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
+    printf("DONE WITH READ\n");
+    // printf("Dir entry name: %s\n", myInfo->d_name);
+    printf("Dir entry len: %d\n", myInfo->d_reclen);
+    // myInfo = fs_readdir(myDirPtr);
+    // printf("Dir entry name: %s\n", myInfo->d_name);
+    // printf("Dir entry len: %d\n", myInfo->d_reclen);
+    // myInfo = fs_readdir(myDirPtr);
+    // printf("Dir entry name: %s\n", myInfo->d_name);
+    // printf("Dir entry len: %d\n", myInfo->d_reclen);
     fs_closedir(myDirPtr);
 
   }
@@ -435,7 +449,7 @@ fdDir* fs_opendir(const char* name) {
   fdDir->dirTable = reqDirTable;
   fdDir->d_reclen = reqDirTable->numEntries;
   fdDir->directoryStartLocation = reqDir->location;
-  fdDir->dirEntryPosition = getNextIdx(-1, reqDirTable);
+  fdDir->dirEntryPosition = -1;
 
   return fdDir;
 }
@@ -445,4 +459,34 @@ int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
   free(dirp);
   return 0;
+}
+
+struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
+
+  //Calculate the new hash table index to use and save it to the fdDir
+  int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
+
+  if (dirEntIdx == NULL) {
+    printf("INDEX was NULL\n");
+    return NULL;
+  }
+
+  printf("INDEX: %d\n", dirEntIdx);
+
+  dirp->dirEntryPosition = dirEntIdx;
+
+  hashTable* dirTable = dirp->dirTable;
+  dirEntry* dirEnt = dirTable->entries[dirEntIdx]->value;
+
+  //Create and populate the directory item info pointer
+  struct fs_diriteminfo* dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
+
+  strcpy(dirItemInfo->d_name, dirEnt->filename);
+  dirItemInfo->d_reclen = dirEnt->fileSize;
+  dirItemInfo->fileType = dirEnt->isDir ? 'd' : 'f';
+
+  printf("dirItemInfo (inside): %d\n", dirItemInfo->d_reclen);
+
+  return dirItemInfo;
+
 }
