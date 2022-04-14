@@ -203,19 +203,19 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSize = (5 * blockSize);	//2560 bytes
-    int numofEntries = dirSize / sizeOfEntry; //53 entries
+    int maxNumEntries = dirSize / sizeOfEntry; //53 entries
 
     // Initialize our root directory to be a new hash table of directory entries
-    hashTable* rootDir = hashTableInit(numofEntries, vcbPtr->rootDir);
+    hashTable* rootDir = hashTableInit(maxNumEntries, vcbPtr->rootDir);
     workingDir = rootDir;
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
-      numofEntries, time(0), time(0));
+      5 * blockSize, time(0), time(0));
     setEntry(curDir->filename, curDir, rootDir);
 
     dirEntry* parentDir = dirEntryInit("..", 1, FREE_SPACE_START_BLOCK +
-      numBlocksWritten, numofEntries, time(0), time(0));
+      numBlocksWritten, 5 * blockSize, time(0), time(0));
     setEntry(parentDir->filename, parentDir, rootDir);
 
     // Writes VCB to block 0
@@ -232,6 +232,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
     //Update the bitvector
     LBAwrite(bitVector, 5, 1);
 
+    printf("\n\n\n");
+
     fdDir* myDirPtr = fs_opendir(".");
 
     struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
@@ -241,22 +243,24 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
       printf("Dir entry name: %s\n", myInfo->d_name);
     }
 
-    myInfo = fs_readdir(myDirPtr);
-    if (myInfo == NULL) {
-      printf("END of directory\n");
-    } else {
-      printf("Dir entry name: %s\n", myInfo->d_name);
-    }
+    // myInfo = fs_readdir(myDirPtr);
+    // if (myInfo == NULL) {
+    //   printf("END of directory\n");
+    // } else {
+    //   printf("Dir entry name: %s\n", myInfo->d_name);
+    // }
 
 
-    myInfo = fs_readdir(myDirPtr);
-    if (myInfo == NULL) {
-      printf("END of directory\n");
-    } else {
-      printf("Dir entry name: %s\n", myInfo->d_name);
-    }
+    // myInfo = fs_readdir(myDirPtr);
+    // if (myInfo == NULL) {
+    //   printf("END of directory\n");
+    // } else {
+    //   printf("Dir entry name: %s\n", myInfo->d_name);
+    // }
 
     fs_closedir(myDirPtr);
+
+    printf("Root dir numEntries: %d\n", rootDir->numEntries);
 
   }
 
@@ -387,7 +391,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSize = (5 * blockSizeG);	//2560 bytes
-  int numofEntries = dirSize / sizeOfEntry; //53 entries
+  int maxNumEntries = dirSize / sizeOfEntry; //53 entries
 
 
   // Get the bitVector in memory -- We need to know what
@@ -419,15 +423,15 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // Initialize the directory entries within the new
   // directory
   int startBlock = getEntry(newDirName, currDir)->location;
-  hashTable* dirEntries = hashTableInit(numofEntries, startBlock);
+  hashTable* dirEntries = hashTableInit(maxNumEntries, startBlock);
 
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
-    numofEntries, time(0), time(0));
+    5 * blockSizeG, time(0), time(0));
   setEntry(curDir->filename, curDir, dirEntries);
 
   dirEntry* parentDir = dirEntryInit("..", 1, freeBlock,
-    numofEntries, time(0), time(0));
+    5 * blockSizeG, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
 
   // Write parent directory
@@ -467,7 +471,7 @@ int fs_closedir(fdDir* dirp) {
 }
 
 struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
-
+  printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
@@ -487,7 +491,7 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   strcpy(dirItemInfo->d_name, dirEnt->filename);
   dirItemInfo->d_reclen = dirEnt->fileSize;
   dirItemInfo->fileType = dirEnt->isDir ? 'd' : 'f';
-
+  printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   return dirItemInfo;
 
 }

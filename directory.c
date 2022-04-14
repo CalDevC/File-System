@@ -101,11 +101,10 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
     return;
   }
 
-  table->numEntries++;
-
   //If there is no collision then add a new initialized entry
   if (strcmp(entry->value->filename, "") == 0) {
     table->entries[hashVal] = entryInit(key, value);
+    table->numEntries++;
     return;
   }
 
@@ -131,6 +130,7 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
   //If the key was not found at the table location then add it to 
   //the end of the list at that location
   prevEntry->next = entryInit(key, value);
+  table->numEntries++;
 
 }
 
