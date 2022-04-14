@@ -297,7 +297,7 @@ void exitFileSystem() {
 char** stringParser(char* stringToParse) {
   // Divide the path provided by the user into
   // several sub paths
-  char** subStrings = malloc(100);
+  char** subStrings = (char**)malloc(sizeof(char*) * (strlen(stringToParse) + 1));
   char* subString;
   char* savePtr;
   char* delim = "/";
@@ -320,7 +320,7 @@ char** stringParser(char* stringToParse) {
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
   //Parse path
-  char* pathnameCopy = malloc(strlen(path));
+  char* pathnameCopy = malloc(strlen(path) + 1);
   strcpy(pathnameCopy, path);
 
   char** pathParts = stringParser(pathnameCopy);
@@ -363,12 +363,12 @@ int fs_isFile(char* path) {
 
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
-  char* pathnameCopy = malloc(strlen(pathname));
+  char* pathnameCopy = malloc(strlen(pathname) + 1);
   strcpy(pathnameCopy, pathname);
 
   char** parsedPath = stringParser(pathnameCopy);
 
-  char* parentPath = malloc(strlen(pathname));
+  char* parentPath = malloc(strlen(pathname) + 1);
 
   int k = 0;
   for (int i = 0; parsedPath[i + 1] != NULL; i++) {
