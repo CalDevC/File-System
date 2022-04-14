@@ -423,7 +423,7 @@ int fs_isDir(char* path) {
 ****************************************************/
 char* fs_getcwd(char* buf, size_t size) {
   char * returnVal = "test output\n";
-
+  // GOAL: return a pointer to a string containing the pathname of the current working directory.
   return returnVal;
 }
 
