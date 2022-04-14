@@ -234,16 +234,16 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     //Update the bitvector
     LBAwrite(bitVector, DIR_SIZE, 1);
 
-    printf("\n\n\n");
+    // printf("\n\n\n");
 
-    fdDir* myDirPtr = fs_opendir(".");
+    // fdDir* myDirPtr = fs_opendir(".");
 
-    struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
-    if (myInfo == NULL) {
-      printf("END of directory\n");
-    } else {
-      printf("Dir entry name: %s\n", myInfo->d_name);
-    }
+    // struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
+    // if (myInfo == NULL) {
+    //   printf("END of directory\n");
+    // } else {
+    //   printf("Dir entry name: %s\n", myInfo->d_name);
+    // }
 
     // myInfo = fs_readdir(myDirPtr);
     // if (myInfo == NULL) {
@@ -260,7 +260,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     //   printf("Dir entry name: %s\n", myInfo->d_name);
     // }
 
-    fs_closedir(myDirPtr);
+    // fs_closedir(myDirPtr);
 
   }
 
@@ -456,9 +456,10 @@ fdDir* fs_opendir(const char* name) {
   hashTable* reqDirTable = readTableData(reqDir->location);
 
   fdDir->dirTable = reqDirTable;
+  fdDir->maxIdx = reqDirTable->maxNumEntries;
   fdDir->d_reclen = reqDirTable->numEntries;
   fdDir->directoryStartLocation = reqDir->location;
-  fdDir->dirEntryPosition = NULL;
+  fdDir->dirEntryPosition = reqDirTable->maxNumEntries;
 
   return fdDir;
 }
@@ -475,9 +476,10 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
-  if (dirEntIdx == NULL) {
+  if (dirEntIdx == dirp->maxIdx) {
     return NULL;
   }
+
   printf("FOUND INDEX: %d\n", dirEntIdx);
 
   dirp->dirEntryPosition = dirEntIdx;

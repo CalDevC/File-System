@@ -153,9 +153,11 @@ dirEntry* getEntry(char key[20], hashTable* table) {
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table) {
   //If we are looking for the first index in the list, start at entry 0
-  if (currIdx == NULL && strcmp(table->entries[0]->key, "") != 0) {
+  int max = table->maxNumEntries;
+
+  if (currIdx == max && strcmp(table->entries[0]->key, "") != 0) {
     return 0;
-  } else if (currIdx == NULL) {
+  } else if (currIdx == max) {
     currIdx = 0;
   }
 
@@ -175,7 +177,7 @@ int getNextIdx(int currIdx, hashTable* table) {
     }
   }
 
-  return NULL;
+  return max;
 }
 
 //Write out the hash table contents to the console for debug
