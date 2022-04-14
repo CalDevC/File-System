@@ -101,37 +101,10 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 }
 
 /****************************************************
-*  fs_readdir
-****************************************************/
-struct fs_diriteminfo* fs_readdir(fdDir* dirp){
-  struct fs_diriteminfo* returnVal = malloc(sizeof(dirp));
-
-  return returnVal;
-}
-
-/****************************************************
 *  fs_stat
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
   int returnVal = 0;
-
-  return returnVal;
-}
-
-/****************************************************
-*  fs_closedir
-****************************************************/
-int fs_closedir(fdDir* dirp){
-  int returnVal = 0;
-
-  return returnVal;
-}
-
-/****************************************************
-*  fs_opendir
-****************************************************/
-fdDir* fs_opendir(const char* name){
-  fdDir * returnVal = 0;
 
   return returnVal;
 }
@@ -162,6 +135,9 @@ int fs_delete(char* filename){
 ****************************************************/
 int fs_setcwd(char* buf){
   int returnVal = 0;
+  char * bufCopy = malloc(sizeof(buf));
+  strcpy(bufCopy, buf);
+  printf("fs_setcwd: %s\n", buf);
 
   return returnVal;
 }
@@ -471,18 +447,26 @@ int fs_isDir(char* path) {
 ****************************************************/
 char* fs_getcwd(char* buf, size_t size) {
   char * returnVal = "test output\n";
-  // GOAL: return a pointer to a string containing the pathname of the current working directory.
+  // GOAL: return a pointer to a string containing the pathname 
+  // of the current working directory.
+  char * bufCopy = malloc(size);
+  if(bufCopy == NULL){
+    printf("Error!\n");
+  }else{
+    printf("malloc succeded \n");
+    strcpy(bufCopy, buf);
+    printf("bufCopy is: %s\n", bufCopy);
+
+  }
+  
+  
   return returnVal;
 }
-<<<<<<< HEAD
 
 /****************************************************
 *  fs_isFile
 ****************************************************/
-//Check is a path is a file (1 = yes, 0 = no)
-=======
 // Check is a path is a file (1 = yes, 0 = no)
->>>>>>> 073986db3a86f714564afb3a9a91b315c0dbe9fc
 int fs_isFile(char* path) {
   // CHANGE this
   return !fs_isDir(path);
@@ -493,23 +477,13 @@ int fs_isFile(char* path) {
 ****************************************************/
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
-<<<<<<< HEAD
-
-  // Store passed in pathname
-  char* pathnameCopy = malloc(strlen(pathname));
-=======
   char* pathnameCopy = malloc(strlen(pathname) + 1);
->>>>>>> 073986db3a86f714564afb3a9a91b315c0dbe9fc
   strcpy(pathnameCopy, pathname);
 
   // Parse path into subarray
   char** parsedPath = stringParser(pathnameCopy);
-<<<<<<< HEAD
-  char* parentPath = malloc(strlen(pathname));
-=======
 
   char* parentPath = malloc(strlen(pathname) + 1);
->>>>>>> 073986db3a86f714564afb3a9a91b315c0dbe9fc
 
   int k = 0;
   for (int i = 0; parsedPath[i + 1] != NULL; i++) {
@@ -610,28 +584,18 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   return 0;
 }
 
-<<<<<<< HEAD
 /****************************************************
-*  fs_rmdir
+*  fs_mkdir
 ****************************************************/
 int fs_rmdir(const char* pathname){
-  int returnVal = 0; 
-
-  // mUST EXIST
-
-  // mUST BE A directory
-
-  // Must be empty
-
-  // Deallocate blocks
-
-  // Mark it unused
-
-  // name[0] = 0;
+  int returnVal = 0;
 
   return returnVal;
 }
-=======
+
+/****************************************************
+*  fs_opendir
+****************************************************/
 // Opens a directory stream corresponding to 'name', and returns
 // a pointer to the directory stream
 fdDir* fs_opendir(const char* name) {
@@ -648,6 +612,9 @@ fdDir* fs_opendir(const char* name) {
   return fdDir;
 }
 
+/****************************************************
+*  fs_closedir
+****************************************************/
 // Closes the directory stream associated with dirp
 int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
@@ -655,6 +622,9 @@ int fs_closedir(fdDir* dirp) {
   return 0;
 }
 
+/****************************************************
+*  fs_readdir
+****************************************************/
 struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   //Calculate the new hash table index to use and save it to the fdDir
@@ -681,4 +651,3 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   return dirItemInfo;
 
 }
->>>>>>> 073986db3a86f714564afb3a9a91b315c0dbe9fc
