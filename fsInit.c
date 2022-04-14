@@ -45,6 +45,10 @@ struct volumeCtrlBlock {
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
 
+
+/****************************************************
+*  stringSplit
+****************************************************/
 char ** stringSplit(char * pathName){
     char ** tokens = malloc(100);
     char * token;
@@ -67,6 +71,10 @@ char ** stringSplit(char * pathName){
     return tokens;
   }
 
+
+/****************************************************
+*  getFreeBlockNum
+****************************************************/
 int getFreeBlockNum(int numOfInts, int* bitVector) {
   //**********Get the free block number ***********
   // This will help determine the first block number that is
@@ -90,48 +98,72 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
   }
 }
 
+/****************************************************
+*  fs_readdir
+****************************************************/
 struct fs_diriteminfo* fs_readdir(fdDir* dirp){
   struct fs_diriteminfo* returnVal = malloc(sizeof(dirp));
 
   return returnVal;
 }
 
+/****************************************************
+*  fs_stat
+****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
   int returnVal = 0;
 
   return returnVal;
 }
 
+/****************************************************
+*  fs_closedir
+****************************************************/
 int fs_closedir(fdDir* dirp){
   int returnVal = 0;
 
   return returnVal;
 }
 
+/****************************************************
+*  fs_opendir
+****************************************************/
 fdDir* fs_opendir(const char* name){
   fdDir * returnVal = 0;
 
   return returnVal;
 }
 
+/****************************************************
+*  fs_rmdir
+****************************************************/
 int fs_rmdir(const char* pathname){
   int returnVal = 0; 
 
   return returnVal;
 }
 
+/****************************************************
+*  fs_delete
+****************************************************/
 int fs_delete(char* filename){
   int returnVal = 0;
 
   return returnVal;
 }
 
+/****************************************************
+*  fs_setcwd
+****************************************************/
 int fs_setcwd(char* buf){
   int returnVal = 0;
 
   return returnVal;
 }
 
+/****************************************************
+*  setBlocksAsAllocated
+****************************************************/
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   // Set the number of bits specified in the blocksAllocated
   // to 0 starting from freeBlock
@@ -140,6 +172,10 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   }
 }
 
+
+/****************************************************
+*  writeTableData
+****************************************************/
 //Write all directory entries in the hashTable to the disk
 void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSize) {
   dirEntry* arr = malloc(lbaCount * blockSize);
@@ -173,6 +209,9 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
   LBAwrite(arr, lbaCount, lbaPosition);
 }
 
+/****************************************************
+*  readTableData
+****************************************************/
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
   //Read all of the entries into an array
@@ -196,6 +235,9 @@ hashTable* readTableData(int lbaCount, int lbaPosition, int blockSize) {
   return dirPtr;
 }
 
+/****************************************************
+*  initFileSystem
+****************************************************/
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
@@ -302,11 +344,16 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t blockSize) {
   return 0;
 }
 
-
+/****************************************************
+*  exitFileSystem
+****************************************************/
 void exitFileSystem() {
   printf("System exiting\n");
 }
 
+/****************************************************
+*  stringParser
+****************************************************/
 // Helper functions
 char** stringParser(char* stringToParse) {
   // Divide the path provided by the user into
@@ -331,6 +378,9 @@ char** stringParser(char* stringToParse) {
   return subStrings;
 }
 
+/****************************************************
+*  fs_isDir
+****************************************************/
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
   //Parse path
@@ -365,23 +415,36 @@ int fs_isDir(char* path) {
   return 1;
 }
 
+/****************************************************
+*  fs_getcwd
+****************************************************/
 char* fs_getcwd(char* buf, size_t size) {
+  char * returnVal = "test output\n";
 
+  return returnVal;
 }
+
+/****************************************************
+*  fs_isFile
+****************************************************/
 //Check is a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
   // CHANGE this
   return !fs_isDir(path);
 }
 
-
+/****************************************************
+*  fs_mkdir
+****************************************************/
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
+
+  // Store passed in pathname
   char* pathnameCopy = malloc(strlen(pathname));
   strcpy(pathnameCopy, pathname);
 
+  // Parse path into subarray
   char** parsedPath = stringParser(pathnameCopy);
-
   char* parentPath = malloc(strlen(pathname));
 
   int k = 0;
