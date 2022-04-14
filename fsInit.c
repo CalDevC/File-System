@@ -13,8 +13,6 @@
 * This file is where you will start and initialize your system
 *
 **************************************************************/
-
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -90,6 +88,48 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
       }
     }
   }
+}
+
+struct fs_diriteminfo* fs_readdir(fdDir* dirp){
+  struct fs_diriteminfo* returnVal = malloc(sizeof(dirp));
+
+  return returnVal;
+}
+
+int fs_stat(const char* path, struct fs_stat* buf){
+  int returnVal = 0;
+
+  return returnVal;
+}
+
+int fs_closedir(fdDir* dirp){
+  int returnVal = 0;
+
+  return returnVal;
+}
+
+fdDir* fs_opendir(const char* name){
+  fdDir * returnVal = 0;
+
+  return returnVal;
+}
+
+int fs_rmdir(const char* pathname){
+  int returnVal = 0; 
+
+  return returnVal;
+}
+
+int fs_delete(char* filename){
+  int returnVal = 0;
+
+  return returnVal;
+}
+
+int fs_setcwd(char* buf){
+  int returnVal = 0;
+
+  return returnVal;
 }
 
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
