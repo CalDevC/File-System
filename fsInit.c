@@ -134,20 +134,23 @@ fdDir* fs_opendir(const char* name){
   return returnVal;
 }
 
-/****************************************************
-*  fs_rmdir
-****************************************************/
-int fs_rmdir(const char* pathname){
-  int returnVal = 0; 
-
-  return returnVal;
-}
 
 /****************************************************
 *  fs_delete
 ****************************************************/
 int fs_delete(char* filename){
   int returnVal = 0;
+
+
+  // File must exist or error
+
+  // Release blocks allocated to the file back to free space
+  // 1) Get first location
+  // 2) How many blocks to free
+  // 3) If extents...
+
+  // Clean up DE and mark it unused
+  // name[0] = 0
 
   return returnVal;
 }
@@ -544,4 +547,25 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // free(pathnameCopy); 
   return 0;
+}
+
+/****************************************************
+*  fs_rmdir
+****************************************************/
+int fs_rmdir(const char* pathname){
+  int returnVal = 0; 
+
+  // mUST EXIST
+
+  // mUST BE A directory
+
+  // Must be empty
+
+  // Deallocate blocks
+
+  // Mark it unused
+
+  // name[0] = 0;
+
+  return returnVal;
 }
