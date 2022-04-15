@@ -70,10 +70,11 @@ node* entryInit(char key[20], dirEntry* value) {
 }
 
 //Initialize a new hashTable
-hashTable* hashTableInit(int maxNumEntries, int location) {
+hashTable* hashTableInit(char dirName[20], int maxNumEntries, int location) {
   hashTable* table = malloc(sizeof(node) * SIZE);
   table->maxNumEntries = maxNumEntries;
   table->location = location;
+  table->dirName == dirName;
 
   //Each node in the table should be set to a directory entry with a filename
   //of "" so that we know if there is a collision or not
