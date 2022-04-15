@@ -129,7 +129,14 @@ void writeTableData(hashTable* table, int lbaCount, int lbaPosition, int blockSi
 
   //Write to the array out to the specified block numbers
   LBAwrite(arr, lbaCount, lbaPosition);
-  free(arr);
+
+  // TEST
+  // for (int i = 0; i < j; i++) {
+  //   // printf("HAHA\n");
+  //   free((void *) &arr[i]);
+  // }
+  // free(arr);
+  // arr = NULL;
 }
 
 //Read all directory entries from a certain disk location into a new hash table
@@ -316,10 +323,12 @@ int fs_isDir(char* path) {
 
     //Move the current directory to the current component's directory
     //now that it has been verified
+    free(currDir);
     currDir = readTableData(5, entry->location, blockSizeG);
   }
   
   free(pathnameCopy);
+  free(currDir);
   free(pathParts);
   
   return 1;
