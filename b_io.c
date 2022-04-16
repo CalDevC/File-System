@@ -69,7 +69,8 @@ b_io_fd b_getFCB ()
 // Interface to open a buffered file
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
-b_io_fd b_open (char * filename, int flags) {
+b_io_fd b_open (char * filename, int flags) 
+	{
 	b_io_fd returnFd;
 
 	//*** TODO ***:  Modify to save or set any information needed
@@ -104,7 +105,7 @@ b_io_fd b_open (char * filename, int flags) {
 	fcbArray[returnFd] = fcb;
 	
 	return (returnFd);	// all set
-}
+	}
 
 
 // Interface to seek function	
@@ -125,7 +126,8 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 
 
 // Interface to write function	
-int b_write (b_io_fd fd, char * buffer, int count) {
+int b_write (b_io_fd fd, char * buffer, int count) 
+	{
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
@@ -143,13 +145,18 @@ int b_write (b_io_fd fd, char * buffer, int count) {
 		index++;
 	}
 
+	fcb.buf[index] = 195;
+
+	int numb = fcb.buf[index];
+	printf("Number stored was: %d\n", numb);
+
 	// Store the updated index
 	fcb.index = index;
 		
 	// To indicate that the write function worked correctly we return
 	// the number of bytes written
 	return count;
-}
+	}
 
 
 
@@ -187,10 +194,11 @@ int b_read (b_io_fd fd, char * buffer, int count)
 	}
 	
 // Interface to Close the file	
-void b_close (b_io_fd fd) {
+void b_close (b_io_fd fd) 
+	{
 	b_fcb fcb = fcbArray[fd];
 
 	// Write the content for zone.txt file to block 11 for 1 block
 	// representing file size
 	LBAwrite(fcb.buf, 1, fcb.location);
-}
+	}
