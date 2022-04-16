@@ -147,6 +147,7 @@ dirEntry* getEntry(char key[20], hashTable* table) {
     }
     entry = entry->next;
   }
+
   return NULL;
 }
 

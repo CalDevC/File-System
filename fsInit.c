@@ -105,7 +105,7 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
   int returnVal = 0;
-
+  
   return returnVal;
 }
 
@@ -126,18 +126,6 @@ int fs_delete(char* filename){
 
   // Clean up DE and mark it unused
   // name[0] = 0
-
-  return returnVal;
-}
-
-/****************************************************
-*  fs_setcwd
-****************************************************/
-int fs_setcwd(char* buf){
-  int returnVal = 0;
-  char * bufCopy = malloc(sizeof(buf));
-  strcpy(bufCopy, buf);
-  printf("fs_setcwd: %s\n", buf);
 
   return returnVal;
 }
@@ -350,6 +338,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
     writeTableData(rootDir, freeBlock);
 
+
+    ////////////// TEST CODE FOR OPR/CLOSE/READ DIR //////////////
     // printf("\n\n\n");
 
     // fdDir* myDirPtr = fs_opendir(".");
@@ -377,6 +367,19 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // }
 
     // fs_closedir(myDirPtr);
+    ////////////// END TEST CODE FOR OPR/CLOSE/READ DIR //////////////
+
+    ///////////// TEST CODE FOR SETCWD /////////////
+    // fs_mkdir("/home", 0777);
+    // fs_mkdir("/home/test", 0777);
+    // fs_mkdir("/home/test/succes", 0777);
+    // fs_mkdir("/home/test/done", 0777);
+    // printf("Set current working directory:\n");
+    // fs_setcwd("/home/test");
+
+    // printTable(workingDir);
+    ///////////// END TEST CODE FOR SETCWD /////////////
+
 
     free(bitVector);
     bitVector = NULL;
@@ -487,6 +490,7 @@ char* fs_getcwd(char* buf, size_t size) {
 /****************************************************
 *  fs_isFile
 ****************************************************/
+
 // Check is a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
   // CHANGE this
@@ -685,4 +689,45 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   return dirItemInfo;
 
+}
+
+/****************************************************
+*  fs_setcwd
+****************************************************/
+int fs_setcwd(char* buf) {
+  //Parse path
+  char* pathnameCopy = malloc(strlen(buf) + 1);
+  strcpy(pathnameCopy, buf);
+
+  char** pathParts = stringParser(pathnameCopy);
+
+  //  Traverse the path one component at a time starting from the root directory
+  // Reads data into VCB
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  LBAread(vcbPtr, 1, 0);
+
+  //Continue until we have processed each component in the path
+  hashTable* currDir = readTableData(vcbPtr->rootDir);
+
+  for (int i = 0; pathParts[i] != NULL; i++) {
+    //check that the location exists and that it is a directory
+    dirEntry* entry = getEntry(pathParts[i], currDir);
+    if (entry == NULL) {  //Not found
+      return -1;
+    }
+
+    if (entry->isDir == 0) {  //Not a directory
+      printf("Error: Directory entry is not a directory\n");
+      return -1;
+    }
+
+    //Move the current directory to the current component's directory
+    //now that it has been verified
+    currDir = readTableData(entry->location);
+  }
+
+  free(vcbPtr);
+  vcbPtr = NULL;
+
+  return 0;
 }

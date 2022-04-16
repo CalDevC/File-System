@@ -53,7 +53,7 @@ b_io_fd b_getFCB ()
 	{
 	for (int i = 0; i < MAXFCBS; i++)
 		{
-		if (fcbArray[i].buff == NULL)
+		if (fcbArray[i].buf == NULL)
 			{
 			return i;		//Not thread safe (But do not worry about it for this assignment)
 			}
@@ -151,5 +151,7 @@ int b_read (b_io_fd fd, char * buffer, int count)
 // Interface to Close the file	
 void b_close (b_io_fd fd)
 	{
-
+		printf("Closing file.\n");
+		fd = NULL;
+		return ;
 	}
