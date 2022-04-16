@@ -21,6 +21,9 @@
 #include <fcntl.h>
 #include "b_io.h"
 
+// Test
+#include "fsLow.h"
+
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
 
@@ -30,6 +33,8 @@ typedef struct b_fcb
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
+	int location;   //holds the file location(block number) in the volume, 
+				    //so we can write to that location
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -64,8 +69,7 @@ b_io_fd b_getFCB ()
 // Interface to open a buffered file
 // Modification of interface for this assignment, flags match the Linux flags for open
 // O_RDONLY, O_WRONLY, or O_RDWR
-b_io_fd b_open (char * filename, int flags)
-	{
+b_io_fd b_open (char * filename, int flags) {
 	b_io_fd returnFd;
 
 	//*** TODO ***:  Modify to save or set any information needed
@@ -74,11 +78,33 @@ b_io_fd b_open (char * filename, int flags)
 		
 	if (startup == 0) b_init();  //Initialize our system
 	
-	returnFd = b_getFCB();				// get our own file descriptor
-										// check for error - all used FCB's
+	returnFd = b_getFCB();	// get our own file descriptor
+
+	if (returnFd == -1) { // check for error - all used FCB's
+		printf("Error: limit of number of open files exceeded\n");
+		return -1;
+	}	
+
+	// Create a new file if the file specified in the
+	// pathname doesn't already exist ?
+
+	// Initialize a file control block for the file
+	b_fcb fcb = fcbArray[returnFd];
+
+	// Initially we malloc memory equivalent to 1 block we can malloc 
+	// more memory as we need it
+	fcb.buf = malloc(sizeof(char) * 512);
+	// To represent number of valid bytes in our buffer
+	fcb.buflen = 0;
+	// To represent the current position in the buffer
+	fcb.index = 0;
+	// To represent the location at which the current file starts
+	fcb.location = 11;			
+
+	fcbArray[returnFd] = fcb;
 	
-	return (returnFd);						// all set
-	}
+	return (returnFd);	// all set
+}
 
 
 // Interface to seek function	
@@ -99,19 +125,31 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 
 
 // Interface to write function	
-int b_write (b_io_fd fd, char * buffer, int count)
-	{
+int b_write (b_io_fd fd, char * buffer, int count) {
 	if (startup == 0) b_init();  //Initialize our system
 
 	// check that fd is between 0 and (MAXFCBS-1)
-	if ((fd < 0) || (fd >= MAXFCBS))
-		{
+	if ((fd < 0) || (fd >= MAXFCBS)) {
 		return (-1); 					//invalid file descriptor
-		}
-		
-		
-	return (0); //Change this
 	}
+
+	// Write the provided text into the buffer that we allocated
+	// for the file in b_open()
+	b_fcb fcb = fcbArray[fd];
+	int index = fcb.index;
+
+	for (int i = 0; i <= count; i++) {
+		fcb.buf[index] = buffer[i];
+		index++;
+	}
+
+	// Store the updated index
+	fcb.index = index;
+		
+	// To indicate that the write function worked correctly we return
+	// the number of bytes written
+	return count;
+}
 
 
 
@@ -149,9 +187,19 @@ int b_read (b_io_fd fd, char * buffer, int count)
 	}
 	
 // Interface to Close the file	
+<<<<<<< HEAD
 void b_close (b_io_fd fd)
 	{
 		printf("Closing file.\n");
 		fd = NULL;
 		return ;
 	}
+=======
+void b_close (b_io_fd fd) {
+	b_fcb fcb = fcbArray[fd];
+
+	// Write the content for zone.txt file to block 11 for 1 block
+	// representing file size
+	LBAwrite(fcb.buf, 1, fcb.location);
+}
+>>>>>>> 5e4b164730d0123620255a719c17fbbacdd22788
