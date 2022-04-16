@@ -617,8 +617,56 @@ int fs_setcwd(char* buf) {
 }
 
 char* fs_getcwd(char* buf, size_t size) {
-  //Build path in reverse
+  char* path = malloc(size);
+  path[0] = '/';
 
-  //
+  printf("working dir name: %s\n", workingDir->dirName);
+
+  //Check if cwd is root
+  if (strcmp(workingDir->dirName, "/") == 0) {
+    strcpy(buf, path);
+    // free(path);
+    // path = NULL;
+    return buf;
+  }
+
+  char** pathElements;
+  int i = 0;
+
+  hashTable* currDir = workingDir;
+  dirEntry* parentDirEnt = getEntry("..", currDir);
+  hashTable* parentDir = readTableData(parentDirEnt->filename, parentDirEnt->location);
+  char* newPathElem = currDir->dirName;
+
+  //Keep traversing up until root is found
+  while (strcmp(newPathElem, "/") != 0) {
+    // printf("in while loop with: %s\n", newPathElem);
+    //add currDir to path elements array
+    path[i] = newPathElem;
+    i++;
+
+    //Move up current directory to its parent
+    currDir = parentDir;
+    newPathElem = currDir->dirName;
+
+    //Set the new parent directory
+    parentDirEnt = getEntry("..", currDir);
+    parentDir = readTableData(parentDirEnt->filename, parentDirEnt->location);
+  }
+
+  //Build the path
+  for (int j = i - 1; j >= 0; j++) {
+    strcat(path, pathElements[j]);
+    strcat(path, "/");
+  }
+
+  //Add NULL char
+  path[size - 1] = '\0';
+
+  //copy path to buf
+  strncpy(buf, path, size);
+
+  // free(path);
+  // path = NULL;
   return buf;
 }
