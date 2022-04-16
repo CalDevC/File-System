@@ -187,14 +187,6 @@ int b_read (b_io_fd fd, char * buffer, int count)
 	}
 	
 // Interface to Close the file	
-<<<<<<< HEAD
-void b_close (b_io_fd fd)
-	{
-		printf("Closing file.\n");
-		fd = NULL;
-		return ;
-	}
-=======
 void b_close (b_io_fd fd) {
 	b_fcb fcb = fcbArray[fd];
 
@@ -202,4 +194,3 @@ void b_close (b_io_fd fd) {
 	// representing file size
 	LBAwrite(fcb.buf, 1, fcb.location);
 }
->>>>>>> 5e4b164730d0123620255a719c17fbbacdd22788
