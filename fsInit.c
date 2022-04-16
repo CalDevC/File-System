@@ -107,12 +107,6 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 void writeTableData(hashTable* table, int lbaPosition) {
   int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
 
-  //All table data
-  typedef struct tableData {
-    char dirName[20];
-    dirEntry arr[arrNumBytes];
-  } tableData;
-
   tableData* data = malloc(blockSize * DIR_SIZE);
 
   //Directory entries
@@ -143,6 +137,7 @@ void writeTableData(hashTable* table, int lbaPosition) {
     }
   }
 
+  data->arr = malloc(arrNumBytes);
   printf("SIZE OF ARR: %d\n", table->maxNumEntries);
   memcpy(data->arr, arr, arrNumBytes);
 
@@ -165,17 +160,12 @@ void writeTableData(hashTable* table, int lbaPosition) {
 hashTable* readTableData(int lbaPosition) {
   int arrNumBytes = ((DIR_SIZE * blockSize) / sizeof(dirEntry)) * sizeof(dirEntry);
 
-  //All table data
-  typedef struct tableData {
-    char dirName[20];
-    dirEntry arr[arrNumBytes];
-  } tableData;
-
   //Read all of the entries into an array
   tableData* data = malloc(DIR_SIZE * blockSize);
   LBAread(data, DIR_SIZE, lbaPosition);
 
-  dirEntry* arr = data->arr;
+  dirEntry* arr = malloc(arrNumBytes);
+  memcpy(arr, data->arr, arrNumBytes);
 
   //Create a new hash table to be populated
   hashTable* dirPtr = hashTableInit(data->dirName, ((DIR_SIZE * blockSize) / sizeof(dirEntry) - 1),

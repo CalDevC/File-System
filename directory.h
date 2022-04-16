@@ -53,6 +53,12 @@ typedef struct hashTable {
   char dirName[20];
 } hashTable;
 
+//Stores hash table data to be written to disk
+typedef struct tableData {
+  char dirName[20];
+  dirEntry* arr;
+} tableData;
+
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,
   unsigned int fileSize, time_t dateModified, time_t dateCreated);
