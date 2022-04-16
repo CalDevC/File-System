@@ -14,6 +14,8 @@
 * functions related to our hashTable.
 *
 **************************************************************/
+#ifndef DIRECTORY_H
+#define DIRECTORY_H
 
 #include <time.h>
 #include <stdlib.h>
@@ -48,7 +50,14 @@ typedef struct hashTable {
   int numEntries;
   int maxNumEntries;
   int location;
+  char dirName[20];
 } hashTable;
+
+//Stores hash table data to be written to disk
+typedef struct tableData {
+  char dirName[20];
+  dirEntry* arr;
+} tableData;
 
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,
@@ -61,7 +70,7 @@ int hash(const char filename[20]);
 node* entryInit(char key[20], dirEntry* value);
 
 //Initialize a new hashTable
-hashTable* hashTableInit(int maxNumEntries, int location);
+hashTable* hashTableInit(char* dirName, int maxNumEntries, int location);
 
 //Update an existing entry or add a new one
 void setEntry(char key[20], dirEntry* value, hashTable* table);
@@ -69,8 +78,13 @@ void setEntry(char key[20], dirEntry* value, hashTable* table);
 //Retrieve an entry from a provided hashTable
 dirEntry* getEntry(char key[20], hashTable* table);
 
+//Given an index, find the index of the next entry in the table
+int getNextIdx(int currIdx, hashTable* table);
+
 //Write out the hash table contents to the console for debug
 void printTable(hashTable* table);
 
 //Free the memory allocated to the hashTable
 void clean(hashTable* table);
+
+#endif
