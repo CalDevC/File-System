@@ -64,7 +64,7 @@ int hash(const char filename[20]);
 node* entryInit(char key[20], dirEntry* value);
 
 //Initialize a new hashTable
-hashTable* hashTableInit(char dirName[20], int maxNumEntries, int location);
+hashTable* hashTableInit(char* dirName, int maxNumEntries, int location);
 
 //Update an existing entry or add a new one
 void setEntry(char key[20], dirEntry* value, hashTable* table);

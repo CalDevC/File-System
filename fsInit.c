@@ -131,9 +131,6 @@ void writeTableData(hashTable* table, int lbaPosition) {
   }
 
   //Write to the array out to the specified block numbers
-  printf("Write directory to: %d, for number of blocks: %d\n",
-    lbaPosition, DIR_SIZE);
-
   int val = LBAwrite(arr, DIR_SIZE, lbaPosition);
 
   // printf("val is: %d\n", val);
@@ -245,6 +242,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // Initialize our root directory to be a new hash table of directory entries
     hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
     workingDir = rootDir;
+    printf("root dir name %s\n", rootDir->dirName);
+    printf("working dir name %s\n", workingDir->dirName);
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
@@ -263,7 +262,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
-    printf("\n\nFree block is %d\n", freeBlock);
     setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
     writeTableData(rootDir, freeBlock);
 
