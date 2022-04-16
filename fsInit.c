@@ -107,7 +107,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 void writeTableData(hashTable* table, int lbaPosition) {
   int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
 
-  //All table data
+  //Struct for table data
   typedef struct tableData {
     char dirName[20];
     dirEntry arr[arrNumBytes];
