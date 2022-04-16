@@ -105,7 +105,7 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
   int returnVal = 0;
-  
+
   return returnVal;
 }
 
@@ -170,7 +170,14 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
 ****************************************************/
 //Write all directory entries in the hashTable to the disk
 void writeTableData(hashTable* table, int lbaPosition) {
-  dirEntry* arr = malloc(DIR_SIZE * blockSize);
+  int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
+
+  tableData* data = malloc(blockSize * DIR_SIZE);
+
+  //Directory entries
+  dirEntry* arr = malloc(arrNumBytes);
+
+  strncpy(data->dirName, table->dirName, strlen(table->dirName));
 
   int j = 0;  //j will track indcies for the array
 
@@ -195,11 +202,12 @@ void writeTableData(hashTable* table, int lbaPosition) {
     }
   }
 
-  //Write to the array out to the specified block numbers
-  printf("Write directory to: %d, for number of blocks: %d\n",
-    lbaPosition, DIR_SIZE);
+  data->arr = malloc(arrNumBytes);
+  printf("SIZE OF ARR: %d\n", table->maxNumEntries);
+  memcpy(data->arr, arr, arrNumBytes);
 
-  int val = LBAwrite(arr, DIR_SIZE, lbaPosition);
+  //Write to the array out to the specified block numbers
+  int val = LBAwrite(data, DIR_SIZE, lbaPosition);
 
   // printf("val is: %d\n", val);
   // if (val == DIR_SIZE) {
@@ -218,12 +226,17 @@ void writeTableData(hashTable* table, int lbaPosition) {
 ****************************************************/
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaPosition) {
+  int arrNumBytes = ((DIR_SIZE * blockSize) / sizeof(dirEntry)) * sizeof(dirEntry);
+
   //Read all of the entries into an array
-  dirEntry* arr = malloc(DIR_SIZE * blockSize);
-  LBAread(arr, DIR_SIZE, lbaPosition);
+  tableData* data = malloc(DIR_SIZE * blockSize);
+  LBAread(data, DIR_SIZE, lbaPosition);
+
+  dirEntry* arr = malloc(arrNumBytes);
+  memcpy(arr, data->arr, arrNumBytes);
 
   //Create a new hash table to be populated
-  hashTable* dirPtr = hashTableInit(((DIR_SIZE * blockSize) / sizeof(dirEntry)),
+  hashTable* dirPtr = hashTableInit(data->dirName, ((DIR_SIZE * blockSize) / sizeof(dirEntry) - 1),
     lbaPosition);
 
   int i = 0;
@@ -311,10 +324,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
-    int maxNumEntries = dirSizeInBytes / sizeOfEntry; //53 entries
+    int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
     // Initialize our root directory to be a new hash table of directory entries
-    hashTable* rootDir = hashTableInit(maxNumEntries, vcbPtr->rootDir);
+    hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
     workingDir = rootDir;
 
     // Initializing the "." current directory and the ".." parent Directory 
@@ -334,7 +347,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
-    printf("\n\nFree block is %d\n", freeBlock);
     setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
     writeTableData(rootDir, freeBlock);
 
@@ -437,18 +449,26 @@ int fs_isDir(char* path) {
   char** pathParts = stringParser(pathnameCopy);
 
   //Traverse the path one component at a time starting from the root directory
-  hashTable* currDir = readTableData(6);
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  LBAread(vcbPtr, 1, 0);
+
+  //Continue until we have processed each component in the path
+  hashTable* currDir = readTableData(vcbPtr->rootDir);
 
   //Continue until we have processed each component in the path
   for (int i = 0; pathParts[i] != NULL; i++) {
     //check that the location exists and that it is a directory
     dirEntry* entry = getEntry(pathParts[i], currDir);
     if (entry == NULL) {
+      free(vcbPtr);
+      vcbPtr = NULL;
       return 0;
     }
 
     if (entry->isDir == 0) {
       printf("Error: Directory entry is not a directory\n");
+      free(vcbPtr);
+      vcbPtr = NULL;
       return 0;
     }
     //set currDir to its hash table if so
@@ -463,28 +483,9 @@ int fs_isDir(char* path) {
   free(pathParts);
   pathParts = NULL;
 
+  free(vcbPtr);
+  vcbPtr = NULL;
   return 1;
-}
-
-/****************************************************
-*  fs_getcwd
-****************************************************/
-char* fs_getcwd(char* buf, size_t size) {
-  char * returnVal = "test output\n";
-  // GOAL: return a pointer to a string containing the pathname 
-  // of the current working directory.
-  char * bufCopy = malloc(size);
-  if(bufCopy == NULL){
-    printf("Error!\n");
-  }else{
-    printf("malloc succeded \n");
-    strcpy(bufCopy, buf);
-    printf("bufCopy is: %s\n", bufCopy);
-
-  }
-  
-  
-  return returnVal;
 }
 
 /****************************************************
@@ -493,7 +494,7 @@ char* fs_getcwd(char* buf, size_t size) {
 
 // Check is a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
-  // CHANGE this
+  // CHANGE this so that we check preceeding dirs but also if it is a file
   return !fs_isDir(path);
 }
 
@@ -552,7 +553,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  int maxNumEntries = dirSizeInBytes / sizeOfEntry; //53 entries
+  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
@@ -583,7 +584,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // Initialize the directory entries within the new
   // directory
   int startBlock = getEntry(newDirName, currDir)->location;
-  hashTable* dirEntries = hashTableInit(maxNumEntries, startBlock);
+  hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
 
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
@@ -730,4 +731,74 @@ int fs_setcwd(char* buf) {
   vcbPtr = NULL;
 
   return 0;
+}
+
+/****************************************************
+*  fs_getcwd
+****************************************************/
+char* fs_getcwd(char* buf, size_t size) {
+  char* path = malloc(size);
+  if (path == NULL){
+    printf("malloc() failed\n");
+    return NULL;
+  }
+
+  //printf("buf: %s\n");
+  printf("After path = malloc()\n");
+  path[0] = '/';
+
+  //Check if cwd is root
+  if (strcmp(workingDir->dirName, "/") == 0) {
+    printf("cwd is root\n");
+    strcpy(buf, path);
+    //printf("buf = %s\n", buf);
+    // free(path);
+    // path = NULL;
+    // return buf;
+  }
+
+  printf("After strcmp()\n");
+
+  char* pathElements[size];
+  int i = 0;
+  
+  printf("After checking cwd is root\n");
+
+  hashTable* currDir = workingDir;
+  dirEntry* parentDirEnt = getEntry("..", currDir);
+  hashTable* parentDir = readTableData(parentDirEnt->location);
+  char* newPathElem = currDir->dirName;
+
+  //Keep traversing up until root is found
+  while (strcmp(newPathElem, "/") != 0) {
+    //add currDir to path elements array
+    pathElements[i] = newPathElem;
+    i++;
+
+    //Move up current directory to its parent
+    currDir = parentDir;
+    newPathElem = currDir->dirName;
+
+    //Set the new parent directory
+    parentDirEnt = getEntry("..", currDir);
+    parentDir = readTableData(parentDirEnt->location);
+  }
+
+  //Build the path
+  for (int j = i - 1; j >= 0; j--) {
+    strcat(path, pathElements[j]);
+    strcat(path, "/");
+  }
+
+  //Add NULL char
+  path[size - 1] = '\0';
+
+  //copy path to buf
+  strncpy(buf, path, size);
+
+  // free(path);
+  // path = NULL;
+
+  printf("end fs_cwd\n");
+  return buf;
 }
