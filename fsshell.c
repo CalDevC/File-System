@@ -262,7 +262,7 @@ int cmd_mv(int argcnt, char* argvec[]) {
   // return -99;
   // // **** TODO ****  For you to implement	
   char* path = argvec[1];
-  printf("argvec[0]: %s\n", path);
+  printf("argvec[1]: %s\n", path);
   struct fs_stat statbuf;
 
   fs_stat(path, &statbuf);

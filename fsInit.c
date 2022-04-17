@@ -20,6 +20,7 @@
 #include <string.h>
 #include "fsLow.h"
 #include "mfs.h"
+#include <time.h>
 
 // Test
 #include "b_io.c"
@@ -49,33 +50,6 @@ struct volumeCtrlBlock {
   int rootDir;		     //Block number where root starts
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
-
-
-/****************************************************
-*  stringSplit
-****************************************************/
-char ** stringSplit(char * pathName){
-    char ** tokens = malloc(100);
-    char * token;
-    char * savePtr;
-    char *delim = "/";
-    int length = strlen(pathName);
-    int stringCount = 0;
-
-    token = strtok_r(pathName, delim, &savePtr);
-    
-    while (token != NULL){
-      tokens[stringCount] = token;
-      stringCount++;
-      printf("Directory entry is: %s\n", token);
-      token = strtok_r(NULL, delim, &savePtr);
-    }
-
-    tokens[stringCount] = token;
-
-    return tokens;
-  }
-
 
 /****************************************************
 *  getFreeBlockNum
@@ -111,24 +85,65 @@ int fs_stat(const char* path, struct fs_stat* buf){
   printf("*************Entering fs_stat()**************\n");
   int returnVal = 0;
 
+  char* pathCopy = malloc(sizeof(path));
+
+  if (path == NULL){
+    printf("fs_stat(): Path cannot be null.\n");
+    return -1;
+  }
+  if(pathCopy == NULL){
+    printf("malloc error\n");
+    return -1;
+  }
+  printf("After validity checks\n");
+  strcpy(pathCopy, path);
+  printf("Cow\n");
+  hashTable* currDir = workingDir;
+  dirEntry* currEntry = getEntry(pathCopy, currDir);
+  
+  // SEG FAULTS WHEN ATTEMPTING TO PRINT
+  //printf("Filename: %s\n", currEntry->filename);
+  //printf("Date Created: %ld\n", currEntry->dateCreated);
+  // printf("Date Modified: %ld\n", currEntry->dateModified);
+  printf("Chicken\n");
+
+
+  // time_t currentTime;
+  // time(&currentTime);
+
+  // struct tm *myTime = localtime(&currentTime);
+  
+  // printf("Current time: %s\n", curentTime);
+
   /*
    * Validate file before return stats 
    */
+  // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  // LBAread(vcbPtr, 1,0);
+  // hashTable* currentDir = readTableData(vcbPtr->rootDir);
+
+  // //const char* pathCopy;
+  // printf("Path is %s\n", path);
+  // dirEntry* entry = getEntry(path, currentDir);
+
+  // printf("Data modified %ld\n", entry->dateModified);
+  // printf("Data created %ld\n", entry->dateCreated);
 
   // If exist?
+  // int fileExistence = fileExists(path);
+  // if(fileExistence == 0){
+  //   printf("fs_stat(): Empty path is not legal.\n");
+  //   return -1;
+  // }
 
-  if(path != NULL){
-    printf("Empty path is not legal.\n");
-  }else{
-    printf("Path: %s\n", path);
-    printf("Access Time: %ld\n", buf->st_accesstime);
-    printf("Block size: %ld\n", buf->st_blksize);
-    printf("Blocks: %ld\n", buf->st_blocks);
-    printf("Create Time: %ld\n", buf->st_createtime);
-    printf("Modtime: %ld\n", buf->st_modtime);
-    printf("Size: %ld\n", buf->st_size);
-  }
-
+  printf("Path: %s\n", path);
+  printf("Size: %ld\n", buf->st_size);
+  printf("Block size: %ld\n", buf->st_blksize);
+  printf("Blocks: %ld\n", buf->st_blocks);
+  // YYYY-MM-DD HH:MM:SS TIMEZONE
+  printf("Access Time: %ld\n", buf->st_accesstime);
+  printf("Modtime: %ld\n", buf->st_modtime);
+  printf("Create Time: %ld\n", buf->st_createtime);
   
   return returnVal;
 }
@@ -595,188 +610,188 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // // ***************************Test start**************************** //
 
-  // // Get next free block to store content for our file
-  // // Get the bitVector in memory -- We need to know what
-  // // block is free so we can store our new directory
-  // // there
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
-
-  // Reads data into VCB
-  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-  LBAread(vcbPtr, 1, 0);
-
-  // Get the root directory
-  hashTable * rootDir = readTableData(vcbPtr->rootDir);
-
-  // Do some calculations
-  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
-
-
-  // Get the next available block for our file
-  int freeBlock = getFreeBlockNum(numOfInts, bitVector);
-
-  // Create a directory entry for a file
-  dirEntry *newDir = dirEntryInit("zone.txt", 0, freeBlock,
-                                  maxNumEntries, time(0), time(0));
-
-  // Store the directory entry for our new file in the root directory                                
-  setEntry(newDir->filename, newDir, rootDir);
-
-  // Write root directory containing our new file
-  writeTableData(rootDir, rootDir->location);
-
-  // Unlike for a directory we allocate 1 block for a file
-  setBlocksAsAllocated(freeBlock, 1, bitVector);
-  LBAwrite(bitVector, 5, 1);
-
-  // // *****************Test File Functions************************** //
-  b_io_fd fileDescrip = b_open("zone.txt", 1);
-
-  // Text that we want to store in the zone.txt file
-  char * fileContent = "Hi, this is a test file";
-
-  // Write the content to the file
-  int bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
-
-  // Close the file
-  b_close(fileDescrip);
-
-  // // ***************************Test end**************************** //
-
-
-  // char* pathnameCopy = malloc(strlen(pathname) + 1);
-  // strcpy(pathnameCopy, pathname);
-
-  // char** parsedPath = stringParser(pathnameCopy);
-
-  // char* parentPath = malloc(strlen(pathname) + 1);
-
-  // int k = 0;
-  // for (int i = 0; parsedPath[i + 1] != NULL; i++) {
-  //   for (int j = 0; j < strlen(parsedPath[i]); j++) {
-  //     parentPath[k] = parsedPath[i][j];
-  //     k++;
-  //   }
-
-  //   parentPath[k] = '/';
-  //   k++;
-  // }
-
-  // parentPath[k] = '\0';
-
-
-  // int returnVal = fs_isDir(parentPath);
-
-  // if (returnVal <= 0) {
-  //   printf("Error: Parent path is invalid\n");
-  //   return -1;
-  // }
-
-  // returnVal = fs_isDir((char *)pathname);
-
-  // if (returnVal == 1) {
-  //   printf("Error: Directory with the same name already exists\n");
-  //   return -1;
-  // }
-
-  // if (!fs_isDir(parentPath)) {
-  //   printf("Error: Parent path is invalid\n");
-  //   return -1;
-  // }
-
-  // if (fs_isDir((char*)pathname)) {
-  //   printf("Error: Directory with the same name already exists\n");
-  //   return -1;
-  // }
-
-  //Continue until we have processed each component in the path
-  // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-  // LBAread(vcbPtr, 1, 0);
-
-  // hashTable* currDir = readTableData(vcbPtr->rootDir);
-
-  // int i = 0;
-  // for (; parsedPath[i + 1] != NULL; i++) {
-  //   //check that the location exists and that it is a directory
-  //   dirEntry* entry = getEntry(parsedPath[i], currDir);
-  //   //Move the current directory to the current component's directory
-  //   //now that it has been verified
-  //   currDir = readTableData(entry->location);
-  // }
-
-  // // Get the bitVector in memory -- We need to know what
-  // // block is free so we can store our new directory
-  // // there
+  // // // Get next free block to store content for our file
+  // // // Get the bitVector in memory -- We need to know what
+  // // // block is free so we can store our new directory
+  // // // there
   // int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
 
   // // Read the bitvector
-  // LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  // LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
-  // // Create a new directory entry
-  // char* newDirName = parsedPath[i];
+  // // Reads data into VCB
+  // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  // LBAread(vcbPtr, 1, 0);
 
-  // dirEntry* newEntry = malloc(sizeof(dirEntry));
-  // int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+  // // Get the root directory
+  // hashTable * rootDir = readTableData(vcbPtr->rootDir);
 
-  // // Initialize the new directory entry
-  // strcpy(newEntry->filename, newDirName);
-  // newEntry->isDir = 1;
-  // newEntry->location = freeBlock;
-  // newEntry->fileSize = DIR_SIZE * blockSize;
-  // newEntry->dateModified = time(0);
-  // newEntry->dateCreated = time(0);
-
-  // // Put the updated directory entry back
-  // // into the directory
-  // setEntry(newDirName, newEntry, currDir);
-
-
+  // // Do some calculations
   // int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   // int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   // int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
-  // // Initialize the directory entries within the new
-  // // directory
-  // int startBlock = getEntry(newDirName, currDir)->location;
-  // hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
 
-  // // Initializing the "." current directory and the ".." parent Directory
-  // dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
-  //   dirSizeInBytes, time(0), time(0));
-  // setEntry(curDir->filename, curDir, dirEntries);
+  // // Get the next available block for our file
+  // int freeBlock = getFreeBlockNum(numOfInts, bitVector);
 
-  // dirEntry* parentDir = dirEntryInit("..", 1, currDir->location,
-  //   dirSizeInBytes, time(0), time(0));
-  // setEntry(parentDir->filename, parentDir, dirEntries);
+  // // Create a directory entry for a file
+  // dirEntry *newDir = dirEntryInit("zone.txt", 0, freeBlock,
+  //                                 maxNumEntries, time(0), time(0));
 
-  // // Write parent directory
-  // writeTableData(currDir, currDir->location);
-  // // Write new directory
-  // writeTableData(dirEntries, dirEntries->location);
+  // // Store the directory entry for our new file in the root directory                                
+  // setEntry(newDir->filename, newDir, rootDir);
 
-  // // Update the bit vector
-  // printf("NEW FREE BLOCK: %d\n", freeBlock);
-  // setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
-  // printTable(currDir);
+  // // Write root directory containing our new file
+  // writeTableData(rootDir, rootDir->location);
+
+  // // Unlike for a directory we allocate 1 block for a file
+  // setBlocksAsAllocated(freeBlock, 1, bitVector);
+  // LBAwrite(bitVector, 5, 1);
+
+  // // // *****************Test File Functions************************** //
+  // b_io_fd fileDescrip = b_open("zone.txt", 1);
+
+  // // Text that we want to store in the zone.txt file
+  // char * fileContent = "Hi, this is a test file";
+
+  // // Write the content to the file
+  // int bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+
+  // // Close the file
+  // b_close(fileDescrip);
+
+  // // // ***************************Test end**************************** //
 
 
-  // free(bitVector);
-  // bitVector = NULL;
-  // free(newEntry);
-  // newEntry = NULL;
-  // free(vcbPtr);
-  // vcbPtr = NULL;
-  // free(pathnameCopy);
-  // pathnameCopy = NULL;
-  // free(parsedPath);
-  // parsedPath = NULL;
-  // free(parentPath);
-  // parentPath = NULL;
+  char* pathnameCopy = malloc(strlen(pathname) + 1);
+  strcpy(pathnameCopy, pathname);
+
+  char** parsedPath = stringParser(pathnameCopy);
+
+  char* parentPath = malloc(strlen(pathname) + 1);
+
+  int k = 0;
+  for (int i = 0; parsedPath[i + 1] != NULL; i++) {
+    for (int j = 0; j < strlen(parsedPath[i]); j++) {
+      parentPath[k] = parsedPath[i][j];
+      k++;
+    }
+
+    parentPath[k] = '/';
+    k++;
+  }
+
+  parentPath[k] = '\0';
+
+
+  int returnVal = fs_isDir(parentPath);
+
+  if (returnVal <= 0) {
+    printf("Error: Parent path is invalid\n");
+    return -1;
+  }
+
+  returnVal = fs_isDir((char *)pathname);
+
+  if (returnVal == 1) {
+    printf("Error: Directory with the same name already exists\n");
+    return -1;
+  }
+
+  if (!fs_isDir(parentPath)) {
+    printf("Error: Parent path is invalid\n");
+    return -1;
+  }
+
+  if (fs_isDir((char*)pathname)) {
+    printf("Error: Directory with the same name already exists\n");
+    return -1;
+  }
+
+  //Continue until we have processed each component in the path
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  LBAread(vcbPtr, 1, 0);
+
+  hashTable* currDir = readTableData(vcbPtr->rootDir);
+
+  int i = 0;
+  for (; parsedPath[i + 1] != NULL; i++) {
+    //check that the location exists and that it is a directory
+    dirEntry* entry = getEntry(parsedPath[i], currDir);
+    //Move the current directory to the current component's directory
+    //now that it has been verified
+    currDir = readTableData(entry->location);
+  }
+
+  // Get the bitVector in memory -- We need to know what
+  // block is free so we can store our new directory
+  // there
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+
+  // Create a new directory entry
+  char* newDirName = parsedPath[i];
+
+  dirEntry* newEntry = malloc(sizeof(dirEntry));
+  int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+   // Initialize the new directory entry
+  strcpy(newEntry->filename, newDirName);
+  newEntry->isDir = 1;
+  newEntry->location = freeBlock;
+  newEntry->fileSize = DIR_SIZE * blockSize;
+  newEntry->dateModified = time(0);
+  newEntry->dateCreated = time(0);
+
+  // Put the updated directory entry back
+  // into the directory
+  setEntry(newDirName, newEntry, currDir);
+
+
+  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+
+  // Initialize the directory entries within the new
+  // directory
+  int startBlock = getEntry(newDirName, currDir)->location;
+  hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
+
+  // Initializing the "." current directory and the ".." parent Directory
+  dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
+    dirSizeInBytes, time(0), time(0));
+  setEntry(curDir->filename, curDir, dirEntries);
+
+  dirEntry* parentDir = dirEntryInit("..", 1, currDir->location,
+    dirSizeInBytes, time(0), time(0));
+  setEntry(parentDir->filename, parentDir, dirEntries);
+
+  // Write parent directory
+  writeTableData(currDir, currDir->location);
+  // Write new directory
+  writeTableData(dirEntries, dirEntries->location);
+
+  // Update the bit vector
+  printf("NEW FREE BLOCK: %d\n", freeBlock);
+  setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+  printTable(currDir);
+
+
+  free(bitVector);
+  bitVector = NULL;
+  free(newEntry);
+  newEntry = NULL;
+  free(vcbPtr);
+  vcbPtr = NULL;
+  free(pathnameCopy);
+  pathnameCopy = NULL;
+  free(parsedPath);
+  parsedPath = NULL;
+  free(parentPath);
+  parentPath = NULL;
 
   return 0;
 }
