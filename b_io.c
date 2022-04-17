@@ -185,6 +185,21 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 		{
 		return (-1); 					//invalid file descriptor
 		}
+	
+	// If whence is SEEK_SET, we need to need to set the file's
+	// index to the offset provided
+
+	// If whence is SEEK_CUR, we need to add offset to the file's
+	// current position (index)
+
+	// If whence is SEEK_END, we need to set the file's index to
+	// the size of the file plus offset
+	
+
+	// If error happens return -1
+
+	// Upon success return the new offset position starting from the
+	// beginning of the file
 		
 		
 	return (0); //Change this
@@ -385,6 +400,9 @@ int b_read (b_io_fd fd, char * buffer, int count)
 void b_close (b_io_fd fd) 
 	{
 	b_fcb fcb = fcbArray[fd];
+
+	// We also need to write the directory entry representing
+	// the open file
 
 	// If fcb.buf is NULL then it means we have already 
 	// written it to the disk and released the memory allocated
