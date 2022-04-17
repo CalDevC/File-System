@@ -474,7 +474,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
       k++;
     }
 
-    if (parentPath[k - 1] != '/') {
+    if (parentPath[k - 1] != '/' && parentPath[k - 1] != '.') {
       parentPath[k] = '/';
       k++;
     }
@@ -489,7 +489,9 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   char* temp = malloc(51);
   char* startingDir = fs_getcwd(temp, 50);
   printf("Starting dir %s\n", startingDir);
+  printf("Parent path is %s\n", parentPath);
   fs_setcwd(parentPath);
+  printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -525,7 +527,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // directory
   int startBlock = getEntry(newDirName, workingDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
-
+  printf("Setting dirs\n");
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
     dirSizeInBytes, time(0), time(0));
@@ -534,9 +536,10 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
     dirSizeInBytes, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
-
+  printf("writing table data 1\n");
   // Write parent directory
   writeTableData(workingDir, workingDir->location);
+  printf("writing table data 2\n");
   // Write new directory
   writeTableData(dirEntries, dirEntries->location);
 
@@ -544,8 +547,9 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
   printTable(workingDir);
-
+  printf("About to setcwd as %s\n", startingDir);
   fs_setcwd(startingDir);
+  printf("Freeing\n");
   free(startingDir);
   startingDir = NULL;
 
@@ -557,6 +561,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   parsedPath = NULL;
   free(parentPath);
   parentPath = NULL;
+  printf("Leaving mkdir\n");
 
   return 0;
 }
@@ -616,38 +621,46 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 int fs_setcwd(char* buf) {
 
   //Parse path
-
   if (fs_isDir(buf)) {
     char** parsedPath = stringParser(buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
-    //Traverse the path one component at a time starting from the root directory
-    // Reads data into VCB
-    struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-    LBAread(vcbPtr, 1, 0);
 
-    //Continue until we have processed each component in the path
-    hashTable* currDir = readTableData(vcbPtr->rootDir);
+    hashTable* currDir;
+    if (fullPath) {  //Absolute path
+      // Reads data into VCB
+      struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+      LBAread(vcbPtr, 1, 0);
+      currDir = readTableData(vcbPtr->rootDir);
+      free(vcbPtr);
+      vcbPtr = NULL;
+    } else {  //Relative path
+      currDir = workingDir;
+    }
+
+    printf("Working dir %s\n", currDir->dirName);
 
     //Continue until we have processed each component in the path
     int i = 0;
     if (fullPath) {
       i++;
     }
-
+    printf("Starting setcwd loop %s\n", parsedPath[i]);
     dirEntry* entry;
     for (; parsedPath[i] != NULL; i++) {
       //check that the location exists and that it is a directory
       // if(strcmp(parsedPath[i], ".") == 0)
       entry = getEntry(parsedPath[i], currDir);
+      printf("Entry %s at %d\n", entry->filename, i);
       free(currDir);
       currDir = readTableData(entry->location);
     }
-
+    printf("Ending setcwd loop\n");
     workingDir = currDir;
+    printf("currDir name: %s\n", currDir->dirName);
 
-    free(vcbPtr);
-    vcbPtr = NULL;
-
+    // free(vcbPtr);
+    // vcbPtr = NULL;
+    printf("Leaving setcwd\n");
     return 0;
   } else {
     return -1;
