@@ -552,7 +552,7 @@ void processcommand(char* cmd) {
   cmd_help(cmdc, cmdv);
   free(cmdv);
   cmdv = NULL;
-  }
+}
 
 
 

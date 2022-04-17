@@ -331,7 +331,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // printTable(workingDir);
     ///////////// END TEST CODE FOR SETCWD /////////////
 
-
     free(bitVector);
     bitVector = NULL;
   }
@@ -357,10 +356,18 @@ char** stringParser(char* stringToParse) {
   char* delim = "/";
 
   int stringCount = 0;
+  //Check if root directory
+  if (stringToParse[0] == '/') {
+    subStrings[stringCount] = "/";
+    stringCount++;
+  }
+
   subString = strtok_r(stringToParse, delim, &savePtr);
+
 
   while (subString != NULL) {
     subStrings[stringCount] = subString;
+    printf("substring: %s at i = %d\n", subString, stringCount);
     stringCount++;
     subString = strtok_r(NULL, delim, &savePtr);
   }
@@ -373,50 +380,114 @@ char** stringParser(char* stringToParse) {
 
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
-  //Parse path
-  char* pathnameCopy = malloc(strlen(path) + 1);
-  strcpy(pathnameCopy, path);
 
-  char** pathParts = stringParser(pathnameCopy);
+  char* pathCopy = malloc(strlen(path) + 1);
+  strcpy(pathCopy, path);
+  char** parsedPath = stringParser(pathCopy);
+
+  int fullPath = strcmp(parsedPath[0], "/") == 0;
+  printf("part 2 %s\n", parsedPath[1]);
+
+  if (fullPath && parsedPath[1] == NULL) {
+    printf("Path given was root\n");
+    free(parsedPath);
+    parsedPath = NULL;
+    free(pathCopy);
+    pathCopy = NULL;
+    return 1;
+  } else if (parsedPath[0] == NULL) {
+    printf("Path was empty\n");
+    free(parsedPath);
+    parsedPath = NULL;
+    free(pathCopy);
+    pathCopy = NULL;
+    return 0;
+  }
+
+  char* parentPath = malloc(strlen(path) + 1);
 
   //Traverse the path one component at a time starting from the root directory
   struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
   LBAread(vcbPtr, 1, 0);
 
   //Continue until we have processed each component in the path
-  hashTable* currDir = readTableData(vcbPtr->rootDir);
+  hashTable* rootDir = readTableData(vcbPtr->rootDir);
+  hashTable* currDir = rootDir;
 
-  //Continue until we have processed each component in the path
-  for (int i = 0; pathParts[i] != NULL; i++) {
+  int i = 0;
+
+  if (fullPath) {
+    i++;
+  }
+
+  for (; parsedPath[i + 1] != NULL; i++) {
+    printf("i: %d\0", i);
     //check that the location exists and that it is a directory
-    dirEntry* entry = getEntry(pathParts[i], currDir);
+    dirEntry* entry;
+    entry = getEntry(parsedPath[i], currDir);
+
     if (entry == NULL) {
+      printf("Error: Part of parent path does not exist\n");
+      free(parsedPath);
+      parsedPath = NULL;
       free(vcbPtr);
       vcbPtr = NULL;
+      free(pathCopy);
+      pathCopy = NULL;
+      free(parentPath);
+      parentPath = NULL;
+      free(currDir);
+      currDir = NULL;
       return 0;
     }
 
     if (entry->isDir == 0) {
-      printf("Error: Directory entry is not a directory\n");
+      printf("Error: Part of parent path was not a directory\n");
+      free(parsedPath);
+      parsedPath = NULL;
       free(vcbPtr);
       vcbPtr = NULL;
+      free(pathCopy);
+      pathCopy = NULL;
+      free(parentPath);
+      parentPath = NULL;
+      free(currDir);
+      currDir = NULL;
       return 0;
     }
-    //set currDir to its hash table if so
 
     //Move the current directory to the current component's directory
     //now that it has been verified
+    free(currDir);
     currDir = readTableData(entry->location);
   }
 
-  free(pathnameCopy);
-  pathnameCopy = NULL;
-  free(pathParts);
-  pathParts = NULL;
+  printf("After loop the token is: %s at i = %d, and currDir is %s\n", parsedPath[i], i, currDir->dirName);
 
+  //Check that the final component in the path is a directory
+  dirEntry* entry;
+  entry = getEntry(parsedPath[i], currDir);
+
+
+  if (entry == NULL) {
+    printf("Error: Part of parent path does not exist\n");
+    free(vcbPtr);
+    vcbPtr = NULL;
+    return 0;
+  }
+
+  free(parsedPath);
+  parsedPath = NULL;
   free(vcbPtr);
   vcbPtr = NULL;
-  return 1;
+  free(pathCopy);
+  pathCopy = NULL;
+  free(parentPath);
+  parentPath = NULL;
+  free(currDir);
+  currDir = NULL;
+
+  return entry->isDir;
 }
 
 // Check is a path is a file (1 = yes, 0 = no)
@@ -427,6 +498,7 @@ int fs_isFile(char* path) {
 
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
+  printf("IN MKDIR\n");
   char* pathnameCopy = malloc(strlen(pathname) + 1);
   strcpy(pathnameCopy, pathname);
 
@@ -435,7 +507,8 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   char* parentPath = malloc(strlen(pathname) + 1);
 
   int k = 0;
-  for (int i = 0; parsedPath[i + 1] != NULL; i++) {
+  int i = 0;
+  for (; parsedPath[i + 1] != NULL; i++) {
     for (int j = 0; j < strlen(parsedPath[i]); j++) {
       parentPath[k] = parsedPath[i][j];
       k++;
@@ -447,13 +520,15 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   parentPath[k] = '\0';
 
+  printf("CHECKING PARENT DIR\n");
   if (!fs_isDir(parentPath)) {
-    printf("Error: Parent path is invalid\n");
+    printf("mkdir Error: Parent path is invalid\n");
     return -1;
   }
 
+  printf("CHECKING WHOLE PATH\n");
   if (fs_isDir((char*)pathname)) {
-    printf("Error: Directory with the same name already exists\n");
+    printf("mkdir Error: Directory with the same name already exists\n");
     return -1;
   }
 
@@ -461,18 +536,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
   LBAread(vcbPtr, 1, 0);
 
-
-  //Continue until we have processed each component in the path
-  hashTable* currDir = readTableData(vcbPtr->rootDir);
-
-  int i = 0;
-  for (; parsedPath[i + 1] != NULL; i++) {
-    //check that the location exists and that it is a directory
-    dirEntry* entry = getEntry(parsedPath[i], currDir);
-    //Move the current directory to the current component's directory
-    //now that it has been verified
-    currDir = readTableData(entry->location);
-  }
+  fs_setcwd(parentPath);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -502,11 +566,11 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Put the updated directory entry back
   // into the directory
-  setEntry(newDirName, newEntry, currDir);
+  setEntry(newDirName, newEntry, workingDir);
 
   // Initialize the directory entries within the new
   // directory
-  int startBlock = getEntry(newDirName, currDir)->location;
+  int startBlock = getEntry(newDirName, workingDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
 
   // Initializing the "." current directory and the ".." parent Directory
@@ -514,19 +578,19 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     dirSizeInBytes, time(0), time(0));
   setEntry(curDir->filename, curDir, dirEntries);
 
-  dirEntry* parentDir = dirEntryInit("..", 1, currDir->location,
+  dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
     dirSizeInBytes, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
 
   // Write parent directory
-  writeTableData(currDir, currDir->location);
+  writeTableData(workingDir, workingDir->location);
   // Write new directory
   writeTableData(dirEntries, dirEntries->location);
 
   // Update the bit vector
   printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
-  printTable(currDir);
+  printTable(workingDir);
 
 
   free(bitVector);
