@@ -206,11 +206,11 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 	// Initially we malloc memory equivalent to 1 block we can malloc 
 	// more memory as we need it
-	fcb.buf = malloc(sizeof(char) * 512);
+	fcb.buf = malloc(sizeof(char) * blockSize);
 
 	// Store the content of the passed in buffer to our file's
 	// buffer
-	int availBlockBytes = 512 - 5;
+	int availBlockBytes = blockSize - 5;
 
 	for (int i = 0; i < count; i++) {
 		if (fcb.buflen >= availBlockBytes) {	
@@ -250,7 +250,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 			// Start writing remaining text to the new buffer
 			//free(fcb.buf);
-			fcb.buf = malloc(sizeof(char) * 512);
+			fcb.buf = malloc(sizeof(char) * blockSize);
 			fcb.buflen = 0;
 			fcb.index = 5;
 		}
@@ -321,9 +321,64 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		return (-1); 					//invalid file descriptor
 		}
 
-	// Get the 
-		
-	return (0);	//Change this
+	// Allocate memory for our buffer
+	b_fcb fcb = fcbArray[fd];
+
+	// We need a check to determine if we have already called a read
+	// before on a same file to determine if we have data in our
+	// buffer from previous read that we can use. This corresponds
+	// to Part 1 mentioned above
+
+	fcb.buf = malloc(sizeof(char) * blockSize);
+
+	// Fill the buffer with file content written to the volume
+	// Change the 11 to be the starting block number of the file
+	LBAread(fcb.buf, 1, 11);
+
+	// Store the content of the passed in buffer to our file's
+	// buffer
+	int availBlockBytes = blockSize - 5;
+	fcb.buflen = availBlockBytes;
+	fcb.index = 5;
+
+	for (int i = 0; i < count; i++) {
+		if (fcb.buflen <= 0) {
+			// Get the characters representing next block number from the file
+			char blockChars[5];
+
+			for (int j = 0; j < 5; j++) {
+				blockChars[j] = fcb.buf[j];
+			}
+			blockChars[5] = '\0';
+
+			// Convert the characters representing block number to
+			// an integer
+			const char * constBlockNumbs = blockChars;
+			int nextBlock = atoi(constBlockNumbs);
+
+			// Start reading remaining text from next buffer
+			//free(fcb.buf);
+
+			// If nextBlock = 0, we can assume that we have reached
+			// the end of the file
+			if (nextBlock == 0) {
+				printf("Hold up at i: %d\n", i);
+				break;
+			}
+
+			fcb.buf = malloc(sizeof(char) * blockSize);
+			LBAread(fcb.buf, 1, nextBlock);
+
+			fcb.buflen = availBlockBytes;
+			fcb.index = 5;
+		}
+
+		buffer[i] = fcb.buf[fcb.index];
+		fcb.index++;
+		fcb.buflen--;
+	}
+
+	return count;	//Change this
 	}
 	
 // Interface to Close the file	
@@ -333,7 +388,7 @@ void b_close (b_io_fd fd)
 
 	// If fcb.buf is NULL then it means we have already 
 	// written it to the disk and released the memory allocated
-	// for it
+	// for it -- Not sure about this logic
 	if (fcb.buf != NULL) 
 		{
 		LBAwrite(fcb.buf, 1, fcb.location);
