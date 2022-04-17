@@ -737,3 +737,67 @@ char* fs_getcwd(char* buf, size_t size) {
   printf("getcwd: final working dir %s\n", workingDir->dirName);
   return buf;
 }
+
+int fs_rmdir(const char* pathname) {
+  char** parsedPath = stringParser((char*)pathname);
+  char* parentPath = malloc(strlen(pathname) + 1);
+
+  int k = 0;
+  int i = 0;
+  for (; parsedPath[i + 1] != NULL; i++) {
+    for (int j = 0; j < strlen(parsedPath[i]); j++) {
+      parentPath[k] = parsedPath[i][j];
+      k++;
+    }
+
+    if (parentPath[k - 1] != '/' && parentPath[k - 1] != '.') {
+      parentPath[k] = '/';
+      k++;
+    }
+  }
+
+  parentPath[k] = '\0';
+
+  if (!fs_isDir((char*)pathname)) {
+    return -1;
+  }
+
+  char* temp = malloc(51);
+  char* startingDir = fs_getcwd(temp, 50);
+  // printf("Starting dir %s\n", startingDir);
+  // printf("Parent path is %s\n", parentPath);
+  fs_setcwd(parentPath);
+  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
+
+  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+
+  // Get the bitVector in memory -- We need to know what
+  // block is free so we can store our new directory
+  // there
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+
+  //Check if empty
+  if (workingDir->numEntries > 2) {
+    printf("Directory is not empty, refusing to delete\n");
+    return -1;
+  }
+
+  // Create a new directory entry
+  char* dirNameToRemove = parsedPath[i];
+
+  //Remove dirEntry from the parent dir
+  fs_setcwd("..");
+  // rmEntry(dirNameToRemove, workingDir);
+
+  //Rewrite parent dir to disk
+
+  //Update the free space bit vector
+
+  //Set workingDir back
+  return 0;
+}
