@@ -74,7 +74,7 @@ hashTable* hashTableInit(char* dirName, int maxNumEntries, int location) {
   hashTable* table = malloc(sizeof(node) * SIZE);
   table->maxNumEntries = maxNumEntries;
   table->location = location;
-  strncpy(table->dirName, dirName, strlen(dirName));
+  strcpy(table->dirName, dirName);
 
   //Each node in the table should be set to a directory entry with a filename
   //of "" so that we know if there is a collision or not
