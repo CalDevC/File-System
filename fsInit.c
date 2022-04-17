@@ -439,7 +439,6 @@ int fs_isDir(char* path) {
     currDir = readTableData(entry->location);
   }
 
-  // printf("Checking entry out of loop at %d\n", i);
   //Check that the final component in the path is a directory
   entry = getEntry(parsedPath[i], currDir);
 
@@ -450,16 +449,13 @@ int fs_isDir(char* path) {
   parentPath = NULL;
 
   if (entry == NULL) {
-    printf("Error: Part of parent path does not exist\n");
     return 0;
   }
 
   int result = entry->isDir;
 
-  // free(currDir);
-  // currDir = NULL;
-
-  printf("isDir: final currdir %s\n", currDir->dirName);
+  free(currDir);
+  currDir = NULL;
 
   return result;
 }
