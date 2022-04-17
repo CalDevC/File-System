@@ -367,7 +367,7 @@ char** stringParser(char* stringToParse) {
 
   while (subString != NULL) {
     subStrings[stringCount] = subString;
-    printf("substring: %s at i = %d\n", subString, stringCount);
+    // printf("substring: %s at i = %d\n", subString, stringCount);
     stringCount++;
     subString = strtok_r(NULL, delim, &savePtr);
   }
@@ -386,7 +386,6 @@ int fs_isDir(char* path) {
   char** parsedPath = stringParser(pathCopy);
 
   int fullPath = strcmp(parsedPath[0], "/") == 0;
-  printf("part 2 %s\n", parsedPath[1]);
 
   if (fullPath && parsedPath[1] == NULL) {
     printf("Path given was root\n");
@@ -421,7 +420,7 @@ int fs_isDir(char* path) {
   }
 
   for (; parsedPath[i + 1] != NULL; i++) {
-    printf("i: %d\0", i);
+    printf("i: %d\n", i);
     //check that the location exists and that it is a directory
     dirEntry* entry;
     entry = getEntry(parsedPath[i], currDir);
@@ -462,7 +461,7 @@ int fs_isDir(char* path) {
     currDir = readTableData(entry->location);
   }
 
-  printf("After loop the token is: %s at i = %d, and currDir is %s\n", parsedPath[i], i, currDir->dirName);
+  // printf("After loop the token is: %s at i = %d, and currDir is %s\n", parsedPath[i], i, currDir->dirName);
 
   //Check that the final component in the path is a directory
   dirEntry* entry;
@@ -514,19 +513,20 @@ int fs_mkdir(const char* pathname, mode_t mode) {
       k++;
     }
 
-    parentPath[k] = '/';
-    k++;
+    if (parentPath[k - 1] != '/') {
+      parentPath[k] = '/';
+      k++;
+    }
   }
 
   parentPath[k] = '\0';
 
-  printf("CHECKING PARENT DIR\n");
+  printf("PARENT PATH BEFORE %s\n", parentPath);
   if (!fs_isDir(parentPath)) {
     printf("mkdir Error: Parent path is invalid\n");
     return -1;
   }
 
-  printf("CHECKING WHOLE PATH\n");
   if (fs_isDir((char*)pathname)) {
     printf("mkdir Error: Directory with the same name already exists\n");
     return -1;
@@ -572,6 +572,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // directory
   int startBlock = getEntry(newDirName, workingDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
+  printf("NEW DIR NAME IS LEN: %ld\n", strlen(dirEntries->dirName));
 
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
@@ -662,44 +663,50 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 }
 
 int fs_setcwd(char* buf) {
+
   //Parse path
   char* pathnameCopy = malloc(strlen(buf) + 1);
   strcpy(pathnameCopy, buf);
 
-  char** pathParts = stringParser(pathnameCopy);
+  printf("PATH: %s\n", pathnameCopy);
 
-  //Traverse the path one component at a time starting from the root directory
-  // Reads data into VCB
-  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-  LBAread(vcbPtr, 1, 0);
+  if (fs_isDir(pathnameCopy)) {
+    printf("PATH: %s\n", pathnameCopy);
+    char** parsedPath = stringParser(pathnameCopy);
+    printf("PATH: %s\n", pathnameCopy);
+    int fullPath = strcmp(parsedPath[0], "/") == 0;
+    //Traverse the path one component at a time starting from the root directory
+    // Reads data into VCB
+    struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+    LBAread(vcbPtr, 1, 0);
 
-  //Continue until we have processed each component in the path
-  hashTable* currDir = readTableData(vcbPtr->rootDir);
+    //Continue until we have processed each component in the path
+    hashTable* currDir = readTableData(vcbPtr->rootDir);
 
-  //Continue until we have processed each component in the path
-  for (int i = 0; pathParts[i] != NULL; i++) {
-    //check that the location exists and that it is a directory
-    dirEntry* entry = getEntry(pathParts[i], currDir);
-    if (entry == NULL) {  //Not found
-      return -1;
+    //Continue until we have processed each component in the path
+    int i = 0;
+    if (fullPath) {
+      i++;
     }
 
-    if (entry->isDir == 0) {  //Not a directory
-      printf("Error: Directory entry is not a directory\n");
-      return -1;
+    for (; parsedPath[i] != NULL; i++) {
+      //check that the location exists and that it is a directory
+      dirEntry* entry = getEntry(parsedPath[i], currDir);
+      free(currDir);
+      currDir = readTableData(entry->location);
     }
 
-    //Move the current directory to the current component's directory
-    //now that it has been verified
-    currDir = readTableData(entry->location);
+    workingDir = currDir;
+
+    free(vcbPtr);
+    vcbPtr = NULL;
+
+    return 0;
+  } else {
+    return -1;
   }
 
-  workingDir = currDir;
 
-  free(vcbPtr);
-  vcbPtr = NULL;
-
-  return 0;
 }
 
 char* fs_getcwd(char* buf, size_t size) {
