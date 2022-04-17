@@ -152,6 +152,39 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   return NULL;
 }
 
+//Remove an existing entry
+// void rmEntry(char key[20], hashTable* table) {
+//   //Get the entry based on the hash value calculated from the key
+//   int hashVal = hash(key);
+//   node* entry = table->entries[hashVal];
+
+//     node* prevEntry;
+
+//   //If there is a collision
+//   while (entry != NULL) {
+
+//     //If the current entry has the same key that we are attempting 
+//     //to remove then update the existing entry
+//     if (strcmp(entry->key, key) == 0) {
+//       free(entry->value);
+//       entry->value = malloc(sizeof(dirEntry));
+//       memcpy(entry->value, value, sizeof(dirEntry));
+//       prevEntry->next = entry->next;
+//       table->numEntries--;
+//       return;
+//     }
+
+//     //Move on to check the next entry at the current table location
+//     prevEntry = entry;
+//     entry = prevEntry->next;
+//   }
+
+//   //If the key was not found at the table location then add it to 
+//   //the end of the list at that location
+//   prevEntry->next = entry->next;
+//   table->numEntries--;
+// }
+
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table) {
   //If we are looking for the first index in the list, start at entry 0

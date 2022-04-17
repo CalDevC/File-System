@@ -103,6 +103,37 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 }
 
+void setBlocksAsFree(int freeBlock, int blocksAllocated, int* bitVector) {
+  // Set the number of bits specified in the blocksAllocated
+  // to 1 starting from freeBlock
+  freeBlock += 1;
+
+  int bitNum = freeBlock - ((intBlock * 32) + 32);
+
+  if (bitNum < 0) {
+    bitNum *= -1;
+  }
+
+  // This will give us the specific bit where
+  // we found the free block in the specific
+  // int block
+  bitNum = 32 - bitNum;
+
+  int index = bitNum;
+  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
+
+  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
+    if (index > 32) {
+      intBlock += 1;
+      index = 1;
+      sumOfFreeBlAndBlocksAlloc -= 32;
+    }
+    bitVector[intBlock] = bitVector[intBlock] | (1 << (32 - index));
+  }
+
+  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+}
+
 //Write all directory entries in the hashTable to the disk
 void writeTableData(hashTable* table, int lbaPosition) {
   int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
