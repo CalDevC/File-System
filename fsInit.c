@@ -411,9 +411,10 @@ int fs_isDir(char* path) {
     i++;
   }
 
+  dirEntry* entry;
+
   for (; parsedPath[i + 1] != NULL; i++) {
     //check that the location exists and that it is a directory
-    dirEntry* entry;
     entry = getEntry(parsedPath[i], currDir);
 
     if (entry == NULL || entry->isDir == 0) {
@@ -433,10 +434,7 @@ int fs_isDir(char* path) {
     currDir = readTableData(entry->location);
   }
 
-  // printf("After loop the token is: %s at i = %d, and currDir is %s\n", parsedPath[i], i, currDir->dirName);
-
   //Check that the final component in the path is a directory
-  dirEntry* entry;
   entry = getEntry(parsedPath[i], currDir);
 
   free(parsedPath);
@@ -462,11 +460,11 @@ int fs_isFile(char* path) {
 
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
-  printf("IN MKDIR\n");
 
   char** parsedPath = stringParser((char*)pathname);
-
   char* parentPath = malloc(strlen(pathname) + 1);
+
+  printf("First part: %s\n", parsedPath[0]);
 
   int k = 0;
   int i = 0;
@@ -484,21 +482,13 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   parentPath[k] = '\0';
 
-  printf("PARENT PATH BEFORE %s\n", parentPath);
-  if (!fs_isDir(parentPath)) {
-    printf("mkdir Error: Parent path is invalid\n");
+  if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
     return -1;
   }
 
-  if (fs_isDir((char*)pathname)) {
-    printf("mkdir Error: Directory with the same name already exists\n");
-    return -1;
-  }
-
-  // Reads data into VCB
-  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-  LBAread(vcbPtr, 1, 0);
-
+  char* temp = malloc(51);
+  char* startingDir = fs_getcwd(temp, 50);
+  printf("Starting dir %s\n", startingDir);
   fs_setcwd(parentPath);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
@@ -551,17 +541,18 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   writeTableData(dirEntries, dirEntries->location);
 
   // Update the bit vector
-  printf("NEW FREE BLOCK: %d\n", freeBlock);
+  // printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
   printTable(workingDir);
 
+  fs_setcwd(startingDir);
+  free(startingDir);
+  startingDir = NULL;
 
   free(bitVector);
   bitVector = NULL;
   free(newEntry);
   newEntry = NULL;
-  free(vcbPtr);
-  vcbPtr = NULL;
   free(parsedPath);
   parsedPath = NULL;
   free(parentPath);
@@ -625,12 +616,9 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 int fs_setcwd(char* buf) {
 
   //Parse path
-  printf("PATH: %s\n", buf);
 
   if (fs_isDir(buf)) {
-    printf("PATH: %s\n", buf);
     char** parsedPath = stringParser(buf);
-    printf("PATH: %s\n", buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
     //Traverse the path one component at a time starting from the root directory
     // Reads data into VCB
@@ -646,9 +634,11 @@ int fs_setcwd(char* buf) {
       i++;
     }
 
+    dirEntry* entry;
     for (; parsedPath[i] != NULL; i++) {
       //check that the location exists and that it is a directory
-      dirEntry* entry = getEntry(parsedPath[i], currDir);
+      // if(strcmp(parsedPath[i], ".") == 0)
+      entry = getEntry(parsedPath[i], currDir);
       free(currDir);
       currDir = readTableData(entry->location);
     }
@@ -669,13 +659,13 @@ int fs_setcwd(char* buf) {
 char* fs_getcwd(char* buf, size_t size) {
   char* path = malloc(size);
   path[0] = '/';
+  path[1] = '\0';
 
   //Check if cwd is root
   if (strcmp(workingDir->dirName, "/") == 0) {
+    printf("Exiting\n");
     strcpy(buf, path);
-    // free(path);
-    // path = NULL;
-    return buf;
+    return path;
   }
 
   char* pathElements[size];
