@@ -99,11 +99,19 @@ int fs_stat(const char* path, struct fs_stat* buf){
   strcpy(pathCopy, path);
   printf("Cow\n");
   hashTable* currDir = workingDir;
+  printf("curDur %s\n", currDir->dirName);
   dirEntry* currEntry = getEntry(pathCopy, currDir);
+
+
+  if(currEntry == NULL){
+    printf("currEntry is NULL\n");
+    return -1;
+  }
+
   
   // SEG FAULTS WHEN ATTEMPTING TO PRINT
-  //printf("Filename: %s\n", currEntry->filename);
-  //printf("Date Created: %ld\n", currEntry->dateCreated);
+  // printf("Filename: %s\n", currEntry->filename);
+  // printf("Date Created: %ld\n", currEntry->dateCreated);
   // printf("Date Modified: %ld\n", currEntry->dateModified);
   printf("Chicken\n");
 
@@ -694,20 +702,20 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   returnVal = fs_isDir((char *)pathname);
 
-  if (returnVal == 1) {
-    printf("Error: Directory with the same name already exists\n");
-    return -1;
-  }
+  // if (returnVal == 1) {
+  //   printf("Error: Directory with the same name already exists\n");
+  //   return -1;
+  // }
 
   if (!fs_isDir(parentPath)) {
     printf("Error: Parent path is invalid\n");
     return -1;
   }
 
-  if (fs_isDir((char*)pathname)) {
-    printf("Error: Directory with the same name already exists\n");
-    return -1;
-  }
+  // if (fs_isDir((char*)pathname)) {
+  //   printf("Error: Directory with the same name already exists\n");
+  //   return -1;
+  // }
 
   //Continue until we have processed each component in the path
   struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
