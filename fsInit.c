@@ -384,10 +384,10 @@ char** stringParser(char* inputStr) {
 //Check if a path is a directory (1 = yes, 0 = no, -1 = error in parent path)
 int isDirWithValidPath(char* path) {
   char** parsedPath = stringParser(path);
-  int fullPath = strcmp(parsedPath[0], "/") == 0;
+  int absPath = strcmp(parsedPath[0], "/") == 0;
 
   //Check if path is root, empty, or multiple '/'
-  if (parsedPath[0] == NULL || (fullPath && parsedPath[1] == NULL)) {
+  if (parsedPath[0] == NULL || (absPath && parsedPath[1] == NULL)) {
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
@@ -397,7 +397,7 @@ int isDirWithValidPath(char* path) {
   char* parentPath = malloc(strlen(path) + 1);
 
   hashTable* currDir;
-  if (fullPath) {  //Absolute path
+  if (absPath) {  //Absolute path
     // Reads data into VCB
     struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
     LBAread(vcbPtr, 1, 0);
@@ -410,7 +410,7 @@ int isDirWithValidPath(char* path) {
 
   int i = 0;
 
-  if (fullPath) {
+  if (absPath) {
     i++;
   }
 
