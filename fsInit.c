@@ -381,14 +381,14 @@ char** stringParser(char* inputStr) {
   return subStrings;
 }
 
-//Check is a path is a directory (1 = yes, 0 = no)
-int fs_isDir(char* path) {
+//Check if a path is a directory (1 = yes, 0 = no, -1 = error in parent path)
+int isDirWithValidPath(char* path) {
   char** parsedPath = stringParser(path);
   int fullPath = strcmp(parsedPath[0], "/") == 0;
 
   //Check if path is root, empty, or multiple '/'
   if (parsedPath[0] == NULL || (fullPath && parsedPath[1] == NULL)) {
-    int result = parsedPath[0] == NULL ? 0 : 1;
+    int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
     return result;
@@ -430,7 +430,7 @@ int fs_isDir(char* path) {
       parentPath = NULL;
       free(currDir);
       currDir = NULL;
-      return 0;
+      return -1;
     }
 
     //Move the current directory to the current component's directory
@@ -460,10 +460,16 @@ int fs_isDir(char* path) {
   return result;
 }
 
-// Check is a path is a file (1 = yes, 0 = no)
+//Check if a path is a directory (1 = yes, 0 = no)
+int fs_isDir(char* path) {
+  int result = isDirWithValidPath(path);
+  return result == -1 ? 0 : result;
+}
+
+// Check if a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
-  // CHANGE this so that we check preceeding dirs but also if it is a file
-  return !fs_isDir(path);
+  int result = isDirWithValidPath(path);
+  return result == -1 ? 0 : !result;
 }
 
 // Implementation of directory functions
