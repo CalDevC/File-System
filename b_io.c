@@ -21,15 +21,15 @@
 #include <fcntl.h>
 #include "b_io.h"
 
-// Test
-#include "fsLow.h"
+// // Test
+// #include "fsLow.h"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
 
 typedef struct b_fcb
 	{
-	/** TODO add al the information you need in the file control block **/
+	/** TODO add all the information you need in the file control block **/
 	char * buf;		//holds the open file buffer
 	int index;		//holds the current position in the buffer
 	int buflen;		//holds how many valid bytes are in the buffer
@@ -40,6 +40,76 @@ typedef struct b_fcb
 b_fcb fcbArray[MAXFCBS];
 
 int startup = 0;	//Indicates that this has not been initialized
+
+
+// This will help us determine the int block in which we
+// found a bit of value 1 representing free block
+int intBlock = 0;
+
+int getFreeBlockNum() {
+  //**********Get the free block number ***********
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
+
+  // This will help determine the first block number that is
+  // free
+  int freeBlock = 0;
+
+  //****Calculate free space block number*****
+  // We can use the following formula to calculate the block
+  // number => (32 * i) + (32 - j), where (32 * i) will give us 
+  // the number of 32 bit blocks where we found a bit of value 1
+  // and we add (31 - j) which is a offset to get the block number 
+  // it represents within that 32 bit block
+  for (int i = 0; i < numOfInts; i++) {
+    for (int j = 31; j >= 0; j--) {
+      if (bitVector[i] & (1 << j)) {
+        intBlock = i;
+        freeBlock = (intBlock * 32) + (31 - j);
+        return freeBlock;
+      }
+    }
+  }
+}
+
+void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
+
+  // Set the number of bits specified in the blocksAllocated
+  // to 0 starting from freeBlock
+  freeBlock += 1;
+
+  int bitNum = freeBlock - ((intBlock * 32) + 32);
+
+  if (bitNum < 0) {
+    bitNum *= -1;
+  }
+
+  // This will give us the specific bit where
+  // we found the free block in the specific
+  // int block
+  bitNum = 32 - bitNum;
+
+  int index = bitNum;
+  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
+
+  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
+    if (index > 32) {
+      intBlock += 1;
+      index = 1;
+      sumOfFreeBlAndBlocksAlloc -= 32;
+    }
+    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
+  }
+
+  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+}
+
 
 //Method to initialize our file system
 void b_init ()
@@ -98,9 +168,9 @@ b_io_fd b_open (char * filename, int flags)
 	// To represent number of valid bytes in our buffer
 	fcb.buflen = 0;
 	// To represent the current position in the buffer
-	fcb.index = 0;
+	fcb.index = 5;
 	// To represent the location at which the current file starts
-	fcb.location = 11;			
+	fcb.location = getFreeBlockNum();
 
 	fcbArray[returnFd] = fcb;
 	
@@ -135,23 +205,79 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		return (-1); 					//invalid file descriptor
 	}
 
-	// Write the provided text into the buffer that we allocated
-	// for the file in b_open()
 	b_fcb fcb = fcbArray[fd];
-	int index = fcb.index;
 
-	for (int i = 0; i <= count; i++) {
-		fcb.buf[index] = buffer[i];
-		index++;
+	// Store the content of the passed in buffer to our file's
+	// buffer
+	int availBlockBytes = 512 - 5;
+
+	for (int i = 0; i < count; i++) {
+		if (fcb.buflen >= availBlockBytes) {	
+			setBlocksAsAllocated(fcb.location, 1);	
+			int freeBlock = getFreeBlockNum();
+			// We need to create a copy of freeBlock, because
+			// we will need the original freeBlock to pass into
+			// the setBlocksAsAllocated() to set blocks as allocated
+			int numb = freeBlock;
+
+			// The following algorithm will break the next freeBlock 
+			// number into separate digits which we will store as 
+			// characters and when we need to get the combined block
+			// number we can rejoin those digits to get an int
+			int j = 4;
+			while (numb > 0) {
+				int mod = numb % 10;
+				fcb.buf[j] = mod + '0';
+				numb = numb / 10;
+				j--;
+			}
+
+			// If the block number is less than 5 digits
+			// we need to store leading zeros
+			while (j >= 0) {
+				fcb.buf[j] = 0 + '0';
+				j--;
+			}
+
+			// Since we have reached the limit of our current block we
+			// need to write it to the volume
+			LBAwrite(fcb.buf, 1, fcb.location);
+
+			// We now set the location to the next free block
+			// it will be useful when we need to write next
+			// block to our volume
+			fcb.location = freeBlock;
+
+			// Start writing remaining text to the new buffer
+			fcb.buf = malloc(512);
+			fcb.buflen = 0;
+			fcb.index = 5;
+		}
+
+		fcb.buf[fcb.index] = buffer[i];
+		fcb.index++;
+		fcb.buflen++;
 	}
 
-	fcb.buf[index] = 195;
+	fcbArray[fd] = fcb;
 
-	int numb = fcb.buf[index];
-	printf("Number stored was: %d\n", numb);
+	// // ***********************Test Start********************** //
+	// // Get the numbers representing block number from the file
+	// char blockNumbs[5];
 
-	// Store the updated index
-	fcb.index = index;
+	// for (int i = 0; i < 5; i++) {
+	// 	blockNumbs[i] += fcb.buf[i];
+	// }
+
+	// // Display the block numbs
+	// printf("The block numb is: %s\n", blockNumbs);
+
+	// // Convert the characters representing block number to 
+	// // an integer
+	// const char * constBlockNumbs = blockNumbs;
+	// printf("Converted block num is: %d\n", atoi(constBlockNumbs));
+
+	// ***********************Test End********************** //
 		
 	// To indicate that the write function worked correctly we return
 	// the number of bytes written
@@ -201,4 +327,5 @@ void b_close (b_io_fd fd)
 	// Write the content for zone.txt file to block 11 for 1 block
 	// representing file size
 	LBAwrite(fcb.buf, 1, fcb.location);
+	setBlocksAsAllocated(fcb.location, 1);
 	}
