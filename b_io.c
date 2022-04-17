@@ -162,9 +162,6 @@ b_io_fd b_open (char * filename, int flags)
 	// Initialize a file control block for the file
 	b_fcb fcb = fcbArray[returnFd];
 
-	// Initially we malloc memory equivalent to 1 block we can malloc 
-	// more memory as we need it
-	fcb.buf = malloc(sizeof(char) * 512);
 	// To represent number of valid bytes in our buffer
 	fcb.buflen = 0;
 	// To represent the current position in the buffer
@@ -207,6 +204,10 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 	b_fcb fcb = fcbArray[fd];
 
+	// Initially we malloc memory equivalent to 1 block we can malloc 
+	// more memory as we need it
+	fcb.buf = malloc(sizeof(char) * 512);
+
 	// Store the content of the passed in buffer to our file's
 	// buffer
 	int availBlockBytes = 512 - 5;
@@ -216,8 +217,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 			setBlocksAsAllocated(fcb.location, 1);	
 			int freeBlock = getFreeBlockNum();
 			// We need to create a copy of freeBlock, because
-			// we will need the original freeBlock to pass into
-			// the setBlocksAsAllocated() to set blocks as allocated
+			// we don't want the original freeBlock to get modified
 			int numb = freeBlock;
 
 			// The following algorithm will break the next freeBlock 
@@ -249,7 +249,8 @@ int b_write (b_io_fd fd, char * buffer, int count)
 			fcb.location = freeBlock;
 
 			// Start writing remaining text to the new buffer
-			fcb.buf = malloc(512);
+			//free(fcb.buf);
+			fcb.buf = malloc(sizeof(char) * 512);
 			fcb.buflen = 0;
 			fcb.index = 5;
 		}
@@ -260,6 +261,10 @@ int b_write (b_io_fd fd, char * buffer, int count)
 	}
 
 	fcbArray[fd] = fcb;
+
+	// Write the remaining block to the disk
+	LBAwrite(fcb.buf, 1, fcb.location);
+	setBlocksAsAllocated(fcb.location, 1);
 
 	// // ***********************Test Start********************** //
 	// // Get the numbers representing block number from the file
@@ -315,6 +320,8 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		{
 		return (-1); 					//invalid file descriptor
 		}
+
+	// Get the 
 		
 	return (0);	//Change this
 	}
@@ -324,8 +331,12 @@ void b_close (b_io_fd fd)
 	{
 	b_fcb fcb = fcbArray[fd];
 
-	// Write the content for zone.txt file to block 11 for 1 block
-	// representing file size
-	LBAwrite(fcb.buf, 1, fcb.location);
-	setBlocksAsAllocated(fcb.location, 1);
+	// If fcb.buf is NULL then it means we have already 
+	// written it to the disk and released the memory allocated
+	// for it
+	if (fcb.buf != NULL) 
+		{
+		LBAwrite(fcb.buf, 1, fcb.location);
+		setBlocksAsAllocated(fcb.location, 1);
+		}
 	}
