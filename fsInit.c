@@ -347,9 +347,12 @@ void exitFileSystem() {
 }
 
 // Helper functions
-char** stringParser(char* stringToParse) {
+char** stringParser(char* inputStr) {
   // Divide the path provided by the user into
   // several sub paths
+  char* stringToParse = malloc(strlen(inputStr) + 1);
+  strcpy(stringToParse, inputStr);
+
   char** subStrings = (char**)malloc(sizeof(char*) * (strlen(stringToParse) + 1));
   char* subString;
   char* savePtr;
@@ -380,10 +383,7 @@ char** stringParser(char* stringToParse) {
 
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
-
-  char* pathCopy = malloc(strlen(path) + 1);
-  strcpy(pathCopy, path);
-  char** parsedPath = stringParser(pathCopy);
+  char** parsedPath = stringParser(path);
 
   int fullPath = strcmp(parsedPath[0], "/") == 0;
 
@@ -391,15 +391,11 @@ int fs_isDir(char* path) {
     printf("Path given was root\n");
     free(parsedPath);
     parsedPath = NULL;
-    free(pathCopy);
-    pathCopy = NULL;
     return 1;
   } else if (parsedPath[0] == NULL) {
     printf("Path was empty\n");
     free(parsedPath);
     parsedPath = NULL;
-    free(pathCopy);
-    pathCopy = NULL;
     return 0;
   }
 
@@ -431,8 +427,6 @@ int fs_isDir(char* path) {
       parsedPath = NULL;
       free(vcbPtr);
       vcbPtr = NULL;
-      free(pathCopy);
-      pathCopy = NULL;
       free(parentPath);
       parentPath = NULL;
       free(currDir);
@@ -446,8 +440,6 @@ int fs_isDir(char* path) {
       parsedPath = NULL;
       free(vcbPtr);
       vcbPtr = NULL;
-      free(pathCopy);
-      pathCopy = NULL;
       free(parentPath);
       parentPath = NULL;
       free(currDir);
@@ -479,8 +471,6 @@ int fs_isDir(char* path) {
   parsedPath = NULL;
   free(vcbPtr);
   vcbPtr = NULL;
-  free(pathCopy);
-  pathCopy = NULL;
   free(parentPath);
   parentPath = NULL;
   free(currDir);
@@ -498,10 +488,8 @@ int fs_isFile(char* path) {
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
   printf("IN MKDIR\n");
-  char* pathnameCopy = malloc(strlen(pathname) + 1);
-  strcpy(pathnameCopy, pathname);
 
-  char** parsedPath = stringParser(pathnameCopy);
+  char** parsedPath = stringParser((char*)pathname);
 
   char* parentPath = malloc(strlen(pathname) + 1);
 
@@ -572,7 +560,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // directory
   int startBlock = getEntry(newDirName, workingDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
-  printf("NEW DIR NAME IS LEN: %ld\n", strlen(dirEntries->dirName));
 
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
@@ -600,8 +587,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   newEntry = NULL;
   free(vcbPtr);
   vcbPtr = NULL;
-  free(pathnameCopy);
-  pathnameCopy = NULL;
   free(parsedPath);
   parsedPath = NULL;
   free(parentPath);
@@ -665,15 +650,12 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 int fs_setcwd(char* buf) {
 
   //Parse path
-  char* pathnameCopy = malloc(strlen(buf) + 1);
-  strcpy(pathnameCopy, buf);
+  printf("PATH: %s\n", buf);
 
-  printf("PATH: %s\n", pathnameCopy);
-
-  if (fs_isDir(pathnameCopy)) {
-    printf("PATH: %s\n", pathnameCopy);
-    char** parsedPath = stringParser(pathnameCopy);
-    printf("PATH: %s\n", pathnameCopy);
+  if (fs_isDir(buf)) {
+    printf("PATH: %s\n", buf);
+    char** parsedPath = stringParser(buf);
+    printf("PATH: %s\n", buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
     //Traverse the path one component at a time starting from the root directory
     // Reads data into VCB
