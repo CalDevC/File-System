@@ -267,7 +267,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // Initialize our root directory to be a new hash table of directory entries
     hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
-    workingDir = rootDir;
+    workingDir = readTableData(rootDir->location);
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
@@ -456,8 +456,8 @@ int fs_isDir(char* path) {
 
   int result = entry->isDir;
 
-  free(currDir);
-  currDir = NULL;
+  // free(currDir);
+  // currDir = NULL;
 
   printf("isDir: final currdir %s\n", currDir->dirName);
 
@@ -647,7 +647,7 @@ int fs_setcwd(char* buf) {
       vcbPtr = NULL;
     } else {  //Relative path
       printf("setcwd: Detected Relative path\n");
-      currDir = workingDir;
+      currDir = readTableData(workingDir->location);
     }
 
     printf("setcwd: Starting dir %s\n", currDir->dirName);
@@ -668,7 +668,7 @@ int fs_setcwd(char* buf) {
       currDir = readTableData(entry->location);
     }
     printf("Ending setcwd loop\n");
-    workingDir = currDir;
+    workingDir = readTableData(currDir->location);
     printf("currDir name: %s\n", currDir->dirName);
 
     // free(vcbPtr);
@@ -698,7 +698,7 @@ char* fs_getcwd(char* buf, size_t size) {
   char* pathElements[size];
   int i = 0;
 
-  hashTable* currDir = workingDir;
+  hashTable* currDir = readTableData(workingDir->location);
   dirEntry* parentDirEnt = getEntry("..", currDir);
   hashTable* parentDir = readTableData(parentDirEnt->location);
   char* newPathElem = currDir->dirName;
