@@ -405,7 +405,7 @@ int fs_isDir(char* path) {
     free(vcbPtr);
     vcbPtr = NULL;
   } else {  //Relative path
-    currDir = workingDir;
+    currDir = readTableData(workingDir->location);
   }
 
   int i = 0;
@@ -418,9 +418,9 @@ int fs_isDir(char* path) {
 
   for (; parsedPath[i + 1] != NULL; i++) {
     //check that the location exists and that it is a directory
-    printf("Getting entry\n");
+    // printf("Getting entry\n");
     entry = getEntry(parsedPath[i], currDir);
-    printf("Entry is %s\n", entry->filename);
+    // printf("Entry is %s\n", entry->filename);
 
     if (entry == NULL || entry->isDir == 0) {
       printf("Error: Part of parent path does not exist\n");
@@ -439,7 +439,7 @@ int fs_isDir(char* path) {
     currDir = readTableData(entry->location);
   }
 
-  printf("Checking entry out of loop at %d\n", i);
+  // printf("Checking entry out of loop at %d\n", i);
   //Check that the final component in the path is a directory
   entry = getEntry(parsedPath[i], currDir);
 
@@ -455,10 +455,11 @@ int fs_isDir(char* path) {
   }
 
   int result = entry->isDir;
-  // if (fullPath); {
-  //   free(currDir);
-  //   currDir = NULL;
-  // }
+
+  free(currDir);
+  currDir = NULL;
+
+  printf("isDir: final currdir %s\n", currDir->dirName);
 
   return result;
 }
@@ -474,8 +475,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   char** parsedPath = stringParser((char*)pathname);
   char* parentPath = malloc(strlen(pathname) + 1);
-
-  printf("First part: %s\n", parsedPath[0]);
 
   int k = 0;
   int i = 0;
@@ -499,10 +498,10 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   char* temp = malloc(51);
   char* startingDir = fs_getcwd(temp, 50);
-  printf("Starting dir %s\n", startingDir);
-  printf("Parent path is %s\n", parentPath);
+  // printf("Starting dir %s\n", startingDir);
+  // printf("Parent path is %s\n", parentPath);
   fs_setcwd(parentPath);
-  printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
+  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -538,7 +537,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // directory
   int startBlock = getEntry(newDirName, workingDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
-  printf("Setting dirs\n");
+
   // Initializing the "." current directory and the ".." parent Directory
   dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
     dirSizeInBytes, time(0), time(0));
@@ -547,10 +546,9 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
     dirSizeInBytes, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
-  printf("writing table data 1\n");
+
   // Write parent directory
   writeTableData(workingDir, workingDir->location);
-  printf("writing table data 2\n");
   // Write new directory
   writeTableData(dirEntries, dirEntries->location);
 
@@ -572,7 +570,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   parsedPath = NULL;
   free(parentPath);
   parentPath = NULL;
-  printf("Leaving mkdir\n");
 
   return 0;
 }
@@ -630,14 +627,18 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 }
 
 int fs_setcwd(char* buf) {
+  printf("setcwd: working dir on entry: %s\n", workingDir->dirName);
 
   //Parse path
   if (fs_isDir(buf)) {
+    printf("setcwd: working dir on entry: %s\n", workingDir->dirName);
+
     char** parsedPath = stringParser(buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
 
     hashTable* currDir;
     if (fullPath) {  //Absolute path
+      printf("setcwd: Detected Absolute path\n");
       // Reads data into VCB
       struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
       LBAread(vcbPtr, 1, 0);
@@ -645,10 +646,11 @@ int fs_setcwd(char* buf) {
       free(vcbPtr);
       vcbPtr = NULL;
     } else {  //Relative path
+      printf("setcwd: Detected Relative path\n");
       currDir = workingDir;
     }
 
-    printf("Working dir %s\n", currDir->dirName);
+    printf("setcwd: Starting dir %s\n", currDir->dirName);
 
     //Continue until we have processed each component in the path
     int i = 0;
@@ -671,7 +673,7 @@ int fs_setcwd(char* buf) {
 
     // free(vcbPtr);
     // vcbPtr = NULL;
-    printf("Leaving setcwd\n");
+    printf("Leaving setcwd with working dir %s\n", workingDir->dirName);
     return 0;
   } else {
     printf("From setcwd, isDir returned false\n");
@@ -688,8 +690,8 @@ char* fs_getcwd(char* buf, size_t size) {
 
   //Check if cwd is root
   if (strcmp(workingDir->dirName, "/") == 0) {
-    printf("Exiting\n");
     strcpy(buf, path);
+    printf("getcwd: final working dir %s\n", workingDir->dirName);
     return path;
   }
 
@@ -730,5 +732,6 @@ char* fs_getcwd(char* buf, size_t size) {
 
   // free(path);
   // path = NULL;
+  printf("getcwd: final working dir %s\n", workingDir->dirName);
   return buf;
 }
