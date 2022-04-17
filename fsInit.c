@@ -384,19 +384,14 @@ char** stringParser(char* inputStr) {
 //Check is a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
   char** parsedPath = stringParser(path);
-
   int fullPath = strcmp(parsedPath[0], "/") == 0;
 
-  if (fullPath && parsedPath[1] == NULL) {
-    printf("Path given was root\n");
+  //Check if path is root, empty, or multiple '/'
+  if (parsedPath[0] == NULL || (fullPath && parsedPath[1] == NULL)) {
+    int result = parsedPath[0] == NULL ? 0 : 1;
     free(parsedPath);
     parsedPath = NULL;
-    return 1;
-  } else if (parsedPath[0] == NULL) {
-    printf("Path was empty\n");
-    free(parsedPath);
-    parsedPath = NULL;
-    return 0;
+    return result;
   }
 
   char* parentPath = malloc(strlen(path) + 1);
@@ -406,8 +401,9 @@ int fs_isDir(char* path) {
   LBAread(vcbPtr, 1, 0);
 
   //Continue until we have processed each component in the path
-  hashTable* rootDir = readTableData(vcbPtr->rootDir);
-  hashTable* currDir = rootDir;
+  hashTable* currDir = readTableData(vcbPtr->rootDir);
+  free(vcbPtr);
+  vcbPtr = NULL;
 
   int i = 0;
 
@@ -416,30 +412,14 @@ int fs_isDir(char* path) {
   }
 
   for (; parsedPath[i + 1] != NULL; i++) {
-    printf("i: %d\n", i);
     //check that the location exists and that it is a directory
     dirEntry* entry;
     entry = getEntry(parsedPath[i], currDir);
 
-    if (entry == NULL) {
+    if (entry == NULL || entry->isDir == 0) {
       printf("Error: Part of parent path does not exist\n");
       free(parsedPath);
       parsedPath = NULL;
-      free(vcbPtr);
-      vcbPtr = NULL;
-      free(parentPath);
-      parentPath = NULL;
-      free(currDir);
-      currDir = NULL;
-      return 0;
-    }
-
-    if (entry->isDir == 0) {
-      printf("Error: Part of parent path was not a directory\n");
-      free(parsedPath);
-      parsedPath = NULL;
-      free(vcbPtr);
-      vcbPtr = NULL;
       free(parentPath);
       parentPath = NULL;
       free(currDir);
@@ -459,22 +439,17 @@ int fs_isDir(char* path) {
   dirEntry* entry;
   entry = getEntry(parsedPath[i], currDir);
 
-
-  if (entry == NULL) {
-    printf("Error: Part of parent path does not exist\n");
-    free(vcbPtr);
-    vcbPtr = NULL;
-    return 0;
-  }
-
   free(parsedPath);
   parsedPath = NULL;
-  free(vcbPtr);
-  vcbPtr = NULL;
   free(parentPath);
   parentPath = NULL;
   free(currDir);
   currDir = NULL;
+
+  if (entry == NULL) {
+    printf("Error: Part of parent path does not exist\n");
+    return 0;
+  }
 
   return entry->isDir;
 }
