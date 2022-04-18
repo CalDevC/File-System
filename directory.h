@@ -53,20 +53,12 @@ typedef struct hashTable {
   char dirName[20];
 } hashTable;
 
-<<<<<<< HEAD
-//Stores hash table data to be written to disk
-typedef struct tableData {
-  char dirName[20];
-  dirEntry* arr;
-} tableData;
-=======
 //A deconstructed path object that holds a parent path and the
 //name of its child componet
 typedef struct deconPath {
   char* parentPath;
   char* childName;
 } deconPath;
->>>>>>> dd01c87632556034514771058fc0dbc467c339a0
 
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,

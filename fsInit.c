@@ -83,40 +83,52 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
   // fs_stat displays details associated with the file system
-  printf("*************Entering fs_stat()**************\n");
+  printf("************* Entering fs_stat() **************\n");
   int returnVal = 0;
   time_t now;
   struct tm *local = localtime(&now);
-  char* pathCopy = malloc(sizeof(path));
-
+  
+  // *** Validation Checks ***
+  printf("*** Validation Checks ***\n");
   if (path == NULL){
     printf("fs_stat(): Path cannot be null.\n");
     return -1;
+  }else{
+    printf("fs_stat(): const char* path is: %s\n", path);
   }
-  if(pathCopy == NULL){
-    printf("malloc error\n");
-    return -1;
-  }
-
-  printf("After validity checks\n");
-  strcpy(pathCopy, path);
-  printf("Cow\n");
-  hashTable* currDir = workingDir;
-  printf("curDur %s\n", currDir->dirName);
-  dirEntry* currEntry = getEntry(pathCopy, currDir);
-
-
-  if(currEntry == NULL){
-    printf("currEntry is NULL\n");
-    return -1;
-  }
-
   
-  // SEG FAULTS WHEN ATTEMPTING TO PRINT
-  printf("Filename: %s\n", currEntry->filename);
-  printf("Date Created: %ld\n", currEntry->dateCreated);
-  printf("Date Modified: %ld\n", currEntry->dateModified);
-  printf("Chicken\n");
+  char* pathCopy = malloc(sizeof(path));
+
+  if(pathCopy == NULL){
+    printf("fs_stat(): Memory allocation error.\n");
+    return -1;
+  }else{
+    printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
+  }
+
+  printf("fs_stat(): Validity checks finished.\n\n");
+  
+  // *** Store information ***
+  printf("*** Store information ***\n");
+  strcpy(pathCopy, path);
+  printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
+  
+  dirEntry *entry = getEntry(pathCopy, workingDir);
+  
+  // printf("currEntry->filename is: %s\n", currEntry->filename);
+  // printf("currEntry->filename is: %d\n", currEntry->fileSize);
+  // printf("currEntry->filename is: %s\n", currEntry->filename);
+
+
+  // if(currEntry->filename == NULL){
+  //   printf("currEntry is NULL\n");
+  //   return -1;
+  // }
+
+  // printf("Filename: %s\n", currEntry->filename);
+  // printf("Date Created: %ld\n", currEntry->dateCreated);
+  // printf("Date Modified: %ld\n", currEntry->dateModified);
+  // printf("Chicken\n");
 
   
 
@@ -130,12 +142,12 @@ int fs_stat(const char* path, struct fs_stat* buf){
   buf->st_accesstime = (long int)ctime(&now);
   printf("Access Time: %ld\n", buf->st_accesstime);
 
-  buf->st_modtime = currEntry->dateModified;
+  // buf->st_modtime = currEntry->dateModified;
   printf("Modtime: %ld\n", buf->st_modtime);
 
 
 
-  buf->st_createtime = currEntry->dateCreated;
+  // buf->st_createtime = currEntry->dateCreated;
   // struct tm ts;
   // char  buf[80];
 
@@ -149,27 +161,6 @@ int fs_stat(const char* path, struct fs_stat* buf){
   printf("Create Time: %ld\n", buf->st_createtime);
   
   //How to write to disk
-  return returnVal;
-}
-
-
-/****************************************************
-*  fs_delete
-****************************************************/
-int fs_delete(char* filename){
-  int returnVal = 0;
-
-
-  // File must exist or error
-
-  // Release blocks allocated to the file back to free space
-  // 1) Get first location
-  // 2) How many blocks to free
-  // 3) If extents...
-
-  // Clean up DE and mark it unused
-  // name[0] = 0
-
   return returnVal;
 }
 
@@ -955,6 +946,9 @@ int fs_rmdir(const char* pathname) {
   return 0;
 }
 
+/****************************************************
+*  fs_delete
+****************************************************/
 int fs_delete(char* filename) {
   return 0;
 }
