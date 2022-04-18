@@ -82,8 +82,10 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 *  fs_stat
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
-  // fs_stat displays details associated with the file system
+  // fs_stat() displays details associated with the file system
+
   printf("************* Entering fs_stat() **************\n");
+
   int returnVal = 0;
   time_t now;
   struct tm *local = localtime(&now);
@@ -112,9 +114,11 @@ int fs_stat(const char* path, struct fs_stat* buf){
   printf("*** Store information ***\n");
   strcpy(pathCopy, path);
   printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
-  
-  dirEntry *entry = getEntry(pathCopy, workingDir);
-  printf("%s\n", entry->filename);
+  printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
+
+  // dirEntry *entry = getEntry(pathCopy, currentDir);
+  // printf("%d\n", entry->fileSize);
+
 
   printf("Path: %s\n", path);
   printf("Size: %ld\n", buf->st_size);
