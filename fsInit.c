@@ -614,18 +614,18 @@ int fs_setcwd(char* buf) {
 }
 
 hashTable* getDir(char* buf) {
-  printf("setcwd: working dir on entry: %s\n", workingDir->dirName);
+  printf("getDir: working dir on entry: %s\n", workingDir->dirName);
 
   //Parse path
   if (fs_isDir(buf)) {
-    printf("setcwd: working dir on entry: %s\n", workingDir->dirName);
+    printf("getDir: working dir on entry: %s\n", workingDir->dirName);
 
     char** parsedPath = stringParser(buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
 
     hashTable* currDir;
     if (fullPath) {  //Absolute path
-      printf("setcwd: Detected Absolute path\n");
+      printf("getDir: Detected Absolute path\n");
       // Reads data into VCB
       struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
       LBAread(vcbPtr, 1, 0);
@@ -652,7 +652,7 @@ hashTable* getDir(char* buf) {
       currDir = readTableData(entry->location);
     }
 
-    printf("Ending setcwd loop\n");
+    printf("Ending getDir loop\n");
     return readTableData(currDir->location);
 
   } else {
@@ -750,12 +750,8 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     return -1;
   }
 
-  char* temp = malloc(51);
-  char* startingDir = fs_getcwd(temp, 50);
-  // printf("Starting dir %s\n", startingDir);
-  // printf("Parent path is %s\n", parentPath);
-  fs_setcwd(parentPath);
-  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
+  hashTable* parentDir = getDir(parentPath);
+  printf("Parent dir is %s\n", parentDir->dirName);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -785,37 +781,33 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Put the updated directory entry back
   // into the directory
-  setEntry(newDirName, newEntry, workingDir);
+  setEntry(newDirName, newEntry, parentDir);
 
   // Initialize the directory entries within the new
   // directory
-  int startBlock = getEntry(newDirName, workingDir)->location;
+  int startBlock = getEntry(newDirName, parentDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
 
   // Initializing the "." current directory and the ".." parent Directory
-  dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
+  dirEntry* currDirEnt = dirEntryInit(".", 1, freeBlock,
     dirSizeInBytes, time(0), time(0));
-  setEntry(curDir->filename, curDir, dirEntries);
+  setEntry(currDirEnt->filename, currDirEnt, dirEntries);
 
-  dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
+  dirEntry* parentDirEnt = dirEntryInit("..", 1, parentDir->location,
     dirSizeInBytes, time(0), time(0));
-  setEntry(parentDir->filename, parentDir, dirEntries);
+  setEntry(parentDirEnt->filename, parentDirEnt, dirEntries);
 
   // Write parent directory
-  writeTableData(workingDir, workingDir->location);
+  writeTableData(parentDir, parentDir->location);
   // Write new directory
   writeTableData(dirEntries, dirEntries->location);
 
   // Update the bit vector
   // printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
-  printTable(workingDir);
-  printf("About to setcwd as %s\n", startingDir);
-  fs_setcwd(startingDir);
+  printTable(parentDir);
 
   printf("Freeing\n");
-  free(startingDir);
-  startingDir = NULL;
   free(bitVector);
   bitVector = NULL;
   free(newEntry);
@@ -834,11 +826,7 @@ int fs_rmdir(const char* pathname) {
     return -1;
   }
 
-  // printf("Starting dir %s\n", startingDir);
-  // printf("Parent path is %s\n", parentPath);
-  // fs_setcwd(parentPath);
   hashTable* parentDir = getDir(parentPath);
-  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -871,14 +859,7 @@ int fs_rmdir(const char* pathname) {
   //Update the free space bit vector
   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
 
-  //Set workingDir back
-  // fs_setcwd(startingDir);
-
   printf("Freeing\n");
-  // free(startingDir);
-  // startingDir = NULL;
-  // free(temp);
-  // temp = NULL;
   free(pathParts);
   pathParts = NULL;
 
