@@ -53,6 +53,8 @@ typedef struct hashTable {
   char dirName[20];
 } hashTable;
 
+//A deconstructed path object that holds a parent path and the
+//name of its child componet
 typedef struct deconPath {
   char* parentPath;
   char* childName;
