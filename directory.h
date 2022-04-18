@@ -53,11 +53,20 @@ typedef struct hashTable {
   char dirName[20];
 } hashTable;
 
+<<<<<<< HEAD
 //Stores hash table data to be written to disk
 typedef struct tableData {
   char dirName[20];
   dirEntry* arr;
 } tableData;
+=======
+//A deconstructed path object that holds a parent path and the
+//name of its child componet
+typedef struct deconPath {
+  char* parentPath;
+  char* childName;
+} deconPath;
+>>>>>>> dd01c87632556034514771058fc0dbc467c339a0
 
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,
@@ -77,6 +86,9 @@ void setEntry(char key[20], dirEntry* value, hashTable* table);
 
 //Retrieve an entry from a provided hashTable
 dirEntry* getEntry(char key[20], hashTable* table);
+
+//Remove an existing entry
+int rmEntry(char key[20], hashTable* table);
 
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table);

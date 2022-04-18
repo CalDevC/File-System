@@ -152,6 +152,51 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   return NULL;
 }
 
+//Remove an existing entry (1 = success, 0 = failed)
+int rmEntry(char key[20], hashTable* table) {
+  //Get the entry based on the hash value calculated from the key
+  int hashVal = hash(key);
+  node* entry = table->entries[hashVal];
+  node* prevEntry = NULL;
+
+  //If there is a collision
+  while (entry != NULL) {
+
+    //If entry was found
+    if (strcmp(entry->key, key) == 0) {
+
+      //If the entry is the first in the hashed location
+      if (prevEntry == NULL) {
+        //If the entry is the only entry at the hashed location
+        if (entry->next == NULL) {
+          //Set the hashed location as free
+          dirEntry* entryVal = dirEntryInit("", 0, 0, 0, time(NULL), time(NULL));
+          node* entry = entryInit("", entryVal);
+          table->entries[hashVal] = entry;
+        } else { //Else there are other entries at the hashed location
+          //Set the hashed location's value to the next entry in line
+          table->entries[hashVal] = entry->next;
+        }
+
+      } else { //Else the entry was not the first at the location
+        prevEntry->next = entry->next;
+      }
+
+      table->numEntries--;
+      free(entry->value);
+      free(entry);
+      return 1;
+    }
+
+    //Move on to check the next entry at the current table location
+    prevEntry = entry;
+    entry = prevEntry->next;
+  }
+
+  //The key was not found
+  return 0;
+}
+
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table) {
   //If we are looking for the first index in the list, start at entry 0
