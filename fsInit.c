@@ -769,9 +769,9 @@ char* fs_getcwd(char* buf, size_t size) {
   return buf;
 }
 
-int fs_rmdir(const char* pathname) {
-  char** parsedPath = stringParser((char*)pathname);
-  char* parentPath = malloc(strlen(pathname) + 1);
+deconPath* splitPath(char* fullPath) {
+  char** parsedPath = stringParser(fullPath);
+  char* parentPath = malloc(strlen(fullPath) + 1);
 
   int k = 0;
   int i = 0;
@@ -788,6 +788,17 @@ int fs_rmdir(const char* pathname) {
   }
 
   parentPath[k] = '\0';
+
+  deconPath* pathParts = malloc(sizeof(deconPath));
+  pathParts->parentPath = parentPath;
+  pathParts->childName = parsedPath[i];
+
+  return pathParts;
+}
+
+int fs_rmdir(const char* pathname) {
+  deconPath* pathParts = splitPath((char*)pathname);
+  char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir((char*)pathname)) {
     return -1;
@@ -812,7 +823,7 @@ int fs_rmdir(const char* pathname) {
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
-  char* dirNameToRemove = parsedPath[i];
+  char* dirNameToRemove = pathParts->childName;
   int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
 
@@ -839,8 +850,8 @@ int fs_rmdir(const char* pathname) {
   startingDir = NULL;
   free(temp);
   temp = NULL;
-  free(parsedPath);
-  parsedPath = NULL;
+  free(pathParts);
+  pathParts = NULL;
   free(parentPath);
   parentPath = NULL;
 

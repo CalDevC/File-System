@@ -53,6 +53,11 @@ typedef struct hashTable {
   char dirName[20];
 } hashTable;
 
+typedef struct deconPath {
+  char* parentPath;
+  char* childName;
+} deconPath;
+
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,
   unsigned int fileSize, time_t dateModified, time_t dateCreated);
