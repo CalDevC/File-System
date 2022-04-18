@@ -73,7 +73,7 @@ void setEntry(char key[20], dirEntry* value, hashTable* table);
 dirEntry* getEntry(char key[20], hashTable* table);
 
 //Remove an existing entry
-// void rmEntry(char key[20], hashTable* table);
+int rmEntry(char key[20], hashTable* table);
 
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table);

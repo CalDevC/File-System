@@ -822,13 +822,27 @@ int fs_rmdir(const char* pathname) {
   char* dirNameToRemove = parsedPath[i];
 
   //Remove dirEntry from the parent dir
-  fs_setcwd("..");
-  // rmEntry(dirNameToRemove, workingDir);
+  rmEntry(dirNameToRemove, workingDir);
 
   //Rewrite parent dir to disk
+  writeTableData(workingDir, workingDir->location);
 
   //Update the free space bit vector
+  int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
+  setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
 
   //Set workingDir back
+  fs_setcwd(startingDir);
+
+  printf("Freeing\n");
+  free(startingDir);
+  startingDir = NULL;
+  free(temp);
+  temp = NULL;
+  free(parsedPath);
+  parsedPath = NULL;
+  free(parentPath);
+  parentPath = NULL;
+
   return 0;
 }
