@@ -556,63 +556,6 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 
 }
 
-int fs_setcwd(char* buf) {
-  printf("setcwd: working dir on entry: %s\n", workingDir->dirName);
-
-  //Parse path
-  if (fs_isDir(buf)) {
-    printf("setcwd: working dir on entry: %s\n", workingDir->dirName);
-
-    char** parsedPath = stringParser(buf);
-    int fullPath = strcmp(parsedPath[0], "/") == 0;
-
-    hashTable* currDir;
-    if (fullPath) {  //Absolute path
-      printf("setcwd: Detected Absolute path\n");
-      // Reads data into VCB
-      struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-      LBAread(vcbPtr, 1, 0);
-      currDir = readTableData(vcbPtr->rootDir);
-      free(vcbPtr);
-      vcbPtr = NULL;
-    } else {  //Relative path
-      printf("setcwd: Detected Relative path\n");
-      currDir = readTableData(workingDir->location);
-    }
-
-    printf("setcwd: Starting dir %s\n", currDir->dirName);
-
-    //Continue until we have processed each component in the path
-    int i = 0;
-    if (fullPath) {
-      i++;
-    }
-    printf("Starting setcwd loop %s\n", parsedPath[i]);
-    dirEntry* entry;
-    for (; parsedPath[i] != NULL; i++) {
-      //check that the location exists and that it is a directory
-      // if(strcmp(parsedPath[i], ".") == 0)
-      entry = getEntry(parsedPath[i], currDir);
-      printf("Entry %s at %d\n", entry->filename, i);
-      free(currDir);
-      currDir = readTableData(entry->location);
-    }
-    printf("Ending setcwd loop\n");
-    workingDir = readTableData(currDir->location);
-    printf("currDir name: %s\n", currDir->dirName);
-
-    // free(vcbPtr);
-    // vcbPtr = NULL;
-    printf("Leaving setcwd with working dir %s\n", workingDir->dirName);
-    return 0;
-  } else {
-    printf("From setcwd, isDir returned false\n");
-    return -1;
-  }
-
-
-}
-
 hashTable* getDir(char* buf) {
   printf("getDir: working dir on entry: %s\n", workingDir->dirName);
 
@@ -659,6 +602,19 @@ hashTable* getDir(char* buf) {
     printf("From getDir, isDir returned false\n");
     return NULL;
   }
+}
+
+int fs_setcwd(char* buf) {
+  hashTable* requestedDir = getDir(buf);
+
+  if (requestedDir == NULL) {
+    printf("From setcwd, isDir returned false\n");
+    return -1;
+  }
+
+  workingDir = requestedDir;
+  printf("Leaving setcwd with working dir %s\n", workingDir->dirName);
+  return 0;
 }
 
 char* fs_getcwd(char* buf, size_t size) {
