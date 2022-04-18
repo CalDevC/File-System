@@ -133,7 +133,19 @@ void writeTableData(hashTable* table, int lbaPosition) {
   //Write to the array out to the specified block numbers
   printf("Write directory to: %d, for number of blocks: %d\n",
     lbaPosition, DIR_SIZE);
-  LBAwrite(arr, DIR_SIZE, lbaPosition);
+
+  int val = LBAwrite(arr, DIR_SIZE, lbaPosition);
+
+  // printf("val is: %d\n", val);
+  // if (val == DIR_SIZE) {
+  //   printf("Freeing arr\n");
+  //   free(arr);
+  //   arr = NULL;
+  //   if (arr == NULL) {
+  //     printf("arr is NULL\n");
+  //   }
+  // }
+
 }
 
 //Read all directory entries from a certain disk location into a new hashmap
@@ -255,6 +267,8 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
     writeTableData(rootDir, freeBlock);
 
+
+    ////////////// TEST CODE FOR OPR/CLOSE/READ DIR //////////////
     // printf("\n\n\n");
 
     // fdDir* myDirPtr = fs_opendir(".");
@@ -282,8 +296,26 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // }
 
     // fs_closedir(myDirPtr);
+    ////////////// END TEST CODE FOR OPR/CLOSE/READ DIR //////////////
 
+    ///////////// TEST CODE FOR SETCWD /////////////
+    // fs_mkdir("/home", 0777);
+    // fs_mkdir("/home/test", 0777);
+    // fs_mkdir("/home/test/succes", 0777);
+    // fs_mkdir("/home/test/done", 0777);
+    // printf("Set current working directory:\n");
+    // fs_setcwd("/home/test");
+
+    // printTable(workingDir);
+    ///////////// END TEST CODE FOR SETCWD /////////////
+
+
+    free(bitVector);
+    bitVector = NULL;
   }
+
+  free(vcbPtr);
+  vcbPtr = NULL;
 
   return 0;
 }
@@ -332,7 +364,6 @@ int fs_isDir(char* path) {
   for (int i = 0; pathParts[i] != NULL; i++) {
     //check that the location exists and that it is a directory
     dirEntry* entry = getEntry(pathParts[i], currDir);
-
     if (entry == NULL) {
       return 0;
     }
@@ -348,33 +379,25 @@ int fs_isDir(char* path) {
     currDir = readTableData(entry->location);
   }
 
+  free(pathnameCopy);
+  pathnameCopy = NULL;
+  free(pathParts);
+  pathParts = NULL;
+
   return 1;
 }
 
 char* fs_getcwd(char* buf, size_t size) {
 
 }
+
+
 // Check is a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
   // CHANGE this
   return !fs_isDir(path);
 }
-// Implementation of ls
-char * fs_getcwd(char* path, size_t size){
-  //parse path
-  char * pathnameCopy = malloc(strlen(path));
-  strcpy(pathnameCopy, path);
-  char ** pathParts = stringParser(pathnameCopy);
 
-  if(fs_isDir(path) == 0){
-    printf("path is not a directory");
-  }else{
-    for (int i = 0; pathParts[i] != NULL; i++) {
-      puts(pathParts[i]);
-    }
-  }
-  
-};
 
 // Implementation of directory functions
 int fs_mkdir(const char* pathname, mode_t mode) {
@@ -429,7 +452,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   int maxNumEntries = dirSizeInBytes / sizeOfEntry; //53 entries
 
-
   // Get the bitVector in memory -- We need to know what
   // block is free so we can store our new directory
   // there
@@ -466,7 +488,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     dirSizeInBytes, time(0), time(0));
   setEntry(curDir->filename, curDir, dirEntries);
 
-  dirEntry* parentDir = dirEntryInit("..", 1, freeBlock,
+  dirEntry* parentDir = dirEntryInit("..", 1, currDir->location,
     dirSizeInBytes, time(0), time(0));
   setEntry(parentDir->filename, parentDir, dirEntries);
 
@@ -478,9 +500,22 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // Update the bit vector
   printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+  printTable(currDir);
 
 
-  // free(pathnameCopy); 
+  free(bitVector);
+  bitVector = NULL;
+  free(newEntry);
+  newEntry = NULL;
+  free(vcbPtr);
+  vcbPtr = NULL;
+  free(pathnameCopy);
+  pathnameCopy = NULL;
+  free(parsedPath);
+  parsedPath = NULL;
+  free(parentPath);
+  parentPath = NULL;
+
   return 0;
 }
 
@@ -503,7 +538,9 @@ fdDir* fs_opendir(const char* name) {
 // Closes the directory stream associated with dirp
 int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
+  dirp->dirTable = NULL;
   free(dirp);
+  dirp = NULL;
   return 0;
 }
 
@@ -532,4 +569,45 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   return dirItemInfo;
 
+}
+
+int fs_setcwd(char* buf) {
+  //Parse path
+  char* pathnameCopy = malloc(strlen(buf) + 1);
+  strcpy(pathnameCopy, buf);
+
+  char** pathParts = stringParser(pathnameCopy);
+
+  //Traverse the path one component at a time starting from the root directory
+  // Reads data into VCB
+  struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+  LBAread(vcbPtr, 1, 0);
+
+  //Continue until we have processed each component in the path
+  hashTable* currDir = readTableData(vcbPtr->rootDir);
+
+  //Continue until we have processed each component in the path
+  for (int i = 0; pathParts[i] != NULL; i++) {
+    //check that the location exists and that it is a directory
+    dirEntry* entry = getEntry(pathParts[i], currDir);
+    if (entry == NULL) {  //Not found
+      return -1;
+    }
+
+    if (entry->isDir == 0) {  //Not a directory
+      printf("Error: Directory entry is not a directory\n");
+      return -1;
+    }
+
+    //Move the current directory to the current component's directory
+    //now that it has been verified
+    currDir = readTableData(entry->location);
+  }
+
+  workingDir = currDir;
+
+  free(vcbPtr);
+  vcbPtr = NULL;
+
+  return 0;
 }
