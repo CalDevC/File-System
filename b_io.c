@@ -188,21 +188,32 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 	
 	// If whence is SEEK_SET, we need to need to set the file's
 	// index to the offset provided
-
+	if (whence == SEEK_SET) {
+		fcbArray[fd].index = offset;
+	} 
 	// If whence is SEEK_CUR, we need to add offset to the file's
 	// current position (index)
-
+	else if (whence == SEEK_CUR) {
+		fcbArray[fd].index += offset;
+	} 
 	// If whence is SEEK_END, we need to set the file's index to
 	// the size of the file plus offset
-	
 
-	// If error happens return -1
+	// In order to keep track of file size we need to store and update
+	// that information, so we need access to the corresponding directory
+	// entry
+	else if (whence == SEEK_END) {
+
+	} 
+	// We return -1 indicating that the value passed for whence is
+	// not valid
+	else {
+		return -1;
+	}
 
 	// Upon success return the new offset position starting from the
 	// beginning of the file
-		
-		
-	return (0); //Change this
+	return fcbArray[fd].index;
 	}
 
 
@@ -402,7 +413,8 @@ void b_close (b_io_fd fd)
 	b_fcb fcb = fcbArray[fd];
 
 	// We also need to write the directory entry representing
-	// the open file
+	// the open file, since we might have changed the file
+	// size, dateModified, or dateCreated fields
 
 	// If fcb.buf is NULL then it means we have already 
 	// written it to the disk and released the memory allocated
