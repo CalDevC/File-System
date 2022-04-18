@@ -812,14 +812,15 @@ int fs_rmdir(const char* pathname) {
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
+  char* dirNameToRemove = parsedPath[i];
+  int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
+  hashTable* dirToRemove = readTableData(dirToRemoveLocation);
+
   //Check if empty
-  if (workingDir->numEntries > 2) {
+  if (dirToRemove->numEntries > 2) {
     printf("Directory is not empty, refusing to delete\n");
     return -1;
   }
-
-  // Create a new directory entry
-  char* dirNameToRemove = parsedPath[i];
 
   //Remove dirEntry from the parent dir
   rmEntry(dirNameToRemove, workingDir);
@@ -828,7 +829,6 @@ int fs_rmdir(const char* pathname) {
   writeTableData(workingDir, workingDir->location);
 
   //Update the free space bit vector
-  int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
 
   //Set workingDir back
@@ -844,5 +844,9 @@ int fs_rmdir(const char* pathname) {
   free(parentPath);
   parentPath = NULL;
 
+  return 0;
+}
+
+int fs_delete(char* filename) {
   return 0;
 }
