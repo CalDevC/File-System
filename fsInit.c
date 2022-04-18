@@ -77,6 +77,7 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
   }
 }
 
+
 /****************************************************
 *  fs_stat
 ****************************************************/
@@ -84,7 +85,8 @@ int fs_stat(const char* path, struct fs_stat* buf){
   // fs_stat displays details associated with the file system
   printf("*************Entering fs_stat()**************\n");
   int returnVal = 0;
-
+  time_t now;
+  struct tm *local = localtime(&now);
   char* pathCopy = malloc(sizeof(path));
 
   if (path == NULL){
@@ -95,6 +97,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
     printf("malloc error\n");
     return -1;
   }
+
   printf("After validity checks\n");
   strcpy(pathCopy, path);
   printf("Cow\n");
@@ -110,49 +113,42 @@ int fs_stat(const char* path, struct fs_stat* buf){
 
   
   // SEG FAULTS WHEN ATTEMPTING TO PRINT
-  // printf("Filename: %s\n", currEntry->filename);
-  // printf("Date Created: %ld\n", currEntry->dateCreated);
-  // printf("Date Modified: %ld\n", currEntry->dateModified);
+  printf("Filename: %s\n", currEntry->filename);
+  printf("Date Created: %ld\n", currEntry->dateCreated);
+  printf("Date Modified: %ld\n", currEntry->dateModified);
   printf("Chicken\n");
 
-
-  // time_t currentTime;
-  // time(&currentTime);
-
-  // struct tm *myTime = localtime(&currentTime);
   
-  // printf("Current time: %s\n", curentTime);
-
-  /*
-   * Validate file before return stats 
-   */
-  // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-  // LBAread(vcbPtr, 1,0);
-  // hashTable* currentDir = readTableData(vcbPtr->rootDir);
-
-  // //const char* pathCopy;
-  // printf("Path is %s\n", path);
-  // dirEntry* entry = getEntry(path, currentDir);
-
-  // printf("Data modified %ld\n", entry->dateModified);
-  // printf("Data created %ld\n", entry->dateCreated);
-
-  // If exist?
-  // int fileExistence = fileExists(path);
-  // if(fileExistence == 0){
-  //   printf("fs_stat(): Empty path is not legal.\n");
-  //   return -1;
-  // }
 
   printf("Path: %s\n", path);
   printf("Size: %ld\n", buf->st_size);
   printf("Block size: %ld\n", buf->st_blksize);
   printf("Blocks: %ld\n", buf->st_blocks);
   // YYYY-MM-DD HH:MM:SS TIMEZONE
+
+  time(&now);
+  buf->st_accesstime = (long int)ctime(&now);
   printf("Access Time: %ld\n", buf->st_accesstime);
+
+  buf->st_modtime = currEntry->dateModified;
   printf("Modtime: %ld\n", buf->st_modtime);
+
+
+
+  buf->st_createtime = currEntry->dateCreated;
+  // struct tm ts;
+  // char  buf[80];
+
+  // ts = *localtime(currEntry->dateCreated);
+  // char * convertTime(time_t epochTime){
+  //   int epochTimeInt = (int)epochTime; 
+    
+  //   long long int timeInSec = (ep)
+  // }
+
   printf("Create Time: %ld\n", buf->st_createtime);
   
+  //How to write to disk
   return returnVal;
 }
 
