@@ -145,9 +145,15 @@ void writeTableData(hashTable* table, int lbaPosition) {
   } tableData;
 
   tableData* data = malloc(blockSize * DIR_SIZE);
+  if (!data) {
+    mallocFailed();
+  }
 
   //Directory entries
   dirEntry* arr = malloc(arrNumBytes);
+  if (!arr) {
+    mallocFailed();
+  }
 
   strncpy(data->dirName, table->dirName, strlen(table->dirName));
 
@@ -204,6 +210,9 @@ hashTable* readTableData(int lbaPosition) {
 
   //Read all of the entries into an array
   tableData* data = malloc(DIR_SIZE * blockSize);
+  if (!data) {
+    mallocFailed();
+  }
   LBAread(data, DIR_SIZE, lbaPosition);
 
   dirEntry* arr = data->arr;
@@ -214,6 +223,9 @@ hashTable* readTableData(int lbaPosition) {
 
   int i = 0;
   dirEntry* currDirEntry = malloc(sizeof(dirEntry));
+  if (!currDirEntry) {
+    mallocFailed();
+  }
   currDirEntry = &arr[0];
 
   while (strcmp(currDirEntry->filename, "") != 0) {
@@ -241,6 +253,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   numOfInts = (numberOfBlocks / 32) + 1;
 
   struct volumeCtrlBlock* vcbPtr = malloc(definedBlockSize);
+  if (!vcbPtr) {
+    mallocFailed();
+  }
 
   // Reads data into VCB to check signature
   LBAread(vcbPtr, 1, 0);
@@ -258,6 +273,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // blocks we need to malloc memory for our bitVector in
     // block sizes as well
     int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * definedBlockSize);
+    if (!bitVector) {
+      mallocFailed();
+    }
 
     // 0 = occupied
     // 1 = free
@@ -372,7 +390,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   return 0;
 }
 
-
 void exitFileSystem() {
   printf("System exiting\n");
 }
@@ -382,9 +399,17 @@ char** stringParser(char* inputStr) {
   // Divide the path provided by the user into
   // several sub paths
   char* stringToParse = malloc(strlen(inputStr) + 1);
+  if (!stringToParse) {
+    mallocFailed();
+  }
+
   strcpy(stringToParse, inputStr);
 
   char** subStrings = (char**)malloc(sizeof(char*) * (strlen(stringToParse) + 1));
+  if (!subStrings) {
+    mallocFailed();
+  }
+
   char* subString;
   char* savePtr;
   char* delim = "/";
@@ -426,11 +451,17 @@ int isDirWithValidPath(char* path) {
   }
 
   char* parentPath = malloc(strlen(path) + 1);
+  if (!parentPath) {
+    mallocFailed();
+  }
 
   hashTable* currDir;
   if (absPath) {  //Absolute path
     // Reads data into VCB
     struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+    if (!vcbPtr) {
+      mallocFailed();
+    }
     LBAread(vcbPtr, 1, 0);
     currDir = readTableData(vcbPtr->rootDir);
     free(vcbPtr);
@@ -508,6 +539,9 @@ int fs_isFile(char* path) {
 // a pointer to the directory stream
 fdDir* fs_opendir(const char* name) {
   fdDir* fdDir = malloc(sizeof(fdDir));
+  if (!fdDir) {
+    mallocFailed();
+  }
   dirEntry* reqDir = getEntry((char*)name, workingDir);
   hashTable* reqDirTable = readTableData(reqDir->location);
 
@@ -547,6 +581,9 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 
   //Create and populate the directory item info pointer
   struct fs_diriteminfo* dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
+  if (!dirItemInfo) {
+    mallocFailed();
+  }
 
   strcpy(dirItemInfo->d_name, dirEnt->filename);
   dirItemInfo->d_reclen = dirEnt->fileSize;
@@ -557,20 +594,17 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 }
 
 hashTable* getDir(char* buf) {
-  printf("getDir: working dir on entry: %s\n", workingDir->dirName);
-
-  //Parse path
   if (fs_isDir(buf)) {
-    printf("getDir: working dir on entry: %s\n", workingDir->dirName);
-
+    //Parse path
     char** parsedPath = stringParser(buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
 
     hashTable* currDir;
     if (fullPath) {  //Absolute path
-      printf("getDir: Detected Absolute path\n");
-      // Reads data into VCB
       struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+      if (!vcbPtr) {
+        mallocFailed();
+      }
       LBAread(vcbPtr, 1, 0);
       currDir = readTableData(vcbPtr->rootDir);
       free(vcbPtr);
@@ -588,14 +622,11 @@ hashTable* getDir(char* buf) {
     dirEntry* entry;
     for (; parsedPath[i] != NULL; i++) {
       //check that the location exists and that it is a directory
-      // if(strcmp(parsedPath[i], ".") == 0)
       entry = getEntry(parsedPath[i], currDir);
-      printf("Entry %s at %d\n", entry->filename, i);
       free(currDir);
       currDir = readTableData(entry->location);
     }
 
-    printf("Ending getDir loop\n");
     return readTableData(currDir->location);
 
   } else {
@@ -619,6 +650,10 @@ int fs_setcwd(char* buf) {
 
 char* fs_getcwd(char* buf, size_t size) {
   char* path = malloc(size);
+  if (!path) {
+    mallocFailed();
+  }
+
   path[0] = '/';
   path[1] = '\0';
 
@@ -673,6 +708,9 @@ char* fs_getcwd(char* buf, size_t size) {
 deconPath* splitPath(char* fullPath) {
   char** parsedPath = stringParser(fullPath);
   char* parentPath = malloc(strlen(fullPath) + 1);
+  if (!parentPath) {
+    mallocFailed();
+  }
 
   int k = 0;
   int i = 0;
@@ -691,6 +729,9 @@ deconPath* splitPath(char* fullPath) {
   parentPath[k] = '\0';
 
   deconPath* pathParts = malloc(sizeof(deconPath));
+  if (!pathParts) {
+    mallocFailed();
+  }
   pathParts->parentPath = parentPath;
   pathParts->childName = parsedPath[i];
 
@@ -717,6 +758,9 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // block is free so we can store our new directory
   // there
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  if (!bitVector) {
+    mallocFailed();
+  }
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
@@ -725,6 +769,9 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   char* newDirName = pathParts->childName;
 
   dirEntry* newEntry = malloc(sizeof(dirEntry));
+  if (!newEntry) {
+    mallocFailed();
+  }
   int freeBlock = getFreeBlockNum(numOfInts, bitVector);
 
   // Initialize the new directory entry
@@ -792,6 +839,9 @@ int fs_rmdir(const char* pathname) {
   // block is free so we can store our new directory
   // there
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  if (!bitVector) {
+    mallocFailed();
+  }
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
@@ -824,4 +874,10 @@ int fs_rmdir(const char* pathname) {
 
 int fs_delete(char* filename) {
   return 0;
+}
+
+void mallocFailed() {
+  printf("Call to malloc memory failed, exiting program...\n");
+  exit(-1);
+  exitFileSystem();
 }
