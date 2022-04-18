@@ -35,6 +35,7 @@ typedef struct b_fcb
 	int buflen;		//holds how many valid bytes are in the buffer
 	int location;   //holds the file location(block number) in the volume, 
 				    //so we can write to that location
+	off_t offset;    //holds the current position in file
 	} b_fcb;
 	
 b_fcb fcbArray[MAXFCBS];
@@ -162,10 +163,21 @@ b_io_fd b_open (char * filename, int flags)
 	// Initialize a file control block for the file
 	b_fcb fcb = fcbArray[returnFd];
 
+	// Initially we malloc memory equivalent to 1 block we can malloc 
+	// more memory as we need it
+	fcb.buf = malloc(sizeof(char) * blockSize);
+
 	// To represent number of valid bytes in our buffer
 	fcb.buflen = 0;
-	// To represent the current position in the buffer
+
+	// To represent the current position in the buffer, the first
+	// five characters are reserved [0-4] to store next free block
+	// number, that's why we start from 5
 	fcb.index = 5;
+
+	// To represent the current position in the file
+	fcb.offset = 0;
+
 	// To represent the location at which the current file starts
 	fcb.location = getFreeBlockNum();
 
@@ -189,12 +201,12 @@ int b_seek (b_io_fd fd, off_t offset, int whence)
 	// If whence is SEEK_SET, we need to need to set the file's
 	// index to the offset provided
 	if (whence == SEEK_SET) {
-		fcbArray[fd].index = offset;
+		fcbArray[fd].offset = offset;
 	} 
 	// If whence is SEEK_CUR, we need to add offset to the file's
 	// current position (index)
 	else if (whence == SEEK_CUR) {
-		fcbArray[fd].index += offset;
+		fcbArray[fd].offset += offset;
 	} 
 	// If whence is SEEK_END, we need to set the file's index to
 	// the size of the file plus offset
@@ -229,10 +241,6 @@ int b_write (b_io_fd fd, char * buffer, int count)
 	}
 
 	b_fcb fcb = fcbArray[fd];
-
-	// Initially we malloc memory equivalent to 1 block we can malloc 
-	// more memory as we need it
-	fcb.buf = malloc(sizeof(char) * blockSize);
 
 	// Store the content of the passed in buffer to our file's
 	// buffer
@@ -283,6 +291,7 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 		fcb.buf[fcb.index] = buffer[i];
 		fcb.index++;
+		fcb.offset++;
 		fcb.buflen++;
 	}
 
@@ -355,8 +364,6 @@ int b_read (b_io_fd fd, char * buffer, int count)
 	// buffer from previous read that we can use. This corresponds
 	// to Part 1 mentioned above
 
-	fcb.buf = malloc(sizeof(char) * blockSize);
-
 	// Fill the buffer with file content written to the volume
 	// Change the 11 to be the starting block number of the file
 	LBAread(fcb.buf, 1, 11);
@@ -366,8 +373,9 @@ int b_read (b_io_fd fd, char * buffer, int count)
 	int availBlockBytes = blockSize - 5;
 	fcb.buflen = availBlockBytes;
 	fcb.index = 5;
+	int i = 0;
 
-	for (int i = 0; i < count; i++) {
+	for (; i < count; i++) {
 		if (fcb.buflen <= 0) {
 			// Get the characters representing next block number from the file
 			char blockChars[5];
@@ -404,6 +412,10 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		fcb.buflen--;
 	}
 
+	// We need to null terminate our buffer, so it doesn't contain
+	// any trailing garbage values
+	buffer[i] = '\0';
+
 	return count;	//Change this
 	}
 	
@@ -419,9 +431,11 @@ void b_close (b_io_fd fd)
 	// If fcb.buf is NULL then it means we have already 
 	// written it to the disk and released the memory allocated
 	// for it -- Not sure about this logic
-	if (fcb.buf != NULL) 
-		{
-		LBAwrite(fcb.buf, 1, fcb.location);
-		setBlocksAsAllocated(fcb.location, 1);
-		}
+	// if (fcb.buf != NULL) 
+	// 	{
+	// 	LBAwrite(fcb.buf, 1, fcb.location);
+	// 	setBlocksAsAllocated(fcb.location, 1);
+	// 	}
+
+	printf("The offset is: %ld\n", fcb.offset);
 	}
