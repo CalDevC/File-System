@@ -114,23 +114,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
   printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
   
   dirEntry *entry = getEntry(pathCopy, workingDir);
-  
-  // printf("currEntry->filename is: %s\n", currEntry->filename);
-  // printf("currEntry->filename is: %d\n", currEntry->fileSize);
-  // printf("currEntry->filename is: %s\n", currEntry->filename);
-
-
-  // if(currEntry->filename == NULL){
-  //   printf("currEntry is NULL\n");
-  //   return -1;
-  // }
-
-  // printf("Filename: %s\n", currEntry->filename);
-  // printf("Date Created: %ld\n", currEntry->dateCreated);
-  // printf("Date Modified: %ld\n", currEntry->dateModified);
-  // printf("Chicken\n");
-
-  
+  printf("%s\n", entry->filename);
 
   printf("Path: %s\n", path);
   printf("Size: %ld\n", buf->st_size);
