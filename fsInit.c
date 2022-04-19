@@ -81,35 +81,35 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
 /****************************************************
 *  fs_stat
 ****************************************************/
-int fs_stat(const char* path, struct fs_stat* buf){
+int fs_stat(const char* path, struct fs_stat* buf) {
   // fs_stat() displays details associated with the file system
 
   printf("************* Entering fs_stat() **************\n");
 
   int returnVal = 0;
   time_t now;
-  struct tm *local = localtime(&now);
+  struct tm* local = localtime(&now);
 
   // *** Validation Checks ***
   printf("*** Validation Checks ***\n");
-  if (path == NULL){
+  if (path == NULL) {
     printf("fs_stat(): Path cannot be null.\n");
     return -1;
-  }else{
+  } else {
     printf("fs_stat(): const char* path is: %s\n", path);
   }
-  
+
   char* pathCopy = malloc(sizeof(path));
 
-  if(pathCopy == NULL){
+  if (pathCopy == NULL) {
     printf("fs_stat(): Memory allocation error.\n");
     return -1;
-  }else{
+  } else {
     printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
   }
 
   printf("fs_stat(): Validity checks finished.\n\n");
-  
+
   // *** Store information ***
   printf("*** Store information ***\n");
   strcpy(pathCopy, path);
@@ -142,12 +142,12 @@ int fs_stat(const char* path, struct fs_stat* buf){
   // ts = *localtime(currEntry->dateCreated);
   // char * convertTime(time_t epochTime){
   //   int epochTimeInt = (int)epochTime; 
-    
+
   //   long long int timeInSec = (ep)
   // }
 
   printf("Create Time: %ld\n", buf->st_createtime);
-  
+
   //How to write to disk
   return returnVal;
 }
@@ -483,12 +483,9 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   return 0;
 }
 
-<<<<<<< HEAD
-=======
 /****************************************************
 *  exitFileSystem
 ****************************************************/
->>>>>>> 106bd2d3d46c793c3eca42cafdf87a0fc81c97fd
 void exitFileSystem() {
   printf("System exiting\n");
 }
@@ -755,20 +752,10 @@ int fs_setcwd(char* buf) {
 ****************************************************/
 char* fs_getcwd(char* buf, size_t size) {
   char* path = malloc(size);
-<<<<<<< HEAD
   if (!path) {
     mallocFailed();
   }
 
-=======
-  if (path == NULL){
-    printf("malloc() failed\n");
-    return NULL;
-  }
-
-  //printf("buf: %s\n");
-  printf("After path = malloc()\n");
->>>>>>> 106bd2d3d46c793c3eca42cafdf87a0fc81c97fd
   path[0] = '/';
   path[1] = '\0';
 
@@ -783,7 +770,7 @@ char* fs_getcwd(char* buf, size_t size) {
 
   char* pathElements[size];
   int i = 0;
-  
+
   printf("After checking cwd is root\n");
 
   hashTable* currDir = readTableData(workingDir->location);
