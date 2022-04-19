@@ -503,109 +503,6 @@ int fs_isFile(char* path) {
   return result == -1 ? 0 : !result;
 }
 
-// Implementation of directory functions
-int fs_mkdir(const char* pathname, mode_t mode) {
-
-  char** parsedPath = stringParser((char*)pathname);
-  char* parentPath = malloc(strlen(pathname) + 1);
-
-  int k = 0;
-  int i = 0;
-  for (; parsedPath[i + 1] != NULL; i++) {
-    for (int j = 0; j < strlen(parsedPath[i]); j++) {
-      parentPath[k] = parsedPath[i][j];
-      k++;
-    }
-
-    if (parentPath[k - 1] != '/' && parentPath[k - 1] != '.') {
-      parentPath[k] = '/';
-      k++;
-    }
-  }
-
-  parentPath[k] = '\0';
-
-  if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
-    return -1;
-  }
-
-  char* temp = malloc(51);
-  char* startingDir = fs_getcwd(temp, 50);
-  // printf("Starting dir %s\n", startingDir);
-  // printf("Parent path is %s\n", parentPath);
-  fs_setcwd(parentPath);
-  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
-
-  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
-
-  // Get the bitVector in memory -- We need to know what
-  // block is free so we can store our new directory
-  // there
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-
-  // Create a new directory entry
-  char* newDirName = parsedPath[i];
-
-  dirEntry* newEntry = malloc(sizeof(dirEntry));
-  int freeBlock = getFreeBlockNum(numOfInts, bitVector);
-
-  // Initialize the new directory entry
-  strcpy(newEntry->filename, newDirName);
-  newEntry->isDir = 1;
-  newEntry->location = freeBlock;
-  newEntry->fileSize = DIR_SIZE * blockSize;
-  newEntry->dateModified = time(0);
-  newEntry->dateCreated = time(0);
-
-  // Put the updated directory entry back
-  // into the directory
-  setEntry(newDirName, newEntry, workingDir);
-
-  // Initialize the directory entries within the new
-  // directory
-  int startBlock = getEntry(newDirName, workingDir)->location;
-  hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
-
-  // Initializing the "." current directory and the ".." parent Directory
-  dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
-    dirSizeInBytes, time(0), time(0));
-  setEntry(curDir->filename, curDir, dirEntries);
-
-  dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
-    dirSizeInBytes, time(0), time(0));
-  setEntry(parentDir->filename, parentDir, dirEntries);
-
-  // Write parent directory
-  writeTableData(workingDir, workingDir->location);
-  // Write new directory
-  writeTableData(dirEntries, dirEntries->location);
-
-  // Update the bit vector
-  // printf("NEW FREE BLOCK: %d\n", freeBlock);
-  setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
-  printTable(workingDir);
-  printf("About to setcwd as %s\n", startingDir);
-  fs_setcwd(startingDir);
-  printf("Freeing\n");
-  free(startingDir);
-  startingDir = NULL;
-
-  free(bitVector);
-  bitVector = NULL;
-  free(newEntry);
-  newEntry = NULL;
-  free(parsedPath);
-  parsedPath = NULL;
-  free(parentPath);
-  parentPath = NULL;
-
-  return 0;
-}
 
 // Opens a directory stream corresponding to 'name', and returns
 // a pointer to the directory stream
@@ -769,9 +666,9 @@ char* fs_getcwd(char* buf, size_t size) {
   return buf;
 }
 
-int fs_rmdir(const char* pathname) {
-  char** parsedPath = stringParser((char*)pathname);
-  char* parentPath = malloc(strlen(pathname) + 1);
+deconPath* splitPath(char* fullPath) {
+  char** parsedPath = stringParser(fullPath);
+  char* parentPath = malloc(strlen(fullPath) + 1);
 
   int k = 0;
   int i = 0;
@@ -788,6 +685,102 @@ int fs_rmdir(const char* pathname) {
   }
 
   parentPath[k] = '\0';
+
+  deconPath* pathParts = malloc(sizeof(deconPath));
+  pathParts->parentPath = parentPath;
+  pathParts->childName = parsedPath[i];
+
+  return pathParts;
+}
+
+//Creates a new directory
+int fs_mkdir(const char* pathname, mode_t mode) {
+  deconPath* pathParts = splitPath((char*)pathname);
+  char* parentPath = pathParts->parentPath;
+
+  if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
+    return -1;
+  }
+
+  char* temp = malloc(51);
+  char* startingDir = fs_getcwd(temp, 50);
+  // printf("Starting dir %s\n", startingDir);
+  // printf("Parent path is %s\n", parentPath);
+  fs_setcwd(parentPath);
+  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
+
+  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+
+  // Get the bitVector in memory -- We need to know what
+  // block is free so we can store our new directory
+  // there
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+
+  // Create a new directory entry
+  char* newDirName = pathParts->childName;
+
+  dirEntry* newEntry = malloc(sizeof(dirEntry));
+  int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+
+  // Initialize the new directory entry
+  strcpy(newEntry->filename, newDirName);
+  newEntry->isDir = 1;
+  newEntry->location = freeBlock;
+  newEntry->fileSize = DIR_SIZE * blockSize;
+  newEntry->dateModified = time(0);
+  newEntry->dateCreated = time(0);
+
+  // Put the updated directory entry back
+  // into the directory
+  setEntry(newDirName, newEntry, workingDir);
+
+  // Initialize the directory entries within the new
+  // directory
+  int startBlock = getEntry(newDirName, workingDir)->location;
+  hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
+
+  // Initializing the "." current directory and the ".." parent Directory
+  dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
+    dirSizeInBytes, time(0), time(0));
+  setEntry(curDir->filename, curDir, dirEntries);
+
+  dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
+    dirSizeInBytes, time(0), time(0));
+  setEntry(parentDir->filename, parentDir, dirEntries);
+
+  // Write parent directory
+  writeTableData(workingDir, workingDir->location);
+  // Write new directory
+  writeTableData(dirEntries, dirEntries->location);
+
+  // Update the bit vector
+  // printf("NEW FREE BLOCK: %d\n", freeBlock);
+  setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+  printTable(workingDir);
+  printf("About to setcwd as %s\n", startingDir);
+  fs_setcwd(startingDir);
+  printf("Freeing\n");
+  free(startingDir);
+  startingDir = NULL;
+
+  free(bitVector);
+  bitVector = NULL;
+  free(newEntry);
+  newEntry = NULL;
+  free(pathParts);
+  pathParts = NULL;
+
+  return 0;
+}
+
+int fs_rmdir(const char* pathname) {
+  deconPath* pathParts = splitPath((char*)pathname);
+  char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir((char*)pathname)) {
     return -1;
@@ -812,14 +805,15 @@ int fs_rmdir(const char* pathname) {
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
+  char* dirNameToRemove = pathParts->childName;
+  int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
+  hashTable* dirToRemove = readTableData(dirToRemoveLocation);
+
   //Check if empty
-  if (workingDir->numEntries > 2) {
+  if (dirToRemove->numEntries > 2) {
     printf("Directory is not empty, refusing to delete\n");
     return -1;
   }
-
-  // Create a new directory entry
-  char* dirNameToRemove = parsedPath[i];
 
   //Remove dirEntry from the parent dir
   rmEntry(dirNameToRemove, workingDir);
@@ -828,21 +822,22 @@ int fs_rmdir(const char* pathname) {
   writeTableData(workingDir, workingDir->location);
 
   //Update the free space bit vector
-  int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
 
   //Set workingDir back
   fs_setcwd(startingDir);
 
   printf("Freeing\n");
-  free(startingDir);
-  startingDir = NULL;
+  // free(startingDir);
+  // startingDir = NULL;
   free(temp);
   temp = NULL;
-  free(parsedPath);
-  parsedPath = NULL;
-  free(parentPath);
-  parentPath = NULL;
+  free(pathParts);
+  pathParts = NULL;
 
+  return 0;
+}
+
+int fs_delete(char* filename) {
   return 0;
 }
