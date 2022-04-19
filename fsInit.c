@@ -823,5 +823,38 @@ int fs_rmdir(const char* pathname) {
 }
 
 int fs_delete(char* filename) {
+  deconPath* pathParts = splitPath((char*)filename);
+  char* childPath = pathParts->childName;
+  if(fs_isFile((char*)childPath) == 0){
+    return -1;
+  }
+  hashTable* childDir = getDir(childPath);
+
+  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+
+  int fileLocation = getEntry(filename, workingDir)->location;
+  hashTable* fileToRemove = readTableData(fileLocation);
+
+  
+  int dirToRemoveLocation = getEntry(childPath, childDir)->location;
+  hashTable* dirToRemove = readTableData(dirToRemoveLocation);
+ 
+  //Remove dirEntry from the parent dir
+  rmEntry(childPath, childDir);
+
+  //Rewrite parent dir to disk
+  writeTableData(childDir, childDir->location);
+
+  //Update the free space bit vector
+  setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
+
+  printf("Freeing\n");
+  free(pathParts);
+  pathParts = NULL;
   return 0;
 }
