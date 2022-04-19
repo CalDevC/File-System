@@ -845,7 +845,7 @@ int fs_delete(char* filename) {
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+  //int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   
