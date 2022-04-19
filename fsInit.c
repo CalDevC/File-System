@@ -472,23 +472,71 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   b_io_fd fileDescrip = b_open("zone.txt", 1);
 
   // Text that we want to store in the zone.txt file
-  char * fileContent = "Hi, this is a test file.";
-
-  // Write the content to the file
+  char * fileContent = "Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507";  // Write the content to the file
   int bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
 
-  fileContent = "Hi, this is a test file.52";
+  // b_seek(fileDescrip, 157, SEEK_SET);
 
+  int bytesToRead = 507;
+  char * readText = malloc(sizeof(char) * bytesToRead);
+  b_read(fileDescrip, readText, bytesToRead);
+  printf("In the fs_mkdir() 1, the returned text from b_read() is: %sEND\n\n", 
+  readText);
+
+  fileContent = "ioi, this is a test file.52";
+  bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+
+  b_seek(fileDescrip, 2, SEEK_SET);
+
+  bytesToRead = 570;
+  readText = malloc(sizeof(char) * bytesToRead);
+  b_read(fileDescrip, readText, bytesToRead);
+  printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n\n", 
+  readText);
+  
+
+  b_seek(fileDescrip, 532, SEEK_SET);
+
+  fileContent = "HiX this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507. Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi 1016";
   bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
 
 
-  // Read the content of the file
-  int bytesToRead = 4000;
-  char * readText = malloc(sizeof(char) * bytesToRead);
+  b_seek(fileDescrip, 2, SEEK_SET);
 
+  bytesToRead = 1014;
+  readText = malloc(sizeof(char) * bytesToRead);
   b_read(fileDescrip, readText, bytesToRead);
+  printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n\n", 
+  readText);
 
-  printf("In the fs_mkdir(), the returned text from b_read() is: %sEND\n", readText);
+  // b_seek(fileDescrip, 506, SEEK_SET);
+
+  // fileContent = "12345678910111213141516";
+  // bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+
+  // b_seek(fileDescrip, 1, SEEK_SET);
+
+  // fileContent = "Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 89ji";
+  // bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+  
+  // Read the content of the file
+  // int bytesToRead = 507;
+  // char * readText = malloc(sizeof(char) * bytesToRead);
+  // b_read(fileDescrip, readText, bytesToRead);
+  // printf("In the fs_mkdir() 1, the returned text from b_read() is: %sEND\n", 
+  // readText);
+
+
+  // // b_seek(fileDescrip, 506, SEEK_SET);
+
+  // bytesToRead = 26;
+  // readText = malloc(sizeof(char) * bytesToRead);
+  // b_read(fileDescrip, readText, bytesToRead);
+  // printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n", 
+  // readText);
+
+  // printf("At index 506 we have: %c\n", readText[506]);
+  printf("**********Calling Close***********\n");
 
   // Close the file
   b_close(fileDescrip);
