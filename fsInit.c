@@ -841,6 +841,7 @@ int fs_rmdir(const char* pathname) {
 int fs_delete(char* filename) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   deconPath* pathParts = splitPath((char*)filename);
   char* childPath = pathParts->childName;
   if(fs_isFile((char*)childPath) == 0){
@@ -877,6 +878,8 @@ int fs_delete(char* filename) {
 =======
 =======
 >>>>>>> 9f9e17f5a363ea376b71ecbc1398735dcacfb14d
+=======
+>>>>>>> 9f9e17f5a363ea376b71ecbc1398735dcacfb14d
   if(fs_isFile((char*)filename) == 0){
     return -1;
   }
@@ -897,6 +900,9 @@ int fs_delete(char* filename) {
   setBlocksAsFree(fileLocation, sizeOfEntry, bitVector);
  
 <<<<<<< HEAD
+<<<<<<< HEAD
+>>>>>>> 9f9e17f5a363ea376b71ecbc1398735dcacfb14d
+=======
 >>>>>>> 9f9e17f5a363ea376b71ecbc1398735dcacfb14d
 =======
 >>>>>>> 9f9e17f5a363ea376b71ecbc1398735dcacfb14d
