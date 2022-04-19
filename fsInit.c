@@ -115,9 +115,10 @@ int fs_stat(const char* path, struct fs_stat* buf){
   strcpy(pathCopy, path);
   printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
   printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
-  // hashTable* currentDir = getDir(pathCopy);
-  // getEntry(pathCopy, workingDir);
-  // printf("%d\n", entry->fileSize);
+  hashTable* currentDirTbl;
+  // currentDirTbl = readTableData(workingDir->location);
+  // dirEntry* currentEntry getEntry(pathCopy, currentDirTbl);
+  // printf("Current Entry Filename: %s\n", currentEntry->filename);
 
   printf("Path: %s\n", path);
   printf("Size: %ld\n", buf->st_size);
