@@ -144,11 +144,13 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   //Checks hashTable for matching key and return its value
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
+      printf("VALUE FOUND!\n");
       return entry->value;
     }
     entry = entry->next;
   }
-
+  printf("ENTRY IS NULL!\n");
+  
   return NULL;
 }
 

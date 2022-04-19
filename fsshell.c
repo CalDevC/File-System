@@ -36,9 +36,9 @@
 #define DIRMAX_LEN		4096
 
 /****   SET THESE TO 1 WHEN READY TO TEST THAT COMMAND ****/
-#define CMDLS_ON	0
+#define CMDLS_ON	1
 #define CMDCP_ON	0
-#define CMDMV_ON	0
+#define CMDMV_ON	1
 #define CMDMD_ON	1
 #define CMDRM_ON	1
 #define CMDCP2L_ON	0
@@ -182,6 +182,7 @@ int cmd_ls(int argcnt, char* argvec[]) {
 
   if (optind < argcnt) {
     //processing arguments after options
+	printf("optind < arcnt\n");
     for (int k = optind; k < argcnt; k++) {
       if (fs_isDir(argvec[k])) {
         fdDir* dirp;
@@ -199,8 +200,10 @@ int cmd_ls(int argcnt, char* argvec[]) {
     }
   } else   // no pathname/filename specified - use cwd
   {
+	printf("Entering else statement\n");
     char* path = fs_getcwd(cwd, DIRMAX_LEN);	//get current working directory
-    fdDir* dirp;
+    printf("After fs_getcwd");
+	fdDir* dirp;
     dirp = fs_opendir(path);
     return (displayFiles(dirp, flall, fllong));
   }
@@ -256,8 +259,15 @@ int cmd_cp(int argcnt, char* argvec[]) {
 ****************************************************/
 int cmd_mv(int argcnt, char* argvec[]) {
 #if (CMDMV_ON == 1)				
-  return -99;
-  // **** TODO ****  For you to implement	
+  // return -99;
+  // // **** TODO ****  For you to implement	
+  char* path = argvec[1];
+  printf("argvec[1]: %s\n", path);
+  struct fs_stat statbuf;
+
+  fs_stat(path, &statbuf);
+
+
 #endif
   return 0;
 }

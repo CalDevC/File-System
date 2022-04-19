@@ -13,8 +13,6 @@
 * This file is where you will start and initialize your system
 *
 **************************************************************/
-
-
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -22,6 +20,10 @@
 #include <string.h>
 #include "fsLow.h"
 #include "mfs.h"
+#include <time.h>
+
+// Test
+#include "b_io.c"
 
 // Magic number for fsInit.c
 #define SIG 90981
@@ -49,6 +51,9 @@ struct volumeCtrlBlock {
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
 
+/****************************************************
+*  getFreeBlockNum
+****************************************************/
 int getFreeBlockNum(int numOfInts, int* bitVector) {
   //**********Get the free block number ***********
   // This will help determine the first block number that is
@@ -72,6 +77,84 @@ int getFreeBlockNum(int numOfInts, int* bitVector) {
   }
 }
 
+
+/****************************************************
+*  fs_stat
+****************************************************/
+int fs_stat(const char* path, struct fs_stat* buf){
+  // fs_stat() displays details associated with the file system
+
+  printf("************* Entering fs_stat() **************\n");
+
+  int returnVal = 0;
+  time_t now;
+  struct tm *local = localtime(&now);
+
+  // *** Validation Checks ***
+  printf("*** Validation Checks ***\n");
+  if (path == NULL){
+    printf("fs_stat(): Path cannot be null.\n");
+    return -1;
+  }else{
+    printf("fs_stat(): const char* path is: %s\n", path);
+  }
+  
+  char* pathCopy = malloc(sizeof(path));
+
+  if(pathCopy == NULL){
+    printf("fs_stat(): Memory allocation error.\n");
+    return -1;
+  }else{
+    printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
+  }
+
+  printf("fs_stat(): Validity checks finished.\n\n");
+  
+  // *** Store information ***
+  printf("*** Store information ***\n");
+  strcpy(pathCopy, path);
+  printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
+  printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
+  hashTable* currentDirTbl;
+  // currentDirTbl = readTableData(workingDir->location);
+  // dirEntry* currentEntry getEntry(pathCopy, currentDirTbl);
+  // printf("Current Entry Filename: %s\n", currentEntry->filename);
+
+  printf("Path: %s\n", path);
+  printf("Size: %ld\n", buf->st_size);
+  printf("Block size: %ld\n", buf->st_blksize);
+  printf("Blocks: %ld\n", buf->st_blocks);
+  // YYYY-MM-DD HH:MM:SS TIMEZONE
+
+  time(&now);
+  buf->st_accesstime = (long int)ctime(&now);
+  printf("Access Time: %ld\n", buf->st_accesstime);
+
+  // buf->st_modtime = currEntry->dateModified;
+  printf("Modtime: %ld\n", buf->st_modtime);
+
+
+
+  // buf->st_createtime = currEntry->dateCreated;
+  // struct tm ts;
+  // char  buf[80];
+
+  // ts = *localtime(currEntry->dateCreated);
+  // char * convertTime(time_t epochTime){
+  //   int epochTimeInt = (int)epochTime; 
+    
+  //   long long int timeInSec = (ep)
+  // }
+
+  printf("Create Time: %ld\n", buf->st_createtime);
+  
+  //How to write to disk
+  return returnVal;
+}
+
+/****************************************************
+*  setBlocksAsAllocated
+****************************************************/
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   // Set the number of bits specified in the blocksAllocated
   // to 0 starting from freeBlock
@@ -103,6 +186,10 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
   LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 }
 
+
+/****************************************************
+*  writeTableData
+****************************************************/
 void setBlocksAsFree(int freeBlock, int blocksAllocated, int* bitVector) {
   // Set the number of bits specified in the blocksAllocated
   // to 1 starting from freeBlock
@@ -138,7 +225,7 @@ void setBlocksAsFree(int freeBlock, int blocksAllocated, int* bitVector) {
 void writeTableData(hashTable* table, int lbaPosition) {
   int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
 
-  //Struct for table data
+  //All table data
   typedef struct tableData {
     char dirName[20];
     dirEntry arr[arrNumBytes];
@@ -198,6 +285,9 @@ void writeTableData(hashTable* table, int lbaPosition) {
 
 }
 
+/****************************************************
+*  readTableData
+****************************************************/
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaPosition) {
   int arrNumBytes = ((DIR_SIZE * blockSize) / sizeof(dirEntry)) * sizeof(dirEntry);
@@ -237,6 +327,9 @@ hashTable* readTableData(int lbaPosition) {
   return dirPtr;
 }
 
+/****************************************************
+*  initFileSystem
+****************************************************/
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
@@ -390,10 +483,19 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   return 0;
 }
 
+<<<<<<< HEAD
+=======
+/****************************************************
+*  exitFileSystem
+****************************************************/
+>>>>>>> 106bd2d3d46c793c3eca42cafdf87a0fc81c97fd
 void exitFileSystem() {
   printf("System exiting\n");
 }
 
+/****************************************************
+*  stringParser
+****************************************************/
 // Helper functions
 char** stringParser(char* inputStr) {
   // Divide the path provided by the user into
@@ -648,12 +750,25 @@ int fs_setcwd(char* buf) {
   return 0;
 }
 
+/****************************************************
+*  fs_getcwd
+****************************************************/
 char* fs_getcwd(char* buf, size_t size) {
   char* path = malloc(size);
+<<<<<<< HEAD
   if (!path) {
     mallocFailed();
   }
 
+=======
+  if (path == NULL){
+    printf("malloc() failed\n");
+    return NULL;
+  }
+
+  //printf("buf: %s\n");
+  printf("After path = malloc()\n");
+>>>>>>> 106bd2d3d46c793c3eca42cafdf87a0fc81c97fd
   path[0] = '/';
   path[1] = '\0';
 
@@ -664,8 +779,12 @@ char* fs_getcwd(char* buf, size_t size) {
     return path;
   }
 
+  printf("After strcmp()\n");
+
   char* pathElements[size];
   int i = 0;
+  
+  printf("After checking cwd is root\n");
 
   hashTable* currDir = readTableData(workingDir->location);
   dirEntry* parentDirEnt = getEntry("..", currDir);
@@ -872,6 +991,9 @@ int fs_rmdir(const char* pathname) {
   return 0;
 }
 
+/****************************************************
+*  fs_delete
+****************************************************/
 int fs_delete(char* filename) {
   return 0;
 }
