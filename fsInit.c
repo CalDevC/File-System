@@ -876,9 +876,6 @@ int fs_stat(const char* path, struct fs_stat* buf){
 
   printf("************* Entering fs_stat() **************\n");
   int returnVal = 0;
-  time_t now;
-  struct tm *local = localtime(&now);
-
 
   // *** Validation Checks ***
   printf("*** Validation Checks ***\n");
@@ -930,38 +927,48 @@ int fs_stat(const char* path, struct fs_stat* buf){
 
   printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
 
-  printf("File: %s\n", currentEntry->filename);
+  printf("File: \t%s\n", currentEntry->filename);
 
   buf->st_size = currentEntry->fileSize;
-  printf("Size: %ld\n", buf->st_size);
+  printf("Size: \t%ld\n", buf->st_size);
 
   buf->st_blksize = 512;
-  printf("IO Block size: %ld\n", buf->st_blksize);
+  printf("IO Block size: \t%ld\n", buf->st_blksize);
 
   buf->st_blocks = currentEntry->fileSize / 512;
-  printf("Blocks: %ld\n", buf->st_blocks);
+  printf("Blocks: \t%ld\n", buf->st_blocks);
 
-  // YYYY-MM-DD HH:MM:SS TIMEZONE
-  time(&now);
+  time_t currentTime;
+  struct tm ts;
+  char time_buf[80];
 
-  buf->st_accesstime = (long int)ctime(&now) / 60;
-  printf("Access Time: %ld\n", buf->st_accesstime);
+  // time_t now;   
+  // struct tm *local = localtime(&now);
+
+
+  // This returns the current time
+  time(&currentTime);
+  //printf("Current time is \t%ld\n", time(&currentTime));
+  // Adjust to local time and format into YYYY-MM-DD HH:MM:SS TIMEZONE
+  ts = *localtime(&currentTime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  //printf("Current time formatted: \t%s\n", time_buf);
+
+  // Store epoch time, but print out formatted time
+  buf->st_accesstime = (long int)ctime(&currentTime) / 60;
+  printf("Access Time: \t%s\n", time_buf);
 
   buf->st_modtime = currentEntry->dateModified;
-  printf("Modtime: %ld\n", buf->st_modtime);
+  ts = *localtime(&buf->st_modtime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Modtime: \t%s\n", time_buf);
 
   buf->st_createtime = currentEntry->dateCreated;
-  printf("Create Time: %ld\n", buf->st_createtime);
+  ts = *localtime(&buf->st_createtime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Create Time: \t%s\n", time_buf);
 
-  // struct tm ts;
-  // char  buf[80];
 
-  // ts = *localtime(currEntry->dateCreated);
-  // char * convertTime(time_t epochTime){
-  //   int epochTimeInt = (int)epochTime; 
-    
-  //   long long int timeInSec = (ep)
-  // }
 
 
   printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
