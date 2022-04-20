@@ -874,16 +874,15 @@ int fs_delete(char* filename) {
 int fs_stat(const char* path, struct fs_stat* buf){
   // fs_stat() displays file details associated with the file system
 
-  printf("************* Entering fs_stat() **************\n");
-  int returnVal = 0;
+  // printf("************* Entering fs_stat() **************\n");
 
   // *** Validation Checks ***
-  printf("*** Validation Checks ***\n");
+  //printf("*** Validation Checks ***\n");
   if (path == NULL){
     printf("fs_stat(): Path cannot be null.\n");
     return -1;
   }else{
-    printf("fs_stat(): const char* path is: %s\n", path);
+    //printf("fs_stat(): const char* path is: %s\n", path);
   }
   
   char* pathCopy = malloc(sizeof(path));
@@ -892,19 +891,19 @@ int fs_stat(const char* path, struct fs_stat* buf){
     printf("fs_stat(): Memory allocation error.\n");
     return -1;
   }else{
-    printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
+    //printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
   }
 
-  printf("fs_stat(): Validity checks finished.\n\n");
+  // printf("fs_stat(): Validity checks finished.\n\n");
   
   // *** Store information ***
-  printf("*** Store information ***\n");
+  // printf("*** Store information ***\n");
 
 
   // Create a char* from const char* in order to manipulate path
   strcpy(pathCopy, path);
-  printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
-  printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
+  // printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
+  // printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
 
   // Handle the case of when an absolute path is given
   char** parsedPath = stringParser(pathCopy);
@@ -914,7 +913,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
     desiredPath = parsedPath[i];
     i++;
   }
-  printf("desiredPath: %s\n", desiredPath);
+  // printf("desiredPath: %s\n", desiredPath);
 
   // Pull desired path into memory
   hashTable* currentDirTbl = readTableData(workingDir->location);
@@ -923,9 +922,9 @@ int fs_stat(const char* path, struct fs_stat* buf){
     printf("fs_stat(): getEntry() failed. Could not find path within fs.\n");
     return -1;
   }
-  printf("Current Entry Filename: %s\n", currentEntry->filename);
+  // printf("Current Entry Filename: %s\n", currentEntry->filename);
 
-  printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
+  // printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
 
   printf("File: \t%s\n", currentEntry->filename);
 
@@ -938,13 +937,13 @@ int fs_stat(const char* path, struct fs_stat* buf){
   buf->st_blocks = currentEntry->fileSize / 512;
   printf("Blocks: \t%ld\n", buf->st_blocks);
 
+  // Create variables for time
   time_t currentTime;
   struct tm ts;
   char time_buf[80];
 
   // time_t now;   
   // struct tm *local = localtime(&now);
-
 
   // This returns the current time
   time(&currentTime);
@@ -968,11 +967,8 @@ int fs_stat(const char* path, struct fs_stat* buf){
   strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
   printf("Create Time: \t%s\n", time_buf);
 
-
-
-
-  printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
-  //How to write to disk
-  return returnVal;
+  // printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
+  // LBAwrite();
+  return 0;
 }
 
