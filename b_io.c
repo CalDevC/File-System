@@ -176,12 +176,14 @@ b_io_fd b_open (char * filename, int flags)
 		
 		// fcb.directory = rootDir;
 
-		fcb.location = 13;
+		fcb.location = getFreeBlockNum();
+		// printf("Dest file starting at: %d\n", fcb.location);
 		setBlocksAsAllocated(fcb.location, 1);
 	} 
 	else if (flags == O_RDONLY) {
 		printf("The source file must exist\n");
-		fcb.location = 11;
+		fcb.location = getFreeBlockNum();
+		// printf("Src file starting at: %d\n", fcb.location);
 		setBlocksAsAllocated(fcb.location, 1);
 	}
 
@@ -279,72 +281,36 @@ int b_write (b_io_fd fd, char * buffer, int count)
 
 	b_fcb fcb = fcbArray[fd];
 
-	int diff = 0;
+	// We use these variable to decide whether we can keep
+	// writing to our current buffer or do we need to
+	// to overwrite a previously written block
 	int newBlockNum = 1;
 	int oldBlockNum = 0;
 
-
-	printf("*********Top of write***********\n");
-	printf("Top: Offset is %ld\n", fcb.offset);
+	// printf("*********Top of write***********\n");
+	// printf("Top: Offset is %ld\n", fcb.offset);
 	
 	if (fcb.writeOffset == 0) {
-		// We need to read from the starting block number 
+		// We need to write from the starting block number 
 		// of the file
-		LBAread(fcb.buf, 1, 11);
-		// printf("We haven't read anything yet\n");
+		// LBAread(fcb.buf, 1, 11);
+		// printf("We haven't wrote anything yet\n");
 	} else {
 		// Calculate the block that we need to read
 		newBlockNum = fcb.offset / 507;
 		oldBlockNum = fcb.writeOffset / 507;
 
-		int startAt = fcb.offset % 507;
-		fcb.index = startAt + 5;
+		fcb.index = fcb.offset % 507;
+ 		fcb.index += 5;
 
 		if (newBlockNum != oldBlockNum) {
 			// Calculate the byte within the block from which
 			// we need to start from
 
-			diff = newBlockNum - oldBlockNum;
-
-			// We don't need to do anything
-			if (diff > 0) {
-				printf("We are in a block # greater than the previous block\n");
-
-				// for (int i = 0; i < diff; i++) {
-				// 	// First we need to get the block number of next block
-				// 	// that is used for our current file
-				// 	// Get the characters representing next block number from the file
-				// 	char blockChars[5];
-
-				// 	for (int j = 0; j < 5; j++) {
-				// 		blockChars[j] = fcb.buf[j];
-				// 	}
-
-				// 	blockChars[5] = '\0';
-
-				// 	// Convert the characters representing block number to
-				// 	// an integer
-				// 	const char *constBlockNumbs = blockChars;
-				// 	int nextBlock = atoi(constBlockNumbs);
-
-				// 	// Start reading remaining text from next buffer
-				// 	//free(fcb.buf);
-
-				// 	// If nextBlock = 0, we can assume that we have reached
-				// 	// the end of the file
-				// 	// if (nextBlock == 0)
-				// 	// {
-				// 	// 	printf("Hold up at i: %d\n", i);
-				// 	// 	break;
-				// 	// }
-
-				// 	fcb.buf = malloc(sizeof(char) * blockSize);
-				// 	LBAread(fcb.buf, 1, nextBlock);
-				// }
-			}
+			int diff = newBlockNum - oldBlockNum;
 
 			// The buf needs to contain the data from previous blocks
-			else {
+			if (diff < 0) {
 				printf("We need to overwrite the previous blocks\n");
 
 				// We need to start from the beginning
@@ -377,16 +343,6 @@ int b_write (b_io_fd fd, char * buffer, int count)
 					const char *constBlockNumbs = blockChars;
 					int nextBlock = atoi(constBlockNumbs);
 
-					// Start reading remaining text from next buffer
-					//free(fcb.buf);
-
-					// If nextBlock = 0, we can assume that we have reached
-					// the end of the file
-					// if (nextBlock == 0)
-					// {
-					// 	printf("Hold up at i: %d\n", i);
-					// 	break;
-					// }
 					fcb.location = nextBlock;
 
 					fcb.buf = malloc(sizeof(char) * blockSize);
@@ -397,15 +353,23 @@ int b_write (b_io_fd fd, char * buffer, int count)
 		}
 	}
 
-	printf("Index in b-write() is: %d\n", fcb.index);
-	int availBlockBytes = 512 - fcb.index;
-	fcb.buflen = availBlockBytes;
-	// fcb.index = 5;
-	int i = 0;
+	// printf("Index in b-write() is: %d\n", fcb.index);
 
+	// This represents the amount of text we can store in our
+	// buffer its 5 less than 512 because we reserve 5 character
+	// to store characters representing next block associated with
+	// the file
+	fcb.buflen = blockSize - fcb.index;
+
+	// fcb.index = 5;
 	// if (fcb.buflen == 0) {
 	// 	return -1;
 	// }
+
+	printf("************TOP: Index in the b_write(): %d************\n", fcb.index);
+	int numBytesWritten = 0;
+
+	int i = 0;
 
 	for (; i < count; i++) {
 		// printf("buflen is: %d\n", fcb.buflen);
@@ -419,38 +383,25 @@ int b_write (b_io_fd fd, char * buffer, int count)
 			// NOTE: Need to think about how to handle this if we are
 			// overwriting existing content
 			fcb.fileSize++;
+			numBytesWritten++;
 			fcb.buflen--;
 			fcb.offset++;
 			fcb.writeOffset++;
 		}
 
 		if (fcb.buflen < 1) {
-
-			char blockChars[5];
-
-			for (int j = 0; j < 5; j++) {
-				blockChars[j] = fcb.buf[j];
-			}
-			blockChars[5] = '\0';
-
-			// Convert the characters representing block number to
-			// an integer
-			const char * constBlockNumbs = blockChars;
-			int nextBlock = atoi(constBlockNumbs);
-
-			// If the nextBLock is 0 we know that we haven't written
-			// the current block to our volume
 			if (newBlockNum >= oldBlockNum) {
-				// Since we have reached the limit of our current block we
+				// Since we have reached the limit of our current buffer we
 				// need to write it to the volume
 				int freeBlock = getFreeBlockNum();
+
 				// We need to create a copy of freeBlock, because
 				// we don't want the original freeBlock to get modified
 				int numb = freeBlock;
 
 				// The following algorithm will break the next freeBlock
 				// number into separate digits which we will store as
-				// characters and when we need to get the combined block
+				// characters and when we need to get the block
 				// number we can rejoin those digits to get an int
 				int j = 4;
 				while (numb > 0)
@@ -469,26 +420,48 @@ int b_write (b_io_fd fd, char * buffer, int count)
 					j--;
 				}
 
-				// Test
-				// fcb.blocksWrote++;
+				// We now set the location to the next free block it will be 
+				// useful when we need to write next block to our volume
 
-				// We now set the location to the next free block
-				// it will be useful when we need to write next
-				// block to our volume
-				printf("Writing the buffer at: %d\n", fcb.location);
-				printf("The buffer is: %s\n", fcb.buf);
+				// printf("Writing the buffer at: %d\n", fcb.location);
+				// printf("The buffer is: %s\n", fcb.buf);
+				printf("We are writing the buffer to our volume: %s\n", fcb.buf);
 				LBAwrite(fcb.buf, 1, fcb.location);
-				setBlocksAsAllocated(fcb.location, 1);
+				printf("*******************Done Writing*******************\n");
+				setBlocksAsAllocated(freeBlock, 1);
 				fcb.location = freeBlock;
+				// printf("Next free block is: %d\n", freeBlock);
 				fcb.buf = malloc(sizeof(char) * blockSize);
 			} 
 			
+			// If newBlockNum is < oldBlockNum we know that we are overwriting
+			// previously written blocks
 			else {
-				printf("new block num is: %d\n", newBlockNum);
+				char blockChars[5];
+
+				for (int j = 0; j < 5; j++)
+				{
+					blockChars[j] = fcb.buf[j];
+				}
+				blockChars[5] = '\0';
+
+				// Convert the characters representing block number to
+				// an integer
+				const char *constBlockNumbs = blockChars;
+				int nextBlock = atoi(constBlockNumbs);
+
+				// printf("new block num is: %d\n", newBlockNum);
 				newBlockNum++;
+
+				printf("We are writing the buffer to our volume in else of loop: %s\n",
+				fcb.buf);
 				LBAwrite(fcb.buf, 1, fcb.location);
+				printf("*******************Done Writing*******************\n");
+
 				fcb.buf = malloc(sizeof(char) * blockSize);
+
 				setBlocksAsAllocated(fcb.location, 1);
+
 				fcb.location = nextBlock;
 				// Read the next block
 				LBAread(fcb.buf, 1, fcb.location);
@@ -498,120 +471,41 @@ int b_write (b_io_fd fd, char * buffer, int count)
 			// fcb.blocksRead++;
 
 			fcb.index = 5;
-			availBlockBytes = 512 - 5;
-			fcb.buflen = availBlockBytes;
+			fcb.buflen = blockSize - fcb.index;
 		}
 
 		// printf("char in fcb.buf[i]: %c\n", fcb.buf[fcb.index]);
 		// printf("char in buffer[i]: %c\n", buffer[i]);
 	}
 
-	// We need to null terminate our buffer, so it doesn't contain
-	// any trailing garbage values
-	// buffer[i] = '\0';
-
-	printf("In b_write() END of loop the offset is: %ld\n", fcb.offset);
-	printf("Index at the end of b_write() is: %d\n", fcb.index);
-	printf("In b_write() END of loop the write offset is: %ld\n", fcb.writeOffset);
-
-	// Store the content of the passed in buffer to our file's
-	// buffer
-	// int availBlockBytes = blockSize - 5;
-
-	// printf("Index at the start of the loop: %d\n", fcb.index);
-	// int mallocNew = 0;
-
-	// for (int i = 0; i < count; i++) {
-	// 	if (fcb.buflen < availBlockBytes) {
-	// 		fcb.buf[fcb.index] = buffer[i];
-	// 		fcb.index++;
-	// 		fcb.offset++;
-	// 		fcb.buflen++;
-	// 	}
-
-	// 	if (fcb.buflen >= availBlockBytes) {		
-	// 		int freeBlock = getFreeBlockNum();
-	// 		// We need to create a copy of freeBlock, because
-	// 		// we don't want the original freeBlock to get modified
-	// 		int numb = freeBlock;
-
-	// 		// The following algorithm will break the next freeBlock 
-	// 		// number into separate digits which we will store as 
-	// 		// characters and when we need to get the combined block
-	// 		// number we can rejoin those digits to get an int
-	// 		int j = 4;
-	// 		while (numb > 0) {
-	// 			int mod = numb % 10;
-	// 			fcb.buf[j] = mod + '0';
-	// 			numb = numb / 10;
-	// 			j--;
-	// 		}
-
-	// 		// If the block number is less than 5 digits
-	// 		// we need to store leading zeros
-	// 		while (j >= 0) {
-	// 			fcb.buf[j] = 0 + '0';
-	// 			j--;
-	// 		}
-
-	// 		// Since we have reached the limit of our current block we
-	// 		// need to write it to the volume
-	// 		LBAwrite(fcb.buf, 1, fcb.location);
-	// 		setBlocksAsAllocated(fcb.location, 1);
-
-	// 		// Test
-	// 		// fcb.blocksWrote++;
-
-	// 		// We now set the location to the next free block
-	// 		// it will be useful when we need to write next
-	// 		// block to our volume
-	// 		fcb.location = freeBlock;
-
-	// 		// Start writing remaining text to the new buffer
-	// 		//free(fcb.buf);
-	// 		fcb.buf = malloc(sizeof(char) * blockSize);
-	// 		fcb.buflen = 0;
-	// 		fcb.index = 5;
-
-	// 	}
-
-	// }
-
 
 	// Write the remaining block to the disk
-	if (fcb.buflen >= 1) {
-		LBAwrite(fcb.buf, 1, fcb.location);
+	if (fcb.index != 5) {
+		// printf("Writing the buffer at: %d\n", fcb.location);
+		printf("Length of our buffer is: %ld\n", strlen(fcb.buf));
+		printf("Index is: %d\n", fcb.index);
+		printf("We are writing the buffer to our volume in the if cond: %s\n", fcb.buf);
+		LBAwrite(fcb.buf, 1, fcb.location);		
+		printf("*******************Done Writing*******************\n");
 		// Test
 		// fcb.blocksWrote++;
-		printf("Index is: %d\n", fcb.index);
-		printf("Buflen is: %d\n", fcb.buflen);
+		// printf("Index is: %d\n", fcb.index);
+		// printf("Buflen is: %d\n", fcb.buflen);
 		// printf("Num blocks written: %d\n", fcb.blocksWrote);
 		setBlocksAsAllocated(fcb.location, 1);
 	}
 
 	fcbArray[fd] = fcb;
-
-	// // ***********************Test Start********************** //
-	// // Get the numbers representing block number from the file
-	// char blockNumbs[5];
-
-	// for (int i = 0; i < 5; i++) {
-	// 	blockNumbs[i] += fcb.buf[i];
-	// }
-
-	// // Display the block numbs
-	// printf("The block numb is: %s\n", blockNumbs);
-
-	// // Convert the characters representing block number to 
-	// // an integer
-	// const char * constBlockNumbs = blockNumbs;
-	// printf("Converted block num is: %d\n", atoi(constBlockNumbs));
-
-	// ***********************Test End********************** //
 		
 	// To indicate that the write function worked correctly we return
 	// the number of bytes written
-	return count;
+	printf("***************num of bytes written: %d***************\n", 
+	numBytesWritten);
+	printf("i at the end of the loop of b_write is: %d\n", i);
+	printf("The buffer contains: %s\n", fcb.buf);
+	printf("******************End of b_write()*******************\n");
+
+	return numBytesWritten;
 	}
 
 
@@ -646,22 +540,19 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		return (-1); 					//invalid file descriptor
 		}
 
-	// Allocate memory for our buffer
+	// Get the file control block associated with our current file
 	b_fcb fcb = fcbArray[fd];
-
-	// Since we only change the read offset in the read
-	// function, so if it's 0 then it means we haven't
-	// read anything yet
 
 	// printf("In b_read() the offset is: %ld\n", fcb.offset);
 	// printf("In b_read() the read offset is: %ld\n", fcb.readOffset);
 
-	printf("*********Top of read***********\n");
-	printf("Top: Offset is %ld\n", fcb.offset);
+	// printf("*********Top of read***********\n");
+	// printf("Top: Offset is %ld\n", fcb.offset);
 
-	// We should only read upto the size of the source
-	// file
-	if (fcb.readOffset >= 530) {
+	// We should only read upto the size of the source file
+	int fileLen = 4247;
+
+	if (fcb.readOffset >= fileLen) {
 		return 0;
 	}
 
@@ -669,9 +560,9 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		// We need to read from the starting block number 
 		// of the file
 		LBAread(fcb.buf, 1, 11);
-		int startAt = fcb.offset % 507;
-		fcb.index = startAt + 5;
-		printf("We haven't read anything yet\n");
+		fcb.index = fcb.offset % 507;
+		fcb.index += 5;
+		// printf("We haven't read anything yet\n");
 	} else {
 		// Calculate the block that we need to read
 		int newBlockNum = fcb.offset / 507;
@@ -680,8 +571,8 @@ int b_read (b_io_fd fd, char * buffer, int count)
 		int startAt = fcb.offset % 507;
 		fcb.index = startAt + 5;
 
-		printf("New block is : %d\n", newBlockNum);
-		printf("Old block is : %d\n", oldBlockNum);
+		// printf("New block is : %d\n", newBlockNum);
+		// printf("Old block is : %d\n", oldBlockNum);
 
 		if (newBlockNum != oldBlockNum) {
 			// Calculate the byte within the block from which
@@ -691,12 +582,14 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 			// The buf needs to contain the data from next blocks
 			if (diff > 0) {
-				printf("We are in a block # greater than the previous block\n");
+				// printf("We are in a block # greater than the previous block\n");
 
 				for (int i = 0; i < diff; i++) {
 					// First we need to get the block number of next block
 					// that is used for our current file
-					// Get the characters representing next block number from the file
+
+					// Get the characters representing next block number from the 
+					// file
 					char blockChars[5];
 
 					for (int j = 0; j < 5; j++) {
@@ -710,17 +603,6 @@ int b_read (b_io_fd fd, char * buffer, int count)
 					const char *constBlockNumbs = blockChars;
 					int nextBlock = atoi(constBlockNumbs);
 
-					// Start reading remaining text from next buffer
-					//free(fcb.buf);
-
-					// If nextBlock = 0, we can assume that we have reached
-					// the end of the file
-					// if (nextBlock == 0)
-					// {
-					// 	printf("Hold up at i: %d\n", i);
-					// 	break;
-					// }
-
 					fcb.buf = malloc(sizeof(char) * blockSize);
 					LBAread(fcb.buf, 1, nextBlock);
 				}
@@ -728,7 +610,7 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 			// The buf needs to contain the data from previous blocks
 			else {
-				printf("We are in a block # smaller than the previous block\n");
+				// printf("We are in a block # smaller than the previous block\n");
 
 				// We need to start from the beginning
 				fcb.buf = malloc(sizeof(char) * blockSize);
@@ -756,17 +638,6 @@ int b_read (b_io_fd fd, char * buffer, int count)
 					const char *constBlockNumbs = blockChars;
 					int nextBlock = atoi(constBlockNumbs);
 
-					// Start reading remaining text from next buffer
-					//free(fcb.buf);
-
-					// If nextBlock = 0, we can assume that we have reached
-					// the end of the file
-					// if (nextBlock == 0)
-					// {
-					// 	printf("Hold up at i: %d\n", i);
-					// 	break;
-					// }
-
 					fcb.buf = malloc(sizeof(char) * blockSize);
 					LBAread(fcb.buf, 1, nextBlock);
 				}
@@ -780,17 +651,30 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 	// // Store the content of the passed in buffer to our file's
 	// // buffer
-	printf("Index in b-read() is: %d\n", fcb.index);
-	int availBlockBytes = 512 - fcb.index;
-	fcb.buflen = availBlockBytes;
+	// printf("Index in b-read() is: %d\n", fcb.index);
+	fcb.buflen = blockSize - fcb.index;
 	// fcb.index = 5;
-	int i = 0;
 
 	// if (fcb.buflen == 0) {
 	// 	return -1;
 	// }
 
+	int numBytesRead = 0;
+
+	int i = 0;
+
 	for (; i < count; i++) {
+		// This marks the EOF
+		if (fcb.readOffset >= fileLen) {
+			printf("***************Num of bytes read: %d***************\n", 
+			numBytesRead);
+			printf("i in last iteration of loop of b_read is: %d\n", i);
+			printf("The buffer contains: %s\n", buffer);
+			printf("******************End of b_read()*******************\n");
+			fcbArray[fd] = fcb;
+			return numBytesRead;
+		}
+
 		// printf("buflen is: %d\n", fcb.buflen);
 		if (fcb.buflen >= 1) {
 			// printf("Buflen in if of read is: %d**********\n", fcb.buflen);
@@ -798,7 +682,8 @@ int b_read (b_io_fd fd, char * buffer, int count)
 			// printf("Index in if of read is: %d*********\n", fcb.index);
 			buffer[i] = fcb.buf[fcb.index];
 			fcb.index++;
-			printf("char is: %d\n", buffer[i]);
+			// printf("char is: %d\n", buffer[i]);
+			numBytesRead++;
 			fcb.buflen--;
 			fcb.offset++;
 			fcb.readOffset++;
@@ -806,7 +691,7 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 		if (fcb.buflen < 1) {
 			// Get the characters representing next block number from the file
-			printf("*************We need another block*************\n");
+			// printf("*************We need another block*************\n");
 			char blockChars[5];
 
 			for (int j = 0; j < 5; j++) {
@@ -824,20 +709,16 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 			// If nextBlock = 0, we can assume that we have reached
 			// the end of the file
-			if (nextBlock == 0) {
-				printf("Hold up at i: %d\n", i);
-				break;
-			}
+			// if (nextBlock == 0) {
+			// 	printf("Hold up at i: %d\n", i);
+			// 	break;
+			// }
 
 			fcb.buf = malloc(sizeof(char) * blockSize);
 			LBAread(fcb.buf, 1, nextBlock);
 
-			// Test
-			// fcb.blocksRead++;
-
 			fcb.index = 5;
-			availBlockBytes = 512 - 5;
-			fcb.buflen = availBlockBytes;
+			fcb.buflen = blockSize - fcb.index;
 		}
 
 		// printf("char in fcb.buf[i]: %c\n", fcb.buf[fcb.index]);
@@ -846,21 +727,30 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 	// We need to null terminate our buffer, so it doesn't contain
 	// any trailing garbage values
-	buffer[i] = '\0';
+	// buffer[i] = '\0';
 
-	printf("In b_read() END of loop the offset is: %ld\n", fcb.offset);
-	printf("Index at the end of b_read() is: %d\n", fcb.index);
-	printf("In b_read() END of loop the read offset is: %ld\n", fcb.readOffset);
+	// printf("In b_read() END of loop the offset is: %ld\n", fcb.offset);
+	// printf("Index at the end of b_read() is: %d\n", fcb.index);
+	// printf("In b_read() END of loop the read offset is: %ld\n", fcb.readOffset);
 
 	fcbArray[fd] = fcb;
 
-	return count;	//Change this
+	printf("***************num of bytes read: %d***************\n", 
+	numBytesRead);
+	printf("i at the end of the loop of b_read is: %d\n", i);
+	printf("The buffer contains: %s\n", buffer);
+	printf("******************End of b_read()*******************\n");
+	return numBytesRead;	
 	}
 	
 // Interface to Close the file	
 void b_close (b_io_fd fd) 
 	{
 	b_fcb fcb = fcbArray[fd];
+
+	fcb.buf = NULL;
+
+	fcbArray[fd] = fcb;
 
 	// We also need to write the directory entry representing
 	// the open file, since we might have changed the file
