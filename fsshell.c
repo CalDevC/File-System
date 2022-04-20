@@ -261,14 +261,52 @@ int cmd_mv(int argcnt, char* argvec[]) {
 #if (CMDMV_ON == 1)				
   // return -99;
   // // **** TODO ****  For you to implement	
-  char* path = argvec[1];
-  printf("argvec[1]: %s\n", path);
-  struct fs_stat statbuf;
+  printf("******ENTER cmd_mv*****\n");
+  printf("argcnt: %d\n", argcnt);
+  int i=0;
+  
+  while(argvec[i] != NULL){
+    printf("argvec[%d]: %s\n", i, argvec[i]);
+    i++;
+  }
 
-  fs_stat(path, &statbuf);
+  /*
+  argvec[0] = mv
+  argvec[1] = src
+  argvec[2] = dest
+  */
 
+
+  if (argcnt == 1){
+    printf("mv: missing file operad\n");
+    printf("Try 'help' for more information\n");
+    return -1;
+  }else{
+    // Pull desired path into memory
+    char * src = argvec[1];
+    char * dest = argvec[2];
+    // hashTable* currentDirTbl = readTableData(workingDir->location);
+    // dirEntry* currentEntry = getEntry(argcnt[1], currentDirTbl);
+    // Check if desitnation file/dir exits
+
+    // Get location of destionation file/dir
+
+    // Rename destionation
+    return 0;
+  }
+
+
+  // THIS WAS ONLY FOR TESTING fs_stat()
+  // char* path = argvec[1];
+  // printf("argvec[1]: %s\n", path);
+  // struct fs_stat statbuf;
+  // fs_stat(path, &statbuf);
+  // END fs_stat() test
+
+  printf("******ENTER cmd_mv*****\n");
 
 #endif
+
   return 0;
 }
 
