@@ -23,6 +23,7 @@
 
 // // Test
 // #include "fsLow.h"
+// #include "directory.c"
 
 #define MAXFCBS 20
 #define B_CHUNK_SIZE 512
@@ -39,6 +40,9 @@ typedef struct b_fcb
 	off_t readOffset;
 	off_t writeOffset;
 	int fileSize;
+	// To represent the directory that contains
+	// the opened file
+	// hashTable* directory;
 	// int blocksRead;
 	// int blocksWrote;
 	// int startBlock;
@@ -161,13 +165,25 @@ b_io_fd b_open (char * filename, int flags)
 	if (returnFd == -1) { // check for error - all used FCB's
 		printf("Error: limit of number of open files exceeded\n");
 		return -1;
-	}	
-
-	// Create a new file if the file specified in the
-	// pathname doesn't already exist ?
+	}
 
 	// Initialize a file control block for the file
 	b_fcb fcb = fcbArray[returnFd];
+
+	if (flags == (O_WRONLY | O_CREAT | O_TRUNC)) {
+		printf("Create the destination file if doesn't already exist\n");
+		// Get the next available block for our file
+		
+		// fcb.directory = rootDir;
+
+		fcb.location = 13;
+		setBlocksAsAllocated(fcb.location, 1);
+	} 
+	else if (flags == O_RDONLY) {
+		printf("The source file must exist\n");
+		fcb.location = 11;
+		setBlocksAsAllocated(fcb.location, 1);
+	}
 
 	// Initially we malloc memory equivalent to 1 block we can malloc 
 	// more memory as we need it
@@ -188,6 +204,8 @@ b_io_fd b_open (char * filename, int flags)
 
 	fcb.writeOffset = 0;
 
+	// If it's a new file then the file size is 0, else we need
+	// to get that information from it's directory entry
 	fcb.fileSize = 0;
 
 	// Test
@@ -196,8 +214,7 @@ b_io_fd b_open (char * filename, int flags)
 	// fcb.blocksWrote = 0;
 
 	// To represent the location at which the current file starts
-	fcb.location = getFreeBlockNum();
-	setBlocksAsAllocated(fcb.location, 1);
+	// fcb.location = getFreeBlockNum();
 
 	// fcb.startBlock = fcb.location;
 
@@ -399,6 +416,9 @@ int b_write (b_io_fd fd, char * buffer, int count)
 			fcb.buf[fcb.index] = buffer[i];
 			fcb.index++;
 			// printf("Index: %d\n", fcb.index);
+			// NOTE: Need to think about how to handle this if we are
+			// overwriting existing content
+			fcb.fileSize++;
 			fcb.buflen--;
 			fcb.offset++;
 			fcb.writeOffset++;
@@ -455,6 +475,8 @@ int b_write (b_io_fd fd, char * buffer, int count)
 				// We now set the location to the next free block
 				// it will be useful when we need to write next
 				// block to our volume
+				printf("Writing the buffer at: %d\n", fcb.location);
+				printf("The buffer is: %s\n", fcb.buf);
 				LBAwrite(fcb.buf, 1, fcb.location);
 				setBlocksAsAllocated(fcb.location, 1);
 				fcb.location = freeBlock;
@@ -636,6 +658,12 @@ int b_read (b_io_fd fd, char * buffer, int count)
 
 	printf("*********Top of read***********\n");
 	printf("Top: Offset is %ld\n", fcb.offset);
+
+	// We should only read upto the size of the source
+	// file
+	if (fcb.readOffset >= 530) {
+		return 0;
+	}
 
 	if (fcb.readOffset == 0) {
 		// We need to read from the starting block number 
@@ -837,6 +865,14 @@ void b_close (b_io_fd fd)
 	// We also need to write the directory entry representing
 	// the open file, since we might have changed the file
 	// size, dateModified, or dateCreated fields
+	// dirEntry *newDir = dirEntryInit(filename, 0, freeBlock,
+	// 								0, time(0), time(0));
+
+	// // Store the directory entry for our new file in the root directory
+	// setEntry(newDir->filename, newDir, rootDir);
+
+	// // Write root directory containing our new file
+	// writeTableData(rootDir, rootDir->location);
 
 	// If fcb.buf is NULL then it means we have already 
 	// written it to the disk and released the memory allocated

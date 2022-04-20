@@ -455,7 +455,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int freeBlock = getFreeBlockNum();
 
   // Create a directory entry for a file
-  dirEntry *newDir = dirEntryInit("zone.txt", 0, freeBlock,
+  dirEntry *newDir = dirEntryInit("src.txt", 0, freeBlock,
                                   maxNumEntries, time(0), time(0));
 
   // Store the directory entry for our new file in the root directory                                
@@ -466,48 +466,75 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Unlike for a directory we allocate 1 block for a file
   setBlocksAsAllocated(freeBlock, 1);
-  LBAwrite(bitVector, 5, 1);
+  // LBAwrite(bitVector, 5, 1);
 
   // *****************Test File Functions************************** //
-  b_io_fd fileDescrip = b_open("zone.txt", 1);
+  // int flags = O_WRONLY | O_CREAT | O_TRUNC;
+
+  // printf("The flags are: %d\n", flags);
+
+  // printf("O_RDONLY flag's value is: %d\n", O_RDONLY);
+  b_io_fd fileDescrip = b_open("src.txt", O_RDONLY);
 
   // Text that we want to store in the zone.txt file
-  char * fileContent = "Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507";  // Write the content to the file
+  char * fileContent = "Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507 hahahahahahahahahahhah";  // Write the content to the file
   int bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
 
-  // b_seek(fileDescrip, 157, SEEK_SET);
 
-  int bytesToRead = 507;
-  char * readText = malloc(sizeof(char) * bytesToRead);
-  b_read(fileDescrip, readText, bytesToRead);
-  printf("In the fs_mkdir() 1, the returned text from b_read() is: %sEND\n\n", 
-  readText);
+  // *************************Create a destination file*********************** //
+    freeBlock = getFreeBlockNum();
 
-  fileContent = "ioi, this is a test file.52";
-  bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+		rootDir = readTableData(vcbPtr->rootDir);
 
-  b_seek(fileDescrip, 2, SEEK_SET);
+		// Create a directory entry for a file and the file size
+		// to be 0
+		newDir = dirEntryInit("dest.txt", maxNumEntries, freeBlock,
+										0, time(0), time(0));
 
-  bytesToRead = 570;
-  readText = malloc(sizeof(char) * bytesToRead);
-  b_read(fileDescrip, readText, bytesToRead);
-  printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n\n", 
-  readText);
+		// Store the directory entry for our new file in the root directory
+		setEntry(newDir->filename, newDir, rootDir);
+
+		// Write root directory containing our new file
+		writeTableData(rootDir, rootDir->location);
+
+		// Unlike for a directory we allocate 1 block for a file
+		setBlocksAsAllocated(freeBlock, 1);
+
+  // ********************End of creating a destination file******************** //
+
+  // // b_seek(fileDescrip, 157, SEEK_SET);
+
+  // int bytesToRead = 507;
+  // char * readText = malloc(sizeof(char) * bytesToRead);
+  // b_read(fileDescrip, readText, bytesToRead);
+  // printf("In the fs_mkdir() 1, the returned text from b_read() is: %sEND\n\n", 
+  // readText);
+
+  // fileContent = "ioi, this is a test file.52";
+  // bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+
+  // b_seek(fileDescrip, 2, SEEK_SET);
+
+  // bytesToRead = 570;
+  // readText = malloc(sizeof(char) * bytesToRead);
+  // b_read(fileDescrip, readText, bytesToRead);
+  // printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n\n", 
+  // readText);
   
 
-  b_seek(fileDescrip, 532, SEEK_SET);
+  // b_seek(fileDescrip, 532, SEEK_SET);
 
-  fileContent = "HiX this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507. Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi 1016";
-  bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+  // fileContent = "HiX this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507. Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi 1016";
+  // bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
 
 
-  b_seek(fileDescrip, 2, SEEK_SET);
+  // b_seek(fileDescrip, 2, SEEK_SET);
 
-  bytesToRead = 1014;
-  readText = malloc(sizeof(char) * bytesToRead);
-  b_read(fileDescrip, readText, bytesToRead);
-  printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n\n", 
-  readText);
+  // bytesToRead = 1014;
+  // readText = malloc(sizeof(char) * bytesToRead);
+  // b_read(fileDescrip, readText, bytesToRead);
+  // printf("In the fs_mkdir() 2, the returned text from b_read() is: %sEND\n\n", 
+  // readText);
 
   // b_seek(fileDescrip, 506, SEEK_SET);
 
@@ -536,10 +563,10 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // readText);
 
   // printf("At index 506 we have: %c\n", readText[506]);
-  printf("**********Calling Close***********\n");
+  // printf("**********Calling Close***********\n");
 
-  // Close the file
-  b_close(fileDescrip);
+  // // Close the file
+  // b_close(fileDescrip);
 
   // ***************************Test end**************************** //
 
