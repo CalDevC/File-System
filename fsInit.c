@@ -872,7 +872,7 @@ int fs_delete(char* filename) {
 *  fs_stat
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf){
-  // fs_stat() displays details associated with the file system
+  // fs_stat() displays file details associated with the file system
 
   printf("************* Entering fs_stat() **************\n");
   int returnVal = 0;
@@ -909,6 +909,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
   printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
   printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
 
+  // Handle the case of when an absolute path is given
   char** parsedPath = stringParser(pathCopy);
   char* desiredPath;
   int i = 0;
@@ -918,38 +919,40 @@ int fs_stat(const char* path, struct fs_stat* buf){
   }
   printf("desiredPath: %s\n", desiredPath);
 
-
   // Pull desired path into memory
   hashTable* currentDirTbl = readTableData(workingDir->location);
   dirEntry* currentEntry = getEntry(desiredPath, currentDirTbl);
-
   if(currentEntry == NULL){
     printf("fs_stat(): getEntry() failed. Could not find path within fs.\n");
     return -1;
   }
-
   printf("Current Entry Filename: %s\n", currentEntry->filename);
 
   printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
+
   printf("File: %s\n", currentEntry->filename);
+
   buf->st_size = currentEntry->fileSize;
   printf("Size: %ld\n", buf->st_size);
-  buf->st_blksize = currentEntry->fileSize;
-  printf("Block size: %ld\n", buf->st_blksize);
+
+  buf->st_blksize = 512;
+  printf("IO Block size: %ld\n", buf->st_blksize);
+
   buf->st_blocks = currentEntry->fileSize / 512;
   printf("Blocks: %ld\n", buf->st_blocks);
 
   // YYYY-MM-DD HH:MM:SS TIMEZONE
   time(&now);
+
   buf->st_accesstime = (long int)ctime(&now) / 60;
   printf("Access Time: %ld\n", buf->st_accesstime);
 
   buf->st_modtime = currentEntry->dateModified;
   printf("Modtime: %ld\n", buf->st_modtime);
 
-
-
   buf->st_createtime = currentEntry->dateCreated;
+  printf("Create Time: %ld\n", buf->st_createtime);
+
   // struct tm ts;
   // char  buf[80];
 
@@ -959,7 +962,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
     
   //   long long int timeInSec = (ep)
   // }
-  printf("Create Time: %ld\n", buf->st_createtime);
+
 
   printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
   //How to write to disk
