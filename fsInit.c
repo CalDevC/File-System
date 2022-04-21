@@ -21,8 +21,6 @@
 #include "fsLow.h"
 #include "mfs.h"
 #include <time.h>
-
-// Test
 #include "b_io.c"
 
 // Magic number for fsInit.c
@@ -31,15 +29,8 @@
 #define NUM_FREE_SPACE_BLOCKS 5
 #define DIR_SIZE 5
 
-// This will help us determine the int block in which we
-// found a bit of value 1 representing free block
-int intBlock = 0;
-
 // Pointer to our root directory (hash table of directory entries)
 hashTable* workingDir;
-
-int blockSize;
-int numOfInts;
 
 struct volumeCtrlBlock {
   long signature;      //Marker left behind that can be checked
@@ -56,33 +47,6 @@ void mallocFailed() {
   exit(-1);
   exitFileSystem();
 }
-
-/****************************************************
-*  getFreeBlockNum
-****************************************************/
-int getFreeBlockNum(int numOfInts, int* bitVector) {
-  //**********Get the free block number ***********
-  // This will help determine the first block number that is
-  // free
-  int freeBlock = 0;
-
-  //****Calculate free space block number*****
-  // We can use the following formula to calculate the block
-  // number => (32 * i) + (32 - j), where (32 * i) will give us 
-  // the number of 32 bit blocks where we found a bit of value 1
-  // and we add (31 - j) which is a offset to get the block number 
-  // it represents within that 32 bit block
-  for (int i = 0; i < numOfInts; i++) {
-    for (int j = 31; j >= 0; j--) {
-      if (bitVector[i] & (1 << j)) {
-        intBlock = i;
-        freeBlock = (intBlock * 32) + (31 - j);
-        return freeBlock;
-      }
-    }
-  }
-}
-
 
 /****************************************************
 *  fs_stat
@@ -159,73 +123,8 @@ int fs_stat(const char* path, struct fs_stat* buf) {
 }
 
 /****************************************************
-*  setBlocksAsAllocated
-****************************************************/
-void setBlocksAsAllocated(int freeBlock, int blocksAllocated, int* bitVector) {
-  // Set the number of bits specified in the blocksAllocated
-  // to 0 starting from freeBlock
-  freeBlock += 1;
-
-  int bitNum = freeBlock - ((intBlock * 32) + 32);
-
-  if (bitNum < 0) {
-    bitNum *= -1;
-  }
-
-  // This will give us the specific bit where
-  // we found the free block in the specific
-  // int block
-  bitNum = 32 - bitNum;
-
-  int index = bitNum;
-  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
-
-  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
-    if (index > 32) {
-      intBlock += 1;
-      index = 1;
-      sumOfFreeBlAndBlocksAlloc -= 32;
-    }
-    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
-  }
-
-  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-}
-
-
-/****************************************************
 *  writeTableData
 ****************************************************/
-void setBlocksAsFree(int freeBlock, int blocksAllocated, int* bitVector) {
-  // Set the number of bits specified in the blocksAllocated
-  // to 1 starting from freeBlock
-  freeBlock += 1;
-
-  int bitNum = freeBlock - ((intBlock * 32) + 32);
-
-  if (bitNum < 0) {
-    bitNum *= -1;
-  }
-
-  // This will give us the specific bit where
-  // we found the free block in the specific
-  // int block
-  bitNum = 32 - bitNum;
-
-  int index = bitNum;
-  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
-
-  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
-    if (index > 32) {
-      intBlock += 1;
-      index = 1;
-      sumOfFreeBlAndBlocksAlloc -= 32;
-    }
-    bitVector[intBlock] = bitVector[intBlock] | (1 << (32 - index));
-  }
-
-  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-}
 
 //Write all directory entries in the hashTable to the disk
 void writeTableData(hashTable* table, int lbaPosition) {
@@ -407,7 +306,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int numBlocksWritten = LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
-    vcbPtr->rootDir = getFreeBlockNum(numOfInts, bitVector);
+    vcbPtr->rootDir = getFreeBlockNum();
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
@@ -430,11 +329,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
     //Get the number of the next free block
-    int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+    int freeBlock = getFreeBlockNum();
 
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
-    setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+    setBlocksAsAllocated(freeBlock, DIR_SIZE);
     writeTableData(rootDir, freeBlock);
 
 
@@ -884,7 +783,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   if (!newEntry) {
     mallocFailed();
   }
-  int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+  int freeBlock = getFreeBlockNum();
 
   // Initialize the new directory entry
   strcpy(newEntry->filename, newDirName);
@@ -919,7 +818,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Update the bit vector
   // printf("NEW FREE BLOCK: %d\n", freeBlock);
-  setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+  setBlocksAsAllocated(freeBlock, DIR_SIZE);
   printTable(parentDir);
 
   printf("Freeing\n");
@@ -975,7 +874,7 @@ int fs_rmdir(const char* pathname) {
   writeTableData(parentDir, parentDir->location);
 
   //Update the free space bit vector
-  setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
+  setBlocksAsFree(dirToRemoveLocation, DIR_SIZE);
 
   printf("Freeing\n");
   free(pathParts);
@@ -1019,7 +918,7 @@ int fs_delete(char* filename) {
   //   writeTableData(childDir, childDir->location);
 
   //   //Update the free space bit vector
-  //   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
+  //   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE);
 
   //   printf("Freeing\n");
   //   free(pathParts);
@@ -1042,7 +941,6 @@ int fs_delete(char* filename) {
   //   LBAread(bitVector, fileLocation, 1);
 
   //   //Update the free space bit vector
-  //   setBlocksAsFree(fileLocation, sizeOfEntry, bitVector);
+  //   setBlocksAsFree(fileLocation, sizeOfEntry);
   return 0;
 }
-

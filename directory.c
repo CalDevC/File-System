@@ -150,7 +150,7 @@ dirEntry* getEntry(char key[20], hashTable* table) {
     entry = entry->next;
   }
   printf("ENTRY IS NULL!\n");
-  
+
   return NULL;
 }
 
