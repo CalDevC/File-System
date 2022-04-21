@@ -260,6 +260,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
   if (vcbPtr->signature == SIG) {
     //Volume was already formatted
+    int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+    int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
+    int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+
+    // Initialize our root directory to be a new hash table of directory entries
+    hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
+    workingDir = readTableData(rootDir->location);
   } else {
     //Volume was not properly formatted
     vcbPtr->signature = SIG;
@@ -752,6 +759,9 @@ deconPath* splitPath(char* fullPath) {
 //Creates a new directory
 int fs_mkdir(const char* pathname, mode_t mode) {
   deconPath* pathParts = splitPath((char*)pathname);
+  if (pathParts->parentPath == NULL) {
+    pathParts->parentPath = ".";
+  }
   char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
