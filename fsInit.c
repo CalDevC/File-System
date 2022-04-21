@@ -904,57 +904,46 @@ int fs_rmdir(const char* pathname) {
 *  fs_delete
 ****************************************************/
 int fs_delete(char* filename) {
-  //   deconPath* pathParts = splitPath((char*)filename);
-  //   char* childPath = pathParts->childName;
-  //   if (fs_isFile((char*)childPath) == 0) {
-  //     return -1;
-  //   }
-  //   hashTable* childDir = getDir(childPath);
+  deconPath* pathParts = splitPath((char*)filename);
+  char* parentPath = pathParts->parentPath;
 
-  //   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  //   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  //   int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+  if (!fs_isDir((char*)filename)) {
+    return -1;
+  }
 
-  //   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-  //   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  hashTable* parentDir = getDir(parentPath);
 
-  //   int fileLocation = getEntry(filename, workingDir)->location;
-  //   hashTable* fileToRemove = readTableData(fileLocation);
+  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
+  // Get the bitVector in memory -- We need to know what
+  // block is free so we can store our new directory
+  // there
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  if (!bitVector) {
+    mallocFailed();
+  }
 
-  //   int dirToRemoveLocation = getEntry(childPath, childDir)->location;
-  //   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
-  //   //Remove dirEntry from the parent dir
-  //   rmEntry(childPath, childDir);
+  char* fileNameToRemove = pathParts->childName;
+  int fileToRemoveLocation = getEntry(fileNameToRemove, parentDir)->location;
 
-  //   //Rewrite parent dir to disk
-  //   writeTableData(childDir, childDir->location);
+  //Iterate over each file block to get all associated block nums
 
-  //   //Update the free space bit vector
-  //   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE);
+  //Set each block num as free
 
-  //   printf("Freeing\n");
-  //   free(pathParts);
-  //   pathParts = NULL;
+  //Remove dirEntry from the parent dir
+  rmEntry(fileNameToRemove, parentDir);
 
-  //   if (fs_isFile((char*)filename) == 0) {
-  //     return -1;
-  //   }
+  //Rewrite parent dir to disk
+  writeTableData(parentDir, parentDir->location);
 
-  //   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  //   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  //   //int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+  printf("Freeing\n");
+  free(pathParts);
+  pathParts = NULL;
 
-  //   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-
-  //   int fileLocation = getEntry(filename, workingDir)->location;
-  //   hashTable* fileToRemove = readTableData(fileLocation);
-
-  //   // Read the bitvector
-  //   LBAread(bitVector, fileLocation, 1);
-
-  //   //Update the free space bit vector
-  //   setBlocksAsFree(fileLocation, sizeOfEntry);
   return 0;
 }
