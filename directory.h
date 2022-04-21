@@ -28,6 +28,16 @@
 #define ENTRIES_PER_BLOCK 16
 #define SIZE 53  
 
+struct volumeCtrlBlock {
+  long signature;      //Marker left behind that can be checked
+                       //to know if the disk is setup correctly 
+  int blockSize;       //The size of each block in bytes
+  long blockCount;	   //The number of blocks in the file system
+  long numFreeBlocks;  //The number of blocks not in use
+  int rootDir;		     //Block number where root starts
+  int freeBlockNum;    //To store the block number where our bitmap starts
+} volumeCtrlBlock;
+
 typedef struct dirEntry {
   int isDir;              //1 if entry is a directory, 0 if it is a file
   int location;           //The block number where the start of the file is stored

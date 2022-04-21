@@ -505,15 +505,14 @@ hashTable* getDir(char* buf) {
 
     hashTable* currDir;
     if (fullPath) {  //Absolute path
-      // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-      // if (!vcbPtr) {
-      //   mallocFailed();
-      // }
-      // LBAread(vcbPtr, 1, 0);
-      // currDir = readTableData(vcbPtr->rootDir);
-      // free(vcbPtr);
-      // vcbPtr = NULL;
-      currDir = getDir("/");
+      struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
+      if (!vcbPtr) {
+        mallocFailed();
+      }
+      LBAread(vcbPtr, 1, 0);
+      currDir = readTableData(vcbPtr->rootDir);
+      free(vcbPtr);
+      vcbPtr = NULL;
     } else {  //Relative path
       currDir = readTableData(workingDir->location);
     }

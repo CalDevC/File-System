@@ -24,9 +24,9 @@
 #include <readline/history.h>
 #include <getopt.h>
 #include <string.h>
+#include "mfs.h"
 #include "b_io.h"
 #include "fsLow.h"
-#include "mfs.h"
 
 #define PERMISSIONS (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)
 

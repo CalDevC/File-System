@@ -20,21 +20,7 @@
 #include <string.h>
 #include "fsLow.h"
 #include <time.h>
-#include "b_io.c"
-
-
-struct volumeCtrlBlock {
-  long signature;      //Marker left behind that can be checked
-                       //to know if the disk is setup correctly 
-  int blockSize;       //The size of each block in bytes
-  long blockCount;	   //The number of blocks in the file system
-  long numFreeBlocks;  //The number of blocks not in use
-  int rootDir;		     //Block number where root starts
-  int freeBlockNum;    //To store the block number where our bitmap starts
-} volumeCtrlBlock;
-
-
-
+#include "b_io.h"
 
 /****************************************************
 *  initFileSystem
