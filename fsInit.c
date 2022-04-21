@@ -474,31 +474,33 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // printf("The flags are: %d\n", flags);
 
   // printf("O_RDONLY flag's value is: %d\n", O_RDONLY);
-  b_io_fd fileDescrip = b_open("src.txt", O_RDONLY);
+  b_io_fd fileDescrip = b_open("src.txt", O_RDWR);
 
-  // Text that we want to store in the zone.txt file
+  // // Text that we want to store in the zone.txt file
   char * fileContent = "Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507 hahahahahahahahahahhah XX9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, XXX hahahahahahahahahahhah Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507 hahahahahahahahahahhah XX9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, XXX hahahahahahahahahahhah Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507 hahahahahahahahahahhah XX9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, XXX hahahahahahahahahahhah Hi9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 507 hahahahahahahahahahhah XX9 this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, 157s is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is ] test file. Hi, this is a test f374. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, this is a test file. Hi, XXX hahahahahahahahahahEOF";  // Write the content to the file
   int bytesWritten = b_write(fileDescrip, fileContent, strlen(fileContent));
+  // char * buff = malloc(sizeof(char) * 512);
+  // LBAwrite(buff, 1, 11);
 
 
   // *************************Create a destination file*********************** //
-    freeBlock = getFreeBlockNum();
+    // freeBlock = getFreeBlockNum();
 
-		rootDir = readTableData(vcbPtr->rootDir);
+		// rootDir = readTableData(vcbPtr->rootDir);
 
-		// Create a directory entry for a file and the file size
-		// to be 0
-		newDir = dirEntryInit("dest.txt", maxNumEntries, freeBlock,
-										0, time(0), time(0));
+		// // Create a directory entry for a file and the file size
+		// // to be 0
+		// newDir = dirEntryInit("dest.txt", maxNumEntries, freeBlock,
+		// 								0, time(0), time(0));
 
-		// Store the directory entry for our new file in the root directory
-		setEntry(newDir->filename, newDir, rootDir);
+		// // Store the directory entry for our new file in the root directory
+		// setEntry(newDir->filename, newDir, rootDir);
 
-		// Write root directory containing our new file
-		writeTableData(rootDir, rootDir->location);
+		// // Write root directory containing our new file
+		// writeTableData(rootDir, rootDir->location);
 
-		// Unlike for a directory we allocate 1 block for a file
-		setBlocksAsAllocated(freeBlock, 1);
+		// // Unlike for a directory we allocate 1 block for a file
+		// setBlocksAsAllocated(freeBlock, 1);
 
   // ********************End of creating a destination file******************** //
 
