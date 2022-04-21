@@ -51,6 +51,12 @@ struct volumeCtrlBlock {
   int freeBlockNum;    //To store the block number where our bitmap starts
 } volumeCtrlBlock;
 
+void mallocFailed() {
+  printf("Call to malloc memory failed, exiting program...\n");
+  exit(-1);
+  exitFileSystem();
+}
+
 /****************************************************
 *  getFreeBlockNum
 ****************************************************/
@@ -122,7 +128,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
 
   printf("Path: %s\n", path);
   printf("Size: %ld\n", buf->st_size);
-  printf("Block size: %ld\n", buf->st_blksize);
+  printf("Block size: %d\n", buf->st_blksize);
   printf("Blocks: %ld\n", buf->st_blocks);
   // YYYY-MM-DD HH:MM:SS TIMEZONE
 
@@ -709,18 +715,15 @@ hashTable* getDir(char* buf) {
       free(vcbPtr);
       vcbPtr = NULL;
     } else {  //Relative path
-      printf("setcwd: Detected Relative path\n");
       currDir = readTableData(workingDir->location);
     }
-
-    printf("setcwd: Starting dir %s\n", currDir->dirName);
 
     //Continue until we have processed each component in the path
     int i = 0;
     if (fullPath) {
       i++;
     }
-    printf("Starting setcwd loop %s\n", parsedPath[i]);
+
     dirEntry* entry;
     for (; parsedPath[i] != NULL; i++) {
       //check that the location exists and that it is a directory
@@ -728,18 +731,26 @@ hashTable* getDir(char* buf) {
       free(currDir);
       currDir = readTableData(entry->location);
     }
-    printf("Ending setcwd loop\n");
-    workingDir = readTableData(currDir->location);
-    printf("currDir name: %s\n", currDir->dirName);
 
     return readTableData(currDir->location);
 
   } else {
+    printf("From getDir, isDir returned false\n");
+    return NULL;
+  }
+}
+
+int fs_setcwd(char* buf) {
+  hashTable* requestedDir = getDir(buf);
+
+  if (requestedDir == NULL) {
     printf("From setcwd, isDir returned false\n");
     return -1;
   }
 
-
+  workingDir = requestedDir;
+  printf("Leaving setcwd with working dir %s\n", workingDir->dirName);
+  return 0;
 }
 
 /****************************************************
@@ -848,12 +859,8 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     return -1;
   }
 
-  char* temp = malloc(51);
-  char* startingDir = fs_getcwd(temp, 50);
-  // printf("Starting dir %s\n", startingDir);
-  // printf("Parent path is %s\n", parentPath);
-  fs_setcwd(parentPath);
-  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
+  hashTable* parentDir = getDir(parentPath);
+  printf("Parent dir is %s\n", parentDir->dirName);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -889,37 +896,33 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Put the updated directory entry back
   // into the directory
-  setEntry(newDirName, newEntry, workingDir);
+  setEntry(newDirName, newEntry, parentDir);
 
   // Initialize the directory entries within the new
   // directory
-  int startBlock = getEntry(newDirName, workingDir)->location;
+  int startBlock = getEntry(newDirName, parentDir)->location;
   hashTable* dirEntries = hashTableInit(newDirName, maxNumEntries, startBlock);
 
   // Initializing the "." current directory and the ".." parent Directory
-  dirEntry* curDir = dirEntryInit(".", 1, freeBlock,
+  dirEntry* currDirEnt = dirEntryInit(".", 1, freeBlock,
     dirSizeInBytes, time(0), time(0));
-  setEntry(curDir->filename, curDir, dirEntries);
+  setEntry(currDirEnt->filename, currDirEnt, dirEntries);
 
-  dirEntry* parentDir = dirEntryInit("..", 1, workingDir->location,
+  dirEntry* parentDirEnt = dirEntryInit("..", 1, parentDir->location,
     dirSizeInBytes, time(0), time(0));
-  setEntry(parentDir->filename, parentDir, dirEntries);
+  setEntry(parentDirEnt->filename, parentDirEnt, dirEntries);
 
   // Write parent directory
-  writeTableData(workingDir, workingDir->location);
+  writeTableData(parentDir, parentDir->location);
   // Write new directory
   writeTableData(dirEntries, dirEntries->location);
 
   // Update the bit vector
   // printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
-  printTable(workingDir);
-  printf("About to setcwd as %s\n", startingDir);
-  fs_setcwd(startingDir);
-  printf("Freeing\n");
-  free(startingDir);
-  startingDir = NULL;
+  printTable(parentDir);
 
+  printf("Freeing\n");
   free(bitVector);
   bitVector = NULL;
   free(newEntry);
@@ -938,12 +941,7 @@ int fs_rmdir(const char* pathname) {
     return -1;
   }
 
-  char* temp = malloc(51);
-  char* startingDir = fs_getcwd(temp, 50);
-  // printf("Starting dir %s\n", startingDir);
-  // printf("Parent path is %s\n", parentPath);
-  fs_setcwd(parentPath);
-  // printf("Working dir name is %s at %d\n", workingDir->dirName, workingDir->location);
+  hashTable* parentDir = getDir(parentPath);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -961,7 +959,7 @@ int fs_rmdir(const char* pathname) {
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
   char* dirNameToRemove = pathParts->childName;
-  int dirToRemoveLocation = getEntry(dirNameToRemove, workingDir)->location;
+  int dirToRemoveLocation = getEntry(dirNameToRemove, parentDir)->location;
   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
 
   //Check if empty
@@ -971,89 +969,80 @@ int fs_rmdir(const char* pathname) {
   }
 
   //Remove dirEntry from the parent dir
-  rmEntry(dirNameToRemove, workingDir);
+  rmEntry(dirNameToRemove, parentDir);
 
   //Rewrite parent dir to disk
-  writeTableData(workingDir, workingDir->location);
+  writeTableData(parentDir, parentDir->location);
 
   //Update the free space bit vector
   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
 
-  //Set workingDir back
-  fs_setcwd(startingDir);
-
   printf("Freeing\n");
-  // free(startingDir);
-  // startingDir = NULL;
-  free(temp);
-  temp = NULL;
   free(pathParts);
   pathParts = NULL;
 
   return 0;
 }
+
+
+
 
 /****************************************************
 *  fs_delete
 ****************************************************/
 int fs_delete(char* filename) {
-  deconPath* pathParts = splitPath((char*)filename);
-  char* childPath = pathParts->childName;
-  if (fs_isFile((char*)childPath) == 0) {
-    return -1;
-  }
-  hashTable* childDir = getDir(childPath);
+  //   deconPath* pathParts = splitPath((char*)filename);
+  //   char* childPath = pathParts->childName;
+  //   if (fs_isFile((char*)childPath) == 0) {
+  //     return -1;
+  //   }
+  //   hashTable* childDir = getDir(childPath);
 
-  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+  //   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  //   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  //   int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  //   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  //   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
-  int fileLocation = getEntry(filename, workingDir)->location;
-  hashTable* fileToRemove = readTableData(fileLocation);
+  //   int fileLocation = getEntry(filename, workingDir)->location;
+  //   hashTable* fileToRemove = readTableData(fileLocation);
 
 
-  int dirToRemoveLocation = getEntry(childPath, childDir)->location;
-  hashTable* dirToRemove = readTableData(dirToRemoveLocation);
+  //   int dirToRemoveLocation = getEntry(childPath, childDir)->location;
+  //   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
 
-  //Remove dirEntry from the parent dir
-  rmEntry(childPath, childDir);
+  //   //Remove dirEntry from the parent dir
+  //   rmEntry(childPath, childDir);
 
-  //Rewrite parent dir to disk
-  writeTableData(childDir, childDir->location);
+  //   //Rewrite parent dir to disk
+  //   writeTableData(childDir, childDir->location);
 
-  //Update the free space bit vector
-  setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
+  //   //Update the free space bit vector
+  //   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE, bitVector);
 
-  printf("Freeing\n");
-  free(pathParts);
-  pathParts = NULL;
+  //   printf("Freeing\n");
+  //   free(pathParts);
+  //   pathParts = NULL;
 
-  if (fs_isFile((char*)filename) == 0) {
-    return -1;
-  }
+  //   if (fs_isFile((char*)filename) == 0) {
+  //     return -1;
+  //   }
 
-  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  //int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+  //   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  //   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  //   //int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  //   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
 
-  int fileLocation = getEntry(filename, workingDir)->location;
-  hashTable* fileToRemove = readTableData(fileLocation);
+  //   int fileLocation = getEntry(filename, workingDir)->location;
+  //   hashTable* fileToRemove = readTableData(fileLocation);
 
-  // Read the bitvector
-  LBAread(bitVector, fileLocation, 1);
+  //   // Read the bitvector
+  //   LBAread(bitVector, fileLocation, 1);
 
-  //Update the free space bit vector
-  setBlocksAsFree(fileLocation, sizeOfEntry, bitVector);
+  //   //Update the free space bit vector
+  //   setBlocksAsFree(fileLocation, sizeOfEntry, bitVector);
   return 0;
 }
 
-void mallocFailed() {
-  printf("Call to malloc memory failed, exiting program...\n");
-  exit(-1);
-  exitFileSystem();
-}
