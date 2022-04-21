@@ -44,10 +44,10 @@ typedef struct b_fcb {
   int fileSize;			//holds the size of the opened file
   char flags[5];  		//at max we can have 4 flags set
 
-  hashTable* directory; 	//points to the directory that contains
-              //the opened file
+  // hashTable* directory; 	//points to the directory that contains
+  //             //the opened file
 
-  dirEntry* entry;  		//points to the directory entry associated
+  // dirEntry* entry;  		//points to the directory entry associated
                 //with opened file
 } b_fcb;
 
@@ -204,6 +204,7 @@ b_io_fd b_open(char* filename, int flags) {
   b_fcb fcb = fcbArray[returnFd];
 
   // If the parent path is invalid return error
+  printf("The file name is: %s\n", filename);
 
   // If last component exists:
     // If the last component of the path exists, and is a directory
@@ -276,9 +277,9 @@ b_io_fd b_open(char* filename, int flags) {
     setBlocksAsAllocated(fcb.location, 1);
   } else if (flags == O_RDONLY) {
     printf("The source file must exist\n");
-    fcb.location = 11;
+    fcb.location = 2;
     // printf("Src file starting at: %d\n", fcb.location);
-    setBlocksAsAllocated(fcb.location, 1);
+    // setBlocksAsAllocated(fcb.location, 1);
   }
 
   // Initially we malloc memory equivalent to 1 block we can malloc 

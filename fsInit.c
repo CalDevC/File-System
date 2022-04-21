@@ -52,71 +52,71 @@ void mallocFailed() {
 *  fs_stat
 ****************************************************/
 int fs_stat(const char* path, struct fs_stat* buf) {
-  // fs_stat() displays details associated with the file system
+  // // fs_stat() displays details associated with the file system
 
-  printf("************* Entering fs_stat() **************\n");
+  // printf("************* Entering fs_stat() **************\n");
 
   int returnVal = 0;
-  time_t now;
-  struct tm* local = localtime(&now);
+  // time_t now;
+  // struct tm* local = localtime(&now);
 
-  // *** Validation Checks ***
-  printf("*** Validation Checks ***\n");
-  if (path == NULL) {
-    printf("fs_stat(): Path cannot be null.\n");
-    return -1;
-  } else {
-    printf("fs_stat(): const char* path is: %s\n", path);
-  }
-
-  char* pathCopy = malloc(sizeof(path));
-
-  if (pathCopy == NULL) {
-    printf("fs_stat(): Memory allocation error.\n");
-    return -1;
-  } else {
-    printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
-  }
-
-  printf("fs_stat(): Validity checks finished.\n\n");
-
-  // *** Store information ***
-  printf("*** Store information ***\n");
-  strcpy(pathCopy, path);
-  printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
-  printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
-  hashTable* currentDirTbl;
-  // currentDirTbl = readTableData(workingDir->location);
-  // dirEntry* currentEntry getEntry(pathCopy, currentDirTbl);
-  // printf("Current Entry Filename: %s\n", currentEntry->filename);
-
-  printf("Path: %s\n", path);
-  printf("Size: %ld\n", buf->st_size);
-  printf("Block size: %d\n", buf->st_blksize);
-  printf("Blocks: %ld\n", buf->st_blocks);
-  // YYYY-MM-DD HH:MM:SS TIMEZONE
-
-  time(&now);
-  buf->st_accesstime = (long int)ctime(&now);
-  printf("Access Time: %ld\n", buf->st_accesstime);
-
-  // buf->st_modtime = currEntry->dateModified;
-  printf("Modtime: %ld\n", buf->st_modtime);
-
-
-
-  // buf->st_createtime = currEntry->dateCreated;
-  // struct tm ts;
-  // char  buf[80];
-
-  // ts = *localtime(currEntry->dateCreated);
-  // char * convertTime(time_t epochTime){
-  //   int epochTimeInt = (int)epochTime; 
-
-  //   long long int timeInSec = (ep)
+  // // *** Validation Checks ***
+  // printf("*** Validation Checks ***\n");
+  // if (path == NULL) {
+  //   printf("fs_stat(): Path cannot be null.\n");
+  //   return -1;
+  // } else {
+  //   printf("fs_stat(): const char* path is: %s\n", path);
   // }
 
-  printf("Create Time: %ld\n", buf->st_createtime);
+  // char* pathCopy = malloc(sizeof(path));
+
+  // if (pathCopy == NULL) {
+  //   printf("fs_stat(): Memory allocation error.\n");
+  //   return -1;
+  // } else {
+  //   printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
+  // }
+
+  // printf("fs_stat(): Validity checks finished.\n\n");
+
+  // // *** Store information ***
+  // printf("*** Store information ***\n");
+  // strcpy(pathCopy, path);
+  // printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
+  // printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
+  // hashTable* currentDirTbl;
+  // // currentDirTbl = readTableData(workingDir->location);
+  // // dirEntry* currentEntry getEntry(pathCopy, currentDirTbl);
+  // // printf("Current Entry Filename: %s\n", currentEntry->filename);
+
+  // printf("Path: %s\n", path);
+  // printf("Size: %ld\n", buf->st_size);
+  // printf("Block size: %d\n", buf->st_blksize);
+  // printf("Blocks: %ld\n", buf->st_blocks);
+  // // YYYY-MM-DD HH:MM:SS TIMEZONE
+
+  // time(&now);
+  // buf->st_accesstime = (long int)ctime(&now);
+  // printf("Access Time: %ld\n", buf->st_accesstime);
+
+  // // buf->st_modtime = currEntry->dateModified;
+  // printf("Modtime: %ld\n", buf->st_modtime);
+
+
+
+  // // buf->st_createtime = currEntry->dateCreated;
+  // // struct tm ts;
+  // // char  buf[80];
+
+  // // ts = *localtime(currEntry->dateCreated);
+  // // char * convertTime(time_t epochTime){
+  // //   int epochTimeInt = (int)epochTime; 
+
+  // //   long long int timeInSec = (ep)
+  // // }
+
+  // printf("Create Time: %ld\n", buf->st_createtime);
 
   //How to write to disk
   return returnVal;
