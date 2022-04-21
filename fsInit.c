@@ -753,13 +753,6 @@ deconPath* splitPath(char* fullPath) {
   pathParts->parentPath = parentPath;
   pathParts->childName = parsedPath[i];
 
-  return pathParts;
-}
-
-//Creates a new directory
-int fs_mkdir(const char* pathname, mode_t mode) {
-  deconPath* pathParts = splitPath((char*)pathname);
-
   if (strcmp(pathParts->parentPath, "") == 0) {
     pathParts->parentPath = ".";
   } else if (strcmp(pathParts->childName, "") == 0) {
@@ -767,6 +760,12 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     pathParts->parentPath = ".";
   }
 
+  return pathParts;
+}
+
+//Creates a new directory
+int fs_mkdir(const char* pathname, mode_t mode) {
+  deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
