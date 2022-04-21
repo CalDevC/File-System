@@ -759,9 +759,14 @@ deconPath* splitPath(char* fullPath) {
 //Creates a new directory
 int fs_mkdir(const char* pathname, mode_t mode) {
   deconPath* pathParts = splitPath((char*)pathname);
-  if (pathParts->parentPath == NULL) {
+
+  if (strcmp(pathParts->parentPath, "") == 0) {
+    pathParts->parentPath = ".";
+  } else if (strcmp(pathParts->childName, "") == 0) {
+    pathParts->childName = pathParts->parentPath;
     pathParts->parentPath = ".";
   }
+
   char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
