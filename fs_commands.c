@@ -5,9 +5,7 @@ void mallocFailed() {
   exit(-1);
 }
 
-/****************************************************
-*  readTableData
-****************************************************/
+
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaPosition) {
   int arrNumBytes = ((DIR_SIZE * blockSize) / sizeof(dirEntry)) * sizeof(dirEntry);
@@ -47,116 +45,6 @@ hashTable* readTableData(int lbaPosition) {
   return dirPtr;
 }
 
-
-
-// This will help us determine the int block in which we
-// found a bit of value 1 representing free block
-int intBlock = 0;
-
-int getFreeBlockNum() {
-  //**********Get the free block number ***********
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
-
-  // This will help determine the first block number that is
-  // free
-  int freeBlock = 0;
-
-  //****Calculate free space block number*****
-  // We can use the following formula to calculate the block
-  // number => (32 * i) + (32 - j), where (32 * i) will give us 
-  // the number of 32 bit blocks where we found a bit of value 1
-  // and we add (31 - j) which is a offset to get the block number 
-  // it represents within that 32 bit block
-  for (int i = 0; i < numOfInts; i++) {
-    for (int j = 31; j >= 0; j--) {
-      if (bitVector[i] & (1 << j)) {
-        intBlock = i;
-        freeBlock = (intBlock * 32) + (31 - j);
-        return freeBlock;
-      }
-    }
-  }
-}
-
-void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
-
-  // Set the number of bits specified in the blocksAllocated
-  // to 0 starting from freeBlock
-  freeBlock += 1;
-
-  int bitNum = freeBlock - ((intBlock * 32) + 32);
-
-  if (bitNum < 0) {
-    bitNum *= -1;
-  }
-
-  // This will give us the specific bit where
-  // we found the free block in the specific
-  // int block
-  bitNum = 32 - bitNum;
-
-  int index = bitNum;
-  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
-
-  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
-    if (index > 32) {
-      intBlock += 1;
-      index = 1;
-      sumOfFreeBlAndBlocksAlloc -= 32;
-    }
-    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
-  }
-
-  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-}
-
-void setBlocksAsFree(int freeBlock, int blocksAllocated) {
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
-
-  // Set the number of bits specified in the blocksAllocated
-  // to 1 starting from freeBlock
-  freeBlock += 1;
-
-  int bitNum = freeBlock - ((intBlock * 32) + 32);
-
-  if (bitNum < 0) {
-    bitNum *= -1;
-  }
-
-  // This will give us the specific bit where
-  // we found the free block in the specific
-  // int block
-  bitNum = 32 - bitNum;
-
-  int index = bitNum;
-  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
-
-  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
-    if (index > 32) {
-      intBlock += 1;
-      index = 1;
-      sumOfFreeBlAndBlocksAlloc -= 32;
-    }
-    bitVector[intBlock] = bitVector[intBlock] | (1 << (32 - index));
-  }
-
-  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-}
-
-
-/****************************************************
-*  writeTableData
-****************************************************/
 
 //Write all directory entries in the hashTable to the disk
 void writeTableData(hashTable* table, int lbaPosition) {
@@ -350,10 +238,113 @@ deconPath* splitPath(char* fullPath) {
   return pathParts;
 }
 
+// This will help us determine the int block in which we
+// found a bit of value 1 representing free block
+int intBlock = 0;
 
-/****************************************************
-*  fs_stat
-****************************************************/
+int getFreeBlockNum() {
+  //**********Get the free block number ***********
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
+
+  // This will help determine the first block number that is
+  // free
+  int freeBlock = 0;
+
+  //****Calculate free space block number*****
+  // We can use the following formula to calculate the block
+  // number => (32 * i) + (32 - j), where (32 * i) will give us 
+  // the number of 32 bit blocks where we found a bit of value 1
+  // and we add (31 - j) which is a offset to get the block number 
+  // it represents within that 32 bit block
+  for (int i = 0; i < numOfInts; i++) {
+    for (int j = 31; j >= 0; j--) {
+      if (bitVector[i] & (1 << j)) {
+        intBlock = i;
+        freeBlock = (intBlock * 32) + (31 - j);
+        return freeBlock;
+      }
+    }
+  }
+}
+
+
+void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
+
+  // Set the number of bits specified in the blocksAllocated
+  // to 0 starting from freeBlock
+  freeBlock += 1;
+
+  int bitNum = freeBlock - ((intBlock * 32) + 32);
+
+  if (bitNum < 0) {
+    bitNum *= -1;
+  }
+
+  // This will give us the specific bit where
+  // we found the free block in the specific
+  // int block
+  bitNum = 32 - bitNum;
+
+  int index = bitNum;
+  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
+
+  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
+    if (index > 32) {
+      intBlock += 1;
+      index = 1;
+      sumOfFreeBlAndBlocksAlloc -= 32;
+    }
+    bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
+  }
+
+  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+}
+
+
+void setBlocksAsFree(int freeBlock, int blocksFreed) {
+  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+
+  // Read the bitvector
+  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
+
+  // Set the number of bits specified in the blocksFreed
+  // to 1 starting from freeBlock
+  freeBlock += 1;
+
+  int bitNum = freeBlock - ((intBlock * 32) + 32);
+
+  if (bitNum < 0) {
+    bitNum *= -1;
+  }
+
+  // This will give us the specific bit where
+  // we found the free block in the specific
+  // int block
+  bitNum = 32 - bitNum;
+
+  int index = bitNum;
+  int total = (bitNum + blocksFreed);
+
+  for (; index < total; index++) {
+    if (index > 32) {
+      intBlock += 1;
+      index = 1;
+      total -= 32;
+    }
+    bitVector[intBlock] = bitVector[intBlock] | (1 << (32 - index));
+  }
+
+  LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+}
+
+
 int fs_stat(const char* path, struct fs_stat* buf) {
   // // fs_stat() displays details associated with the file system
 
@@ -425,18 +416,19 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   return returnVal;
 }
 
-
 //Check if a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
   int result = isDirWithValidPath(path);
   return result == -1 ? 0 : result;
 }
 
+
 // Check if a path is a file (1 = yes, 0 = no)
 int fs_isFile(char* path) {
   int result = isDirWithValidPath(path);
   return result == -1 ? 0 : !result;
 }
+
 
 // Opens a directory stream corresponding to 'name', and returns
 // a pointer to the directory stream
@@ -457,6 +449,7 @@ fdDir* fs_opendir(const char* name) {
   return fdDir;
 }
 
+
 // Closes the directory stream associated with dirp
 int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
@@ -465,6 +458,7 @@ int fs_closedir(fdDir* dirp) {
   dirp = NULL;
   return 0;
 }
+
 
 struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
@@ -539,10 +533,7 @@ hashTable* getDir(char* buf) {
   }
 }
 
-/****************************************************
-*  stringParser
-****************************************************/
-// Helper functions
+
 char** stringParser(char* inputStr) {
   // Divide the path provided by the user into
   // several sub paths
@@ -586,7 +577,6 @@ char** stringParser(char* inputStr) {
 }
 
 
-
 int fs_setcwd(char* buf) {
   hashTable* requestedDir = getDir(buf);
 
@@ -600,9 +590,7 @@ int fs_setcwd(char* buf) {
   return 0;
 }
 
-/****************************************************
-*  fs_getcwd
-****************************************************/
+
 char* fs_getcwd(char* buf, size_t size) {
   char* path = malloc(size);
   if (!path) {
@@ -748,6 +736,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   return 0;
 }
 
+
 int fs_rmdir(const char* pathname) {
   deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
@@ -800,11 +789,6 @@ int fs_rmdir(const char* pathname) {
 }
 
 
-
-
-/****************************************************
-*  fs_delete
-****************************************************/
 int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
   char* parentPath = pathParts->parentPath;

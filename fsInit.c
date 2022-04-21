@@ -22,11 +22,9 @@
 #include <time.h>
 #include "b_io.h"
 
-/****************************************************
-*  initFileSystem
-****************************************************/
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
+
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
     numberOfBlocks, definedBlockSize);
 
