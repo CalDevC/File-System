@@ -17,8 +17,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <time.h>
-
-#include "b_io.h"
 #include "directory.h"
 
 #include <dirent.h>

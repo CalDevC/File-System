@@ -19,9 +19,10 @@
 #include <stdio.h>
 #include <string.h>
 #include "fsLow.h"
-#include "mfs.h"
 #include <time.h>
+#include "b_io.h"
 
+<<<<<<< HEAD
 // Test
 #include "b_io.c"
 
@@ -245,8 +246,11 @@ hashTable* readTableData(int lbaPosition) {
 /****************************************************
 *  initFileSystem
 ****************************************************/
+=======
+>>>>>>> origin/chase
 //Initialize the file system
 int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
+
   printf("Initializing File System with %ld blocks with a block size of %ld\n",
     numberOfBlocks, definedBlockSize);
 
@@ -267,6 +271,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
   if (vcbPtr->signature == SIG) {
     //Volume was already formatted
+    int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+    int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
+    int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+
+    // Initialize our root directory to be a new hash table of directory entries
+    hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
+    workingDir = readTableData(rootDir->location);
   } else {
     //Volume was not properly formatted
     vcbPtr->signature = SIG;
@@ -310,7 +321,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int numBlocksWritten = LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
-    vcbPtr->rootDir = getFreeBlockNum(numOfInts, bitVector);
+    vcbPtr->rootDir = getFreeBlockNum();
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
@@ -333,11 +344,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
     //Get the number of the next free block
-    int freeBlock = getFreeBlockNum(numOfInts, bitVector);
+    int freeBlock = getFreeBlockNum();
 
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
-    setBlocksAsAllocated(freeBlock, DIR_SIZE, bitVector);
+    setBlocksAsAllocated(freeBlock, DIR_SIZE);
     writeTableData(rootDir, freeBlock);
 
 
@@ -397,6 +408,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 ****************************************************/
 void exitFileSystem() {
   printf("System exiting\n");
+<<<<<<< HEAD
 }
 
 /****************************************************
@@ -970,4 +982,6 @@ int fs_stat(const char* path, struct fs_stat* buf){
   // printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
   // LBAwrite();
   return 0;
+=======
+>>>>>>> origin/chase
 }
