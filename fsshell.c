@@ -473,6 +473,7 @@ int cmd_pwd(int argcnt, char* argvec[]) {
   {
     printf("An error occurred while trying to get the current working directory\n");
   } else {
+    printf("cmd_pwd(): ptr is not NULL\n");
     printf("%s\n", ptr);
   }
   free(dir_buf);
