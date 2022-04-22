@@ -868,26 +868,6 @@ int fs_delete(char* filename) {
   return 0;
 }
 
-
-/****************************************************
-*  fs_mv
-****************************************************/
-// int fs_mv(const char* src, const char* dest){
-//   // Pull desired path into memory
-  
-//   hashTable* currentDirTbl = readTableData(workingDir->location);
-//   dirEntry* currentEntry = getEntry(src, currentDirTbl);
-//   printf("src: %s\n", currentEntry->filename);
-//   // Check if desitnation file/dir exits
-
-//   // Get location of destionation file/dir
-
-//   // Rename destionation
-
-//   // Return successful or not
-//   return 0;
-// }
-
 /****************************************************
 *  fs_stat
 ****************************************************/
