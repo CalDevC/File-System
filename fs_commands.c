@@ -345,75 +345,108 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
 }
 
 
-int fs_stat(const char* path, struct fs_stat* buf) {
-  // // fs_stat() displays details associated with the file system
+/****************************************************
+*  fs_stat
+****************************************************/
+int fs_stat(const char* path, struct fs_stat* buf){
+  // fs_stat() displays file details associated with the file system
 
   // printf("************* Entering fs_stat() **************\n");
 
-  int returnVal = 0;
-  // time_t now;
-  // struct tm* local = localtime(&now);
+  // *** Validation Checks ***
+  //printf("*** Validation Checks ***\n");
+  if (path == NULL){
+    printf("fs_stat(): Path cannot be null.\n");
+    return -1;
+  }else{
+    //printf("fs_stat(): const char* path is: %s\n", path);
+  }
+  
+  char* pathCopy = malloc(sizeof(path));
 
-  // // *** Validation Checks ***
-  // printf("*** Validation Checks ***\n");
-  // if (path == NULL) {
-  //   printf("fs_stat(): Path cannot be null.\n");
-  //   return -1;
-  // } else {
-  //   printf("fs_stat(): const char* path is: %s\n", path);
-  // }
-
-  // char* pathCopy = malloc(sizeof(path));
-
-  // if (pathCopy == NULL) {
-  //   printf("fs_stat(): Memory allocation error.\n");
-  //   return -1;
-  // } else {
-  //   printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
-  // }
+  if(pathCopy == NULL){
+    printf("fs_stat(): Memory allocation error.\n");
+    return -1;
+  }else{
+    //printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
+  }
 
   // printf("fs_stat(): Validity checks finished.\n\n");
-
-  // // *** Store information ***
+  
+  // *** Store information ***
   // printf("*** Store information ***\n");
-  // strcpy(pathCopy, path);
+
+
+  // Create a char* from const char* in order to manipulate path
+  strcpy(pathCopy, path);
   // printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
   // printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
-  // hashTable* currentDirTbl;
-  // // currentDirTbl = readTableData(workingDir->location);
-  // // dirEntry* currentEntry getEntry(pathCopy, currentDirTbl);
-  // // printf("Current Entry Filename: %s\n", currentEntry->filename);
 
-  // printf("Path: %s\n", path);
-  // printf("Size: %ld\n", buf->st_size);
-  // printf("Block size: %d\n", buf->st_blksize);
-  // printf("Blocks: %ld\n", buf->st_blocks);
-  // // YYYY-MM-DD HH:MM:SS TIMEZONE
+  // Handle the case of when an absolute path is given
+  char** parsedPath = stringParser(pathCopy);
+  char* desiredPath;
+  int i = 0;
+  while(parsedPath[i] != NULL){
+    desiredPath = parsedPath[i];
+    i++;
+  }
+  // printf("desiredPath: %s\n", desiredPath);
 
-  // time(&now);
-  // buf->st_accesstime = (long int)ctime(&now);
-  // printf("Access Time: %ld\n", buf->st_accesstime);
+  // Pull desired path into memory
+  hashTable* currentDirTbl = readTableData(workingDir->location);
+  dirEntry* currentEntry = getEntry(desiredPath, currentDirTbl);
+  if(currentEntry == NULL){
+    printf("fs_stat(): getEntry() failed. Could not find path within fs.\n");
+    return -1;
+  }
+  // printf("Current Entry Filename: %s\n", currentEntry->filename);
 
-  // // buf->st_modtime = currEntry->dateModified;
-  // printf("Modtime: %ld\n", buf->st_modtime);
+  // printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
 
+  printf("File: \t%s\n", currentEntry->filename);
 
+  buf->st_size = currentEntry->fileSize;
+  printf("Size: \t%ld\n", buf->st_size);
 
-  // // buf->st_createtime = currEntry->dateCreated;
-  // // struct tm ts;
-  // // char  buf[80];
+  buf->st_blksize = 512;
+  printf("IO Block size: \t%d\n", buf->st_blksize);
 
-  // // ts = *localtime(currEntry->dateCreated);
-  // // char * convertTime(time_t epochTime){
-  // //   int epochTimeInt = (int)epochTime; 
+  buf->st_blocks = currentEntry->fileSize / 512;
+  printf("Blocks: \t%ld\n", buf->st_blocks);
 
-  // //   long long int timeInSec = (ep)
-  // // }
+  // Create variables for time
+  time_t currentTime;
+  struct tm ts;
+  char time_buf[80];
 
-  // printf("Create Time: %ld\n", buf->st_createtime);
+  // time_t now;   
+  // struct tm *local = localtime(&now);
 
-  //How to write to disk
-  return returnVal;
+  // This returns the current time
+  time(&currentTime);
+  //printf("Current time is \t%ld\n", time(&currentTime));
+  // Adjust to local time and format into YYYY-MM-DD HH:MM:SS TIMEZONE
+  ts = *localtime(&currentTime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  //printf("Current time formatted: \t%s\n", time_buf);
+
+  // Store epoch time, but print out formatted time
+  buf->st_accesstime = (long int)ctime(&currentTime) / 60;
+  printf("Access Time: \t%s\n", time_buf);
+
+  buf->st_modtime = currentEntry->dateModified;
+  ts = *localtime(&buf->st_modtime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Modtime: \t%s\n", time_buf);
+
+  buf->st_createtime = currentEntry->dateCreated;
+  ts = *localtime(&buf->st_createtime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Create Time: \t%s\n", time_buf);
+
+  // printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
+  // LBAwrite();
+  return 0;
 }
 
 //Check if a path is a directory (1 = yes, 0 = no)
