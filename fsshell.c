@@ -292,16 +292,16 @@ int cmd_mv(int argcnt, char* argvec[]) {
     // Get location of destionation file/dir
 
     // Rename destionation
+   
+    // THIS WAS ONLY FOR TESTING fs_stat()
+      char* path = argvec[1];
+      printf("argvec[1]: %s\n", path);
+      struct fs_stat statbuf;
+      fs_stat(path, &statbuf);
+      // END fs_stat() test
+
     return 0;
   }
-
-
-  // THIS WAS ONLY FOR TESTING fs_stat()
-  // char* path = argvec[1];
-  // printf("argvec[1]: %s\n", path);
-  // struct fs_stat statbuf;
-  // fs_stat(path, &statbuf);
-  // END fs_stat() test
 
   printf("******ENTER cmd_mv*****\n");
 

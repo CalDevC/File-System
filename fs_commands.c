@@ -344,7 +344,6 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
   LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 }
 
-
 /****************************************************
 *  fs_stat
 ****************************************************/
