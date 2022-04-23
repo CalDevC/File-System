@@ -793,7 +793,7 @@ int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
   char* parentPath = pathParts->parentPath;
 
-  if (!fs_isDir((char*)filename)) {
+  if (!fs_isFile((char*)filename)) {
     return -1;
   }
 
