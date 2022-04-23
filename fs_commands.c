@@ -213,7 +213,7 @@ deconPath* splitPath(char* fullPath) {
       k++;
     }
 
-    if (parentPath[k - 1] != '/' && parentPath[k - 1] != '.') {
+    if (parentPath[k - 1] != '/') {
       parentPath[k] = '/';
       k++;
     }
