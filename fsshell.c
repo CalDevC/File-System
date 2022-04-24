@@ -429,6 +429,10 @@ int cmd_cd(int argcnt, char* argvec[]) {
 int cmd_pwd(int argcnt, char* argvec[]) {
 #if (CMDPWD_ON == 1)
   char* dir_buf = malloc(DIRMAX_LEN + 1);
+  if (!dir_buf) {
+    mallocFailed();
+  }
+
   char* ptr;
   ptr = fs_getcwd(dir_buf, DIRMAX_LEN);
   if (ptr == NULL)			//an error occurred
@@ -482,6 +486,9 @@ void processcommand(char* cmd) {
   cmdLen = strlen(cmd);
   cmdv = (char**)malloc(sizeof(char*) * ((cmdLen / 2) + 2));
   cmdc = 0;
+  if (!cmdv) {
+    mallocFailed();
+  }
 
   cmdv[cmdc] = cmd;
   ++cmdc;
@@ -611,6 +618,10 @@ int main(int argc, char* argv[]) {
 #endif
 
     cmd = malloc(strlen(cmdin) + 30);
+    if (!cmd) {
+      mallocFailed();
+    }
+
     strcpy(cmd, cmdin);
     free(cmdin);
     cmdin = NULL;

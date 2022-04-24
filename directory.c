@@ -16,11 +16,19 @@
 
 #include "directory.h"
 
+void mallocFailed() {
+  printf("Call to malloc memory failed, exiting program...\n");
+  exit(-1);
+}
+
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,
   unsigned int fileSize, time_t dateModified, time_t dateCreated) {
 
   dirEntry* entry = malloc(sizeof(dirEntry));
+  if (!entry) {
+    mallocFailed();
+  }
 
   strcpy(entry->filename, filename);
   entry->isDir = isDir;
@@ -59,7 +67,14 @@ node* entryInit(char key[20], dirEntry* value) {
   //allocate memory for the entry in the table and 
   //the entry's value (directory entry)
   node* entry = malloc(sizeof(node));
+  if (!entry) {
+    mallocFailed();
+  }
+
   entry->value = malloc(sizeof(dirEntry));
+  if (!entry->value) {
+    mallocFailed();
+  }
 
   //Transfer the data to the allocated memory
   strcpy(entry->key, key);
@@ -72,6 +87,10 @@ node* entryInit(char key[20], dirEntry* value) {
 //Initialize a new hashTable
 hashTable* hashTableInit(char* dirName, int maxNumEntries, int location) {
   hashTable* table = malloc(sizeof(node) * SIZE);
+  if (!table) {
+    mallocFailed();
+  }
+
   table->maxNumEntries = maxNumEntries;
   table->location = location;
   strcpy(table->dirName, dirName);

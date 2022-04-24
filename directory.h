@@ -60,6 +60,9 @@ typedef struct deconPath {
   char* childName;
 } deconPath;
 
+//Handles what to do whaen malloc fails
+void mallocFailed();
+
 //Initialize a new directory entry
 dirEntry* dirEntryInit(char filename[20], int isDir, int location,
   unsigned int fileSize, time_t dateModified, time_t dateCreated);
