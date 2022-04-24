@@ -435,12 +435,12 @@ int fs_stat(const char* path, struct fs_stat* buf){
   time(&currentTime);
   //printf("Current time is \t%ld\n", time(&currentTime));
   // Adjust to local time and format into YYYY-MM-DD HH:MM:SS TIMEZONE
-  ts = *localtime(&currentTime);
-  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
   //printf("Current time formatted: \t%s\n", time_buf);
 
   // Store epoch time, but print out formatted time
-  buf->st_accesstime = (long int)ctime(&currentTime) / 60;
+  buf->st_accesstime = currentEntry->dateModified;
+  ts = *localtime(&buf->st_accesstime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
   printf("Access Time: \t%s\n", time_buf);
 
   buf->st_modtime = currentEntry->dateModified;

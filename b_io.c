@@ -711,6 +711,7 @@ void b_close(b_io_fd fd) {
   }
   printf("The file size is: %d\n", fcb.fileSize);
   fcb.entry->fileSize = fcb.fileSize;
+  fcb.entry->dateModified = time(0);
 
   printTable(fcb.directory);
   printf("Writing the directory at: %d\n", fcb.directory->location);
