@@ -121,6 +121,7 @@ int isDirWithValidPath(char* path) {
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
+    printf("Returning because if path is root, empty, or multiple '/'\n");
     return result;
   }
 
@@ -167,6 +168,7 @@ int isDirWithValidPath(char* path) {
       parentPath = NULL;
       free(currDir);
       currDir = NULL;
+      printf("Returning(-1) because either the entry is NULL or entry is a file\n");
       return -1;
     }
 
@@ -186,7 +188,8 @@ int isDirWithValidPath(char* path) {
   parentPath = NULL;
 
   if (entry == NULL) {
-    return 0;
+    printf("Returning because the entry is NULL\n");
+    return -1;
   }
 
   int result = entry->isDir;
@@ -194,6 +197,7 @@ int isDirWithValidPath(char* path) {
   free(currDir);
   currDir = NULL;
 
+  printf("Returning result: %d\n", result);
   return result;
 }
 
@@ -318,6 +322,11 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
   // to 1 starting from freeBlock
   freeBlock += 1;
 
+  printf("***********In the setBlocks as allocated*******************\n");
+  printf("Block to free is: %d\n", freeBlock);
+  printf("intBlock is: %d\n", intBlock);
+  printf("***********End of setBlocks as allocated*******************\n");
+
   int bitNum = freeBlock - ((intBlock * 32) + 32);
 
   if (bitNum < 0) {
@@ -345,75 +354,108 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
 }
 
 
-int fs_stat(const char* path, struct fs_stat* buf) {
-  // // fs_stat() displays details associated with the file system
+/****************************************************
+*  fs_stat
+****************************************************/
+int fs_stat(const char* path, struct fs_stat* buf){
+  // fs_stat() displays file details associated with the file system
 
   // printf("************* Entering fs_stat() **************\n");
 
-  int returnVal = 0;
-  // time_t now;
-  // struct tm* local = localtime(&now);
+  // *** Validation Checks ***
+  //printf("*** Validation Checks ***\n");
+  if (path == NULL){
+    printf("fs_stat(): Path cannot be null.\n");
+    return -1;
+  }else{
+    //printf("fs_stat(): const char* path is: %s\n", path);
+  }
+  
+  char* pathCopy = malloc(sizeof(path));
 
-  // // *** Validation Checks ***
-  // printf("*** Validation Checks ***\n");
-  // if (path == NULL) {
-  //   printf("fs_stat(): Path cannot be null.\n");
-  //   return -1;
-  // } else {
-  //   printf("fs_stat(): const char* path is: %s\n", path);
-  // }
-
-  // char* pathCopy = malloc(sizeof(path));
-
-  // if (pathCopy == NULL) {
-  //   printf("fs_stat(): Memory allocation error.\n");
-  //   return -1;
-  // } else {
-  //   printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
-  // }
+  if(pathCopy == NULL){
+    printf("fs_stat(): Memory allocation error.\n");
+    return -1;
+  }else{
+    //printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
+  }
 
   // printf("fs_stat(): Validity checks finished.\n\n");
-
-  // // *** Store information ***
+  
+  // *** Store information ***
   // printf("*** Store information ***\n");
-  // strcpy(pathCopy, path);
+
+
+  // Create a char* from const char* in order to manipulate path
+  strcpy(pathCopy, path);
   // printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
   // printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
-  // hashTable* currentDirTbl;
-  // // currentDirTbl = readTableData(workingDir->location);
-  // // dirEntry* currentEntry getEntry(pathCopy, currentDirTbl);
-  // // printf("Current Entry Filename: %s\n", currentEntry->filename);
 
-  // printf("Path: %s\n", path);
-  // printf("Size: %ld\n", buf->st_size);
-  // printf("Block size: %d\n", buf->st_blksize);
-  // printf("Blocks: %ld\n", buf->st_blocks);
-  // // YYYY-MM-DD HH:MM:SS TIMEZONE
+  // Handle the case of when an absolute path is given
+  char** parsedPath = stringParser(pathCopy);
+  char* desiredPath;
+  int i = 0;
+  while(parsedPath[i] != NULL){
+    desiredPath = parsedPath[i];
+    i++;
+  }
+  // printf("desiredPath: %s\n", desiredPath);
 
-  // time(&now);
-  // buf->st_accesstime = (long int)ctime(&now);
-  // printf("Access Time: %ld\n", buf->st_accesstime);
+  // Pull desired path into memory
+  hashTable* currentDirTbl = readTableData(workingDir->location);
+  dirEntry* currentEntry = getEntry(desiredPath, currentDirTbl);
+  if(currentEntry == NULL){
+    printf("fs_stat(): getEntry() failed. Could not find path within fs.\n");
+    return -1;
+  }
+  // printf("Current Entry Filename: %s\n", currentEntry->filename);
 
-  // // buf->st_modtime = currEntry->dateModified;
-  // printf("Modtime: %ld\n", buf->st_modtime);
+  // printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
 
+  printf("File: \t%s\n", currentEntry->filename);
 
+  buf->st_size = currentEntry->fileSize;
+  printf("Size: \t%ld\n", buf->st_size);
 
-  // // buf->st_createtime = currEntry->dateCreated;
-  // // struct tm ts;
-  // // char  buf[80];
+  buf->st_blksize = 512;
+  printf("IO Block size: \t%ld\n", buf->st_blksize);
 
-  // // ts = *localtime(currEntry->dateCreated);
-  // // char * convertTime(time_t epochTime){
-  // //   int epochTimeInt = (int)epochTime; 
+  buf->st_blocks = currentEntry->fileSize / 512;
+  printf("Blocks: \t%ld\n", buf->st_blocks);
 
-  // //   long long int timeInSec = (ep)
-  // // }
+  // Create variables for time
+  time_t currentTime;
+  struct tm ts;
+  char time_buf[80];
 
-  // printf("Create Time: %ld\n", buf->st_createtime);
+  // time_t now;   
+  // struct tm *local = localtime(&now);
 
-  //How to write to disk
-  return returnVal;
+  // This returns the current time
+  time(&currentTime);
+  //printf("Current time is \t%ld\n", time(&currentTime));
+  // Adjust to local time and format into YYYY-MM-DD HH:MM:SS TIMEZONE
+  //printf("Current time formatted: \t%s\n", time_buf);
+
+  // Store epoch time, but print out formatted time
+  buf->st_accesstime = currentEntry->dateModified;
+  ts = *localtime(&buf->st_accesstime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Access Time: \t%s\n", time_buf);
+
+  buf->st_modtime = currentEntry->dateModified;
+  ts = *localtime(&buf->st_modtime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Modtime: \t%s\n", time_buf);
+
+  buf->st_createtime = currentEntry->dateCreated;
+  ts = *localtime(&buf->st_createtime);
+  strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
+  printf("Create Time: \t%s\n", time_buf);
+
+  // printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
+  // LBAwrite();
+  return 0;
 }
 
 //Check if a path is a directory (1 = yes, 0 = no)
@@ -437,14 +479,14 @@ fdDir* fs_opendir(const char* name) {
   if (!fdDir) {
     mallocFailed();
   }
-  dirEntry* reqDir = getEntry((char*)name, workingDir);
-  hashTable* reqDirTable = readTableData(reqDir->location);
 
-  fdDir->dirTable = reqDirTable;
-  fdDir->maxIdx = reqDirTable->maxNumEntries;
-  fdDir->d_reclen = reqDirTable->numEntries;
-  fdDir->directoryStartLocation = reqDir->location;
-  fdDir->dirEntryPosition = reqDirTable->maxNumEntries;
+  hashTable* dir = getDir((char *)name);
+
+  fdDir->dirTable = dir;
+  fdDir->maxIdx = dir->maxNumEntries;
+  fdDir->d_reclen = dir->numEntries;
+  fdDir->directoryStartLocation = dir->location;
+  fdDir->dirEntryPosition = dir->maxNumEntries;
 
   return fdDir;
 }
@@ -465,16 +507,35 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
+  static int prevIdx = -999;
+  static int prevIdxCount = 0;
+
+  if (prevIdx == dirEntIdx) {
+    prevIdxCount++;
+  } else {
+    prevIdxCount = 0;
+  }
+
+
   if (dirEntIdx == dirp->maxIdx) {
     return NULL;
   }
 
   printf("FOUND INDEX: %d\n", dirEntIdx);
 
+  // if (dirEntIdx == 25) {
+  //   printf("Hold up\n");
+  //   return NULL;
+  // }
+
   dirp->dirEntryPosition = dirEntIdx;
 
   hashTable* dirTable = dirp->dirTable;
   dirEntry* dirEnt = dirTable->entries[dirEntIdx]->value;
+
+  for (int i = prevIdxCount; i > 0; i--) {
+    dirEnt = dirTable->entries[dirEntIdx]->next->value;
+  }
 
   //Create and populate the directory item info pointer
   struct fs_diriteminfo* dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
@@ -486,6 +547,7 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   dirItemInfo->d_reclen = dirEnt->fileSize;
   dirItemInfo->fileType = dirEnt->isDir ? 'd' : 'f';
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
+  prevIdx = dirEntIdx;
   return dirItemInfo;
 
 }
@@ -663,7 +725,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   }
 
   hashTable* parentDir = getDir(parentPath);
-  printf("Parent dir is %s\n", parentDir->dirName);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
