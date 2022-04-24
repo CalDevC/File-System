@@ -117,8 +117,7 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
     //If the current entry has the same key that we are attempting 
     //to add then update the existing entry
     if (strcmp(entry->key, key) == 0) {
-      free(entry->value);
-      entry->value = malloc(sizeof(dirEntry));
+      entry->value = realloc(entry->value, sizeof(dirEntry));
       memcpy(entry->value, value, sizeof(dirEntry));
       return;
     }

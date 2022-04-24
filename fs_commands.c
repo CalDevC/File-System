@@ -121,6 +121,7 @@ int isDirWithValidPath(char* path) {
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
+    printf("Returning because if path is root, empty, or multiple '/'\n");
     return result;
   }
 
@@ -167,6 +168,7 @@ int isDirWithValidPath(char* path) {
       parentPath = NULL;
       free(currDir);
       currDir = NULL;
+      printf("Returning(-1) because either the entry is NULL or entry is a file\n");
       return -1;
     }
 
@@ -186,7 +188,8 @@ int isDirWithValidPath(char* path) {
   parentPath = NULL;
 
   if (entry == NULL) {
-    return 0;
+    printf("Returning because the entry is NULL\n");
+    return -1;
   }
 
   int result = entry->isDir;
@@ -194,6 +197,7 @@ int isDirWithValidPath(char* path) {
   free(currDir);
   currDir = NULL;
 
+  printf("Returning result: %d\n", result);
   return result;
 }
 
@@ -213,7 +217,7 @@ deconPath* splitPath(char* fullPath) {
       k++;
     }
 
-    if (parentPath[k - 1] != '/' && parentPath[k - 1] != '.') {
+    if (parentPath[k - 1] != '/') {
       parentPath[k] = '/';
       k++;
     }
@@ -317,6 +321,11 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
   // Set the number of bits specified in the blocksFreed
   // to 1 starting from freeBlock
   freeBlock += 1;
+
+  printf("***********In the setBlocks as allocated*******************\n");
+  printf("Block to free is: %d\n", freeBlock);
+  printf("intBlock is: %d\n", intBlock);
+  printf("***********End of setBlocks as allocated*******************\n");
 
   int bitNum = freeBlock - ((intBlock * 32) + 32);
 
@@ -663,7 +672,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   }
 
   hashTable* parentDir = getDir(parentPath);
-  printf("Parent dir is %s\n", parentDir->dirName);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
