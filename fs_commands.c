@@ -681,6 +681,10 @@ char* fs_getcwd(char* buf, size_t size) {
   // free(path);
   // path = NULL;
   printf("getcwd: final working dir %s\n", workingDir->dirName);
+  if (workingDir->dirName == NULL){
+    printf("getcwd: final working dir is null!\n");
+    return "";
+  }
   return buf;
 }
 
