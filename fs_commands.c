@@ -507,16 +507,35 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
+  static int prevIdx = -999;
+  static int prevIdxCount = 0;
+
+  if (prevIdx == dirEntIdx) {
+    prevIdxCount++;
+  } else {
+    prevIdxCount = 0;
+  }
+
+
   if (dirEntIdx == dirp->maxIdx) {
     return NULL;
   }
 
   printf("FOUND INDEX: %d\n", dirEntIdx);
 
+  // if (dirEntIdx == 25) {
+  //   printf("Hold up\n");
+  //   return NULL;
+  // }
+
   dirp->dirEntryPosition = dirEntIdx;
 
   hashTable* dirTable = dirp->dirTable;
   dirEntry* dirEnt = dirTable->entries[dirEntIdx]->value;
+
+  for (int i = prevIdxCount; i > 0; i--) {
+    dirEnt = dirTable->entries[dirEntIdx]->next->value;
+  }
 
   //Create and populate the directory item info pointer
   struct fs_diriteminfo* dirItemInfo = malloc(sizeof(struct fs_diriteminfo));
@@ -528,6 +547,7 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   dirItemInfo->d_reclen = dirEnt->fileSize;
   dirItemInfo->fileType = dirEnt->isDir ? 'd' : 'f';
   printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
+  prevIdx = dirEntIdx;
   return dirItemInfo;
 
 }

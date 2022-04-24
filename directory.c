@@ -202,28 +202,51 @@ int rmEntry(char key[20], hashTable* table) {
 int getNextIdx(int currIdx, hashTable* table) {
   //If we are looking for the first index in the list, start at entry 0
   int max = table->maxNumEntries;
+  static int prevIdx = -999;
+  static int prevIdxCount = 0;
+
+  if (prevIdx == currIdx) {
+    prevIdxCount++;
+  } else {
+    prevIdxCount = 0;
+  }
 
   if (currIdx == max && strcmp(table->entries[0]->key, "") != 0) {
+    printf("In getNextIdx, returning 0\n");
     return 0;
   } else if (currIdx == max) {
     currIdx = 0;
   }
 
+  printf("Before the for loop in getNextIdx()\n");
   node* currNode = table->entries[currIdx];
 
-  //Return the same index is there is another element hashed to that location
+  for (int i = prevIdxCount; i > 0; i--) {
+    currNode = table->entries[currIdx]->next;
+  }
+
+  printf("After the for loop in getNextIdx()\n");
+
+  //Return the same index if there is another element hashed to that location
   if (currNode->next != NULL) {
+    printf("In getNextIdx, next filename is: %s\n", currNode->next->value->filename);
+    prevIdx = currIdx;
     return currIdx;
   }
 
   //Otherwise continue through the table looking for the next non-free entry
   for (int i = currIdx + 1; i < SIZE; i++) {
+    // printf("In getNextIdx, i is: %d\n", i);
     currNode = table->entries[i];
     // printf("index: %d, currNode filename: %s\n", i, currNode->value->filename);
     if (strcmp(currNode->value->filename, "") != 0) {
+      prevIdx = currIdx;
       return i;
     }
   }
+
+  printf("In getNextIdx, returning max: %d\n", max);
+  prevIdx = currIdx;
 
   return max;
 }
