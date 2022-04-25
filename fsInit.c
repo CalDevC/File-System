@@ -101,7 +101,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int numBlocksWritten = LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
-    vcbPtr->rootDir = getFreeBlockNum();
+    int freeBlock = getFreeBlockNum(DIR_SIZE);
+
+    // Check if the freeBlock returned is valid or not
+    if (freeBlock < 0) {
+      return -1;
+    }
+    vcbPtr->rootDir = freeBlock;
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
@@ -123,13 +129,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
-    //Get the number of the next free block
-    int freeBlock = getFreeBlockNum();
-
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
-    setBlocksAsAllocated(freeBlock, DIR_SIZE);
-    writeTableData(rootDir, freeBlock);
+    setBlocksAsAllocated(vcbPtr->rootDir, DIR_SIZE);
+    writeTableData(rootDir, vcbPtr->rootDir);
 
 
     ////////////// TEST CODE FOR OPR/CLOSE/READ DIR //////////////

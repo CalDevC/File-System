@@ -202,10 +202,6 @@ b_io_fd b_open(char* filename, int flags) {
     return -1;
   }
 
-  // TODO -- We need such function, because right now fs_isFile() only
-  // checks if the argument is a directory or not, it doesn't actually
-  // check if such file exists
-
   dirEntry* dirEntry = getEntry(pathParts->childName, parentDir);
 
   printf("fs_isFile() returns: %d\n", fs_isFile(filename));
@@ -218,7 +214,13 @@ b_io_fd b_open(char* filename, int flags) {
     printf("Initializing new file\n");
 
     if (fcb.flags[2] - '0') {
-      dirEntry = dirEntryInit(pathParts->childName, 0, getFreeBlockNum(),
+      int freeBlock = getFreeBlockNum(1);
+      // Check if the freeBlock returned is valid or not
+      if (freeBlock < 0) {
+        return -1;
+      }
+      
+      dirEntry = dirEntryInit(pathParts->childName, 0, freeBlock,
         0, time(0), time(0));
       setBlocksAsAllocated(dirEntry->location, 1);
       printf("In if cond before setEntry new file\n");
@@ -471,7 +473,11 @@ int b_write(b_io_fd fd, char* buffer, int count) {
     if (fcb.buflen < 1) {
       // Since we have reached the limit of our current buffer we
       // need to write it to the volume
-      int freeBlock = getFreeBlockNum();
+      int freeBlock = getFreeBlockNum(1);
+      // Check if the freeBlock returned is valid or not
+      if (freeBlock < 0) {
+        return -1;
+      }
 
       // We need to create a copy of freeBlock, because
       // we don't want the original freeBlock to get modified
@@ -529,6 +535,9 @@ int b_write(b_io_fd fd, char* buffer, int count) {
     // printf("Length of our buffer is: %ld\n", strlen(fcb.buf));
     // printf("Index is: %d\n", fcb.index);
     // printf("We are writing the buffer to our volume in the if cond: %s\n", fcb.buf);
+    for (int i = 0; i < 5; i++) {
+        fcb.buf[i] = 0 + '0';
+    }
     LBAwrite(fcb.buf, 1, fcb.location);
     // printf("*******************Done Writing*******************\n");
     // Test

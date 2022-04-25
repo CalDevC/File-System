@@ -241,7 +241,7 @@ deconPath* splitPath(char* fullPath) {
 // found a bit of value 1 representing free block
 int intBlock = 0;
 
-int getFreeBlockNum() {
+int getFreeBlockNum(int getNumBlocks) {
   //**********Get the free block number ***********
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
@@ -253,7 +253,8 @@ int getFreeBlockNum() {
 
   // This will help determine the first block number that is
   // free
-  int freeBlock = 0;
+  int freeBlock = -1;
+  int blocksToFind = getNumBlocks;
 
   //****Calculate free space block number*****
   // We can use the following formula to calculate the block
@@ -264,12 +265,32 @@ int getFreeBlockNum() {
   for (int i = 0; i < numOfInts; i++) {
     for (int j = 31; j >= 0; j--) {
       if (bitVector[i] & (1 << j)) {
-        intBlock = i;
-        freeBlock = (intBlock * 32) + (31 - j);
-        return freeBlock;
+        blocksToFind--;
+
+        if (freeBlock == -1) {
+          intBlock = i;
+          freeBlock = (intBlock * 32) + (31 - j);
+        }
+
+        // If the blocksToFind is 0 than we have found the contiguous blocks
+        // that the caller asked for
+        if (blocksToFind == 0) {
+          return freeBlock;
+        }
+      } 
+      
+      // If the freeBlock is not -1 and the bit is 0 then it means that we have
+      // to start looking for contiguous free blocks again, since we have found a 
+      // block that is not free after finding a block that was free
+      else if (freeBlock != -1) {
+        freeBlock = -1;
+        blocksToFind = getNumBlocks;
       }
     }
   }
+
+  printf("Error: Couldn't find %d contiguous free blocks\n", getNumBlocks);
+  return -1;
 }
 
 
@@ -425,7 +446,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   printf("Size: \t%ld\n", buf->st_size);
 
   buf->st_blksize = blockSize;
-  printf("IO Block size: \t%d\n", buf->st_blksize);
+  printf("IO Block size: \t%ld\n", buf->st_blksize);
 
   buf->st_blocks = currentEntry->fileSize / blockSize;
   printf("Blocks: \t%ld\n", buf->st_blocks);
@@ -746,7 +767,12 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   if (!newEntry) {
     mallocFailed();
   }
-  int freeBlock = getFreeBlockNum();
+
+  int freeBlock = getFreeBlockNum(DIR_SIZE);
+  // Check if the freeBlock returned is valid or not
+  if (freeBlock < 0) {
+    return -1;
+  }
 
   // Initialize the new directory entry
   strcpy(newEntry->filename, newDirName);
@@ -850,35 +876,57 @@ int fs_rmdir(const char* pathname) {
 
 int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
-  char* parentPath = pathParts->parentPath;
 
-  if (!fs_isFile((char*)filename)) {
-    return -1;
-  }
+  // if (!fs_isDir((char*)filename)) {
+  //   return -1;
+  // }
 
-  hashTable* parentDir = getDir(parentPath);
+  hashTable* parentDir = getDir(pathParts->parentPath);
 
-  int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
+  // int sizeOfEntry = sizeof(dirEntry);	//48 bytes
+  // int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
+  // int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
-  // Get the bitVector in memory -- We need to know what
-  // block is free so we can store our new directory
-  // there
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-  if (!bitVector) {
-    mallocFailed();
-  }
+  // // Get the bitVector in memory -- We need to know what
+  // // block is free so we can store our new directory
+  // // there
+  // int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  // if (!bitVector) {
+  //   mallocFailed();
+  // }
 
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  // // Read the bitvector
+  // LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
   char* fileNameToRemove = pathParts->childName;
-  int fileToRemoveLocation = getEntry(fileNameToRemove, parentDir)->location;
+  dirEntry *dirEntry = getEntry(pathParts->childName, parentDir);
+  int fileToRemoveLocation = dirEntry->location;
 
   //Iterate over each file block to get all associated block nums
+  int blockToFree = dirEntry->location;
 
-  //Set each block num as free
+  while (blockToFree) {
+    //Set each block num as free
+    setBlocksAsFree(blockToFree, 1);
+
+    printf("In the fs_Delete()'s loop freeing file block: %d\n", blockToFree);
+
+    char *buffer = malloc(blockSize);
+    LBAread(buffer, 1, blockToFree);
+
+    char blockChars[6];
+
+    for (int j = 0; j < 5; j++)
+    {
+      blockChars[j] = buffer[j];
+    }
+    blockChars[5] = '\0';
+
+    // Convert the characters representing block number to
+    // an integer
+    const char *constBlockNumbs = blockChars;
+    blockToFree = atoi(constBlockNumbs);
+  }
 
   //Remove dirEntry from the parent dir
   rmEntry(fileNameToRemove, parentDir);
