@@ -116,7 +116,7 @@ int isDirWithValidPath(char* path) {
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
-    printf("Returning because if path is root, empty, or multiple '/'\n");
+    printf("Returning because path is root, empty, or multiple '/'\n");
     return result;
   }
 
@@ -510,7 +510,6 @@ int fs_closedir(fdDir* dirp) {
 
 
 struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
-  printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
@@ -527,13 +526,6 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   if (dirEntIdx == dirp->maxIdx) {
     return NULL;
   }
-
-  printf("FOUND INDEX: %d\n", dirEntIdx);
-
-  // if (dirEntIdx == 25) {
-  //   printf("Hold up\n");
-  //   return NULL;
-  // }
 
   dirp->dirEntryPosition = dirEntIdx;
 
@@ -553,7 +545,6 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   strcpy(dirItemInfo->d_name, dirEnt->filename);
   dirItemInfo->d_reclen = dirEnt->fileSize;
   dirItemInfo->fileType = dirEnt->isDir ? 'd' : 'f';
-  printf("Inside ReadDir numEntries: %d\n", dirp->dirTable->numEntries);
   prevIdx = dirEntIdx;
   return dirItemInfo;
 

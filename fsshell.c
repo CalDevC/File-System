@@ -260,12 +260,50 @@ int cmd_cp(int argcnt, char* argvec[]) {
 int cmd_mv(int argcnt, char* argvec[]) {
 #if (CMDMV_ON == 1)				
   // return -99;
-  // // **** TODO ****  For you to implement	
+  // **** TODO ****  For you to implement	
   char* path = argvec[1];
   printf("argvec[1]: %s\n", path);
+
+  char* newPath = argvec[2];
+  printf("argvec[2]: %s\n", newPath);
   struct fs_stat statbuf;
 
-  fs_stat(path, &statbuf);
+  printf("Current path: %s\n", path);
+  printf("New path: %s\n", newPath);
+
+  deconPath* currPathParts = splitPath(path);
+  hashTable* currParentDir = getDir(currPathParts->parentPath);
+
+  printf("Current parent path: %s\n", currPathParts->parentPath);
+  printf("Current child: %s\n", currPathParts->childName);
+
+  deconPath* newPathParts = splitPath(newPath);
+  hashTable* newParentDir = getDir(newPathParts->parentPath);
+
+  printf("New parent path: %s\n", newPathParts->parentPath);
+  printf("New child: %s\n", newPathParts->childName);
+  dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
+
+  dirEntry* newEntry = dirEntryInit(newPathParts->childName, entryToMove->isDir,
+    entryToMove->location, entryToMove->fileSize,
+    time(0), entryToMove->dateCreated);
+
+  //If the directory entry moved was a directory and it was renamed, rewrite it to
+  //the disk with its new name
+  if (newEntry->isDir && strcmp(newEntry->filename, entryToMove->filename) != 0) {
+    hashTable* newDir = getDir(entryToMove->filename);
+    printTable(newDir);
+    strcpy(newDir->dirName, newEntry->filename);
+    writeTableData(newDir, newDir->location);
+  }
+
+  rmEntry(entryToMove->filename, currParentDir);
+  setEntry(newPathParts->childName, newEntry, newParentDir);
+
+  writeTableData(currParentDir, currParentDir->location);
+  writeTableData(newParentDir, newParentDir->location);
+
+  fs_stat(newPath, &statbuf);
 
 
 #endif
@@ -569,7 +607,7 @@ void processcommand(char* cmd) {
   cmd_help(cmdc, cmdv);
   free(cmdv);
   cmdv = NULL;
-}
+  }
 
 
 

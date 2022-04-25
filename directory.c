@@ -162,12 +162,12 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   //Checks hashTable for matching key and return its value
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
-      printf("VALUE FOUND!\n");
+      // printf("VALUE FOUND!\n");
       return entry->value;
     }
     entry = entry->next;
   }
-  printf("ENTRY IS NULL!\n");
+  // printf("ENTRY IS NULL!\n");
 
   return NULL;
 }
@@ -231,24 +231,19 @@ int getNextIdx(int currIdx, hashTable* table) {
   }
 
   if (currIdx == max && strcmp(table->entries[0]->key, "") != 0) {
-    printf("In getNextIdx, returning 0\n");
     return 0;
   } else if (currIdx == max) {
     currIdx = 0;
   }
 
-  printf("Before the for loop in getNextIdx()\n");
   node* currNode = table->entries[currIdx];
 
   for (int i = prevIdxCount; i > 0; i--) {
     currNode = table->entries[currIdx]->next;
   }
 
-  printf("After the for loop in getNextIdx()\n");
-
   //Return the same index if there is another element hashed to that location
   if (currNode->next != NULL) {
-    printf("In getNextIdx, next filename is: %s\n", currNode->next->value->filename);
     prevIdx = currIdx;
     return currIdx;
   }
@@ -264,7 +259,6 @@ int getNextIdx(int currIdx, hashTable* table) {
     }
   }
 
-  printf("In getNextIdx, returning max: %d\n", max);
   prevIdx = currIdx;
 
   return max;
