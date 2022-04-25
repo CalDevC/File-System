@@ -134,48 +134,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     setBlocksAsAllocated(vcbPtr->rootDir, DIR_SIZE);
     writeTableData(rootDir, vcbPtr->rootDir);
 
-
-    ////////////// TEST CODE FOR OPR/CLOSE/READ DIR //////////////
-    printf("\n\n\n");
-
-    fdDir* myDirPtr = fs_opendir(".");
-
-    struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
-    if (myInfo == NULL) {
-      printf("END of directory\n");
-    } else {
-      printf("Dir entry name: %s\n", myInfo->d_name);
-    }
-
-    myInfo = fs_readdir(myDirPtr);
-    if (myInfo == NULL) {
-      printf("END of directory\n");
-    } else {
-      printf("Dir entry name: %s\n", myInfo->d_name);
-    }
-
-
-    myInfo = fs_readdir(myDirPtr);
-    if (myInfo == NULL) {
-      printf("END of directory\n");
-    } else {
-      printf("Dir entry name: %s\n", myInfo->d_name);
-    }
-
-    fs_closedir(myDirPtr);
-    ////////////// END TEST CODE FOR OPR/CLOSE/READ DIR //////////////
-
-    ///////////// TEST CODE FOR SETCWD /////////////
-    // fs_mkdir("/home", 0777);
-    // fs_mkdir("/home/test", 0777);
-    // fs_mkdir("/home/test/succes", 0777);
-    // fs_mkdir("/home/test/done", 0777);
-    // printf("Set current working directory:\n");
-    // fs_setcwd("/home/test");
-
-    // printTable(workingDir);
-    ///////////// END TEST CODE FOR SETCWD /////////////
-
     free(bitVector);
     bitVector = NULL;
   }

@@ -162,12 +162,10 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   //Checks hashTable for matching key and return its value
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
-      // printf("VALUE FOUND!\n");
       return entry->value;
     }
     entry = entry->next;
   }
-  // printf("ENTRY IS NULL!\n");
 
   return NULL;
 }
@@ -250,9 +248,7 @@ int getNextIdx(int currIdx, hashTable* table) {
 
   //Otherwise continue through the table looking for the next non-free entry
   for (int i = currIdx + 1; i < SIZE; i++) {
-    // printf("In getNextIdx, i is: %d\n", i);
     currNode = table->entries[i];
-    // printf("index: %d, currNode filename: %s\n", i, currNode->value->filename);
     if (strcmp(currNode->value->filename, "") != 0) {
       prevIdx = currIdx;
       return i;
@@ -264,7 +260,7 @@ int getNextIdx(int currIdx, hashTable* table) {
   return max;
 }
 
-//Write out the hash table contents to the console for debug
+//Write out the hash table contents to the console for viewing
 void printTable(hashTable* table) {
   printf("\n******** table ********\n");
   for (int i = 0; i < SIZE; i++) {

@@ -87,21 +87,10 @@ void writeTableData(hashTable* table, int lbaPosition) {
     }
   }
 
-  printf("SIZE OF ARR: %d\n", table->maxNumEntries);
   memcpy(data->arr, arr, arrNumBytes);
 
   //Write to the array out to the specified block numbers
   int val = LBAwrite(data, DIR_SIZE, lbaPosition);
-
-  // printf("val is: %d\n", val);
-  // if (val == DIR_SIZE) {
-  //   printf("Freeing arr\n");
-  //   free(arr);
-  //   arr = NULL;
-  //   if (arr == NULL) {
-  //     printf("arr is NULL\n");
-  //   }
-  // }
 
 }
 
@@ -116,7 +105,6 @@ int isDirWithValidPath(char* path) {
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
-    printf("Returning because path is root, empty, or multiple '/'\n");
     return result;
   }
 
@@ -151,19 +139,15 @@ int isDirWithValidPath(char* path) {
 
   for (; parsedPath[i + 1] != NULL; i++) {
     //check that the location exists and that it is a directory
-    // printf("Getting entry\n");
     entry = getEntry(parsedPath[i], currDir);
-    // printf("Entry is %s\n", entry->filename);
 
     if (entry == NULL || entry->isDir == 0) {
-      printf("Error: Part of parent path does not exist\n");
       free(parsedPath);
       parsedPath = NULL;
       free(parentPath);
       parentPath = NULL;
       free(currDir);
       currDir = NULL;
-      printf("Returning(-1) because either the entry is NULL or entry is a file\n");
       return -1;
     }
 
@@ -183,7 +167,6 @@ int isDirWithValidPath(char* path) {
   parentPath = NULL;
 
   if (entry == NULL) {
-    printf("Returning because the entry is NULL\n");
     return -1;
   }
 
@@ -192,7 +175,6 @@ int isDirWithValidPath(char* path) {
   free(currDir);
   currDir = NULL;
 
-  printf("Returning result: %d\n", result);
   return result;
 }
 
@@ -277,8 +259,8 @@ int getFreeBlockNum(int getNumBlocks) {
         if (blocksToFind == 0) {
           return freeBlock;
         }
-      } 
-      
+      }
+
       // If the freeBlock is not -1 and the bit is 0 then it means that we have
       // to start looking for contiguous free blocks again, since we have found a 
       // block that is not free after finding a block that was free
@@ -347,11 +329,6 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
   // to 1 starting from freeBlock
   freeBlock += 1;
 
-  printf("***********In the setBlocks as allocated*******************\n");
-  printf("Block to free is: %d\n", freeBlock);
-  printf("intBlock is: %d\n", intBlock);
-  printf("***********End of setBlocks as allocated*******************\n");
-
   int bitNum = freeBlock - ((intBlock * 32) + 32);
 
   if (bitNum < 0) {
@@ -385,15 +362,9 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
 int fs_stat(const char* path, struct fs_stat* buf) {
   // fs_stat() displays file details associated with the file system
 
-  // printf("************* Entering fs_stat() **************\n");
-
   // *** Validation Checks ***
-  //printf("*** Validation Checks ***\n");
   if (path == NULL) {
-    printf("fs_stat(): Path cannot be null.\n");
     return -1;
-  } else {
-    //printf("fs_stat(): const char* path is: %s\n", path);
   }
 
   char* pathCopy = malloc(sizeof(path));
@@ -401,23 +372,8 @@ int fs_stat(const char* path, struct fs_stat* buf) {
     mallocFailed();
   }
 
-  if (pathCopy == NULL) {
-    printf("fs_stat(): Memory allocation error.\n");
-    return -1;
-  } else {
-    //printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
-  }
-
-  // printf("fs_stat(): Validity checks finished.\n\n");
-
-  // *** Store information ***
-  // printf("*** Store information ***\n");
-
-
   // Create a char* from const char* in order to manipulate path
   strcpy(pathCopy, path);
-  // printf("fs_stat(): strcpy() successful. pathCopy is %s\n", pathCopy);
-  // printf("fs_stat(): Checking for hash value: %d\n", hash(pathCopy));
 
   // Handle the case of when an absolute path is given
   char** parsedPath = stringParser(pathCopy);
@@ -427,18 +383,14 @@ int fs_stat(const char* path, struct fs_stat* buf) {
     desiredPath = parsedPath[i];
     i++;
   }
-  // printf("desiredPath: %s\n", desiredPath);
 
   // Pull desired path into memory
   hashTable* currentDirTbl = readTableData(workingDir->location);
   dirEntry* currentEntry = getEntry(desiredPath, currentDirTbl);
+
   if (currentEntry == NULL) {
-    printf("fs_stat(): getEntry() failed. Could not find path within fs.\n");
     return -1;
   }
-  // printf("Current Entry Filename: %s\n", currentEntry->filename);
-
-  // printf("\n\n\n***********fs_stat() BEGINING OUTPUT *********\n");
 
   printf("File: \t%s\n", currentEntry->filename);
 
@@ -456,14 +408,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   struct tm ts;
   char time_buf[80];
 
-  // time_t now;   
-  // struct tm *local = localtime(&now);
-
-  // This returns the current time
   time(&currentTime);
-  //printf("Current time is \t%ld\n", time(&currentTime));
-  // Adjust to local time and format into YYYY-MM-DD HH:MM:SS TIMEZONE
-  //printf("Current time formatted: \t%s\n", time_buf);
 
   // Store epoch time, but print out formatted time
   buf->st_accesstime = currentEntry->dateModified;
@@ -480,9 +425,6 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   ts = *localtime(&buf->st_createtime);
   strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
   printf("Create Time: \t%s\n", time_buf);
-
-  // printf("\n\n\n***********fs_stat() END OUTPUT *********\n");
-  // LBAwrite();
   return 0;
 }
 
@@ -609,7 +551,6 @@ hashTable* getDir(char* buf) {
     return readTableData(currDir->location);
 
   } else {
-    printf("From getDir, isDir returned false\n");
     return NULL;
   }
 }
@@ -646,7 +587,6 @@ char** stringParser(char* inputStr) {
 
   while (subString != NULL) {
     subStrings[stringCount] = subString;
-    // printf("substring: %s at i = %d\n", subString, stringCount);
     stringCount++;
     subString = strtok_r(NULL, delim, &savePtr);
   }
@@ -662,12 +602,10 @@ int fs_setcwd(char* buf) {
   hashTable* requestedDir = getDir(buf);
 
   if (requestedDir == NULL) {
-    printf("From setcwd, isDir returned false\n");
     return -1;
   }
 
   workingDir = requestedDir;
-  printf("Leaving setcwd with working dir %s\n", workingDir->dirName);
   return 0;
 }
 
@@ -684,16 +622,11 @@ char* fs_getcwd(char* buf, size_t size) {
   //Check if cwd is root
   if (strcmp(workingDir->dirName, "/") == 0) {
     strcpy(buf, path);
-    printf("getcwd: final working dir %s\n", workingDir->dirName);
     return path;
   }
 
-  printf("After strcmp()\n");
-
   char* pathElements[size];
   int i = 0;
-
-  printf("After checking cwd is root\n");
 
   hashTable* currDir = readTableData(workingDir->location);
   dirEntry* parentDirEnt = getEntry("..", currDir);
@@ -727,9 +660,6 @@ char* fs_getcwd(char* buf, size_t size) {
   //copy path to buf
   strncpy(buf, path, size);
 
-  // free(path);
-  // path = NULL;
-  printf("getcwd: final working dir %s\n", workingDir->dirName);
   return buf;
 }
 
@@ -806,11 +736,8 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   writeTableData(dirEntries, dirEntries->location);
 
   // Update the bit vector
-  // printf("NEW FREE BLOCK: %d\n", freeBlock);
   setBlocksAsAllocated(freeBlock, DIR_SIZE);
-  printTable(parentDir);
 
-  printf("Freeing\n");
   free(bitVector);
   bitVector = NULL;
   free(newEntry);
@@ -866,7 +793,6 @@ int fs_rmdir(const char* pathname) {
   //Update the free space bit vector
   setBlocksAsFree(dirToRemoveLocation, DIR_SIZE);
 
-  printf("Freeing\n");
   free(pathParts);
   pathParts = NULL;
 
@@ -876,11 +802,6 @@ int fs_rmdir(const char* pathname) {
 
 int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
-
-  // if (!fs_isDir((char*)filename)) {
-  //   return -1;
-  // }
-
   hashTable* parentDir = getDir(pathParts->parentPath);
 
   // int sizeOfEntry = sizeof(dirEntry);	//48 bytes
@@ -899,7 +820,7 @@ int fs_delete(char* filename) {
   // LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
   char* fileNameToRemove = pathParts->childName;
-  dirEntry *dirEntry = getEntry(pathParts->childName, parentDir);
+  dirEntry* dirEntry = getEntry(pathParts->childName, parentDir);
   int fileToRemoveLocation = dirEntry->location;
 
   //Iterate over each file block to get all associated block nums
@@ -909,22 +830,19 @@ int fs_delete(char* filename) {
     //Set each block num as free
     setBlocksAsFree(blockToFree, 1);
 
-    printf("In the fs_Delete()'s loop freeing file block: %d\n", blockToFree);
-
-    char *buffer = malloc(blockSize);
+    char* buffer = malloc(blockSize);
     LBAread(buffer, 1, blockToFree);
 
     char blockChars[6];
 
-    for (int j = 0; j < 5; j++)
-    {
+    for (int j = 0; j < 5; j++) {
       blockChars[j] = buffer[j];
     }
     blockChars[5] = '\0';
 
     // Convert the characters representing block number to
     // an integer
-    const char *constBlockNumbs = blockChars;
+    const char* constBlockNumbs = blockChars;
     blockToFree = atoi(constBlockNumbs);
   }
 
@@ -934,7 +852,6 @@ int fs_delete(char* filename) {
   //Rewrite parent dir to disk
   writeTableData(parentDir, parentDir->location);
 
-  printf("Freeing\n");
   free(pathParts);
   pathParts = NULL;
 
