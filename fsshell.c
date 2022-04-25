@@ -200,9 +200,7 @@ int cmd_ls(int argcnt, char* argvec[]) {
     }
   } else   // no pathname/filename specified - use cwd
   {
-    printf("Entering else statement\n");
     char* path = fs_getcwd(cwd, DIRMAX_LEN);	//get current working directory
-    printf("After fs_getcwd");
     fdDir* dirp;
     dirp = fs_opendir(path);
     return (displayFiles(dirp, flall, fllong));
@@ -259,29 +257,16 @@ int cmd_cp(int argcnt, char* argvec[]) {
 ****************************************************/
 int cmd_mv(int argcnt, char* argvec[]) {
 #if (CMDMV_ON == 1)				
-  // return -99;
-  // **** TODO ****  For you to implement	
   char* path = argvec[1];
-  printf("argvec[1]: %s\n", path);
-
   char* newPath = argvec[2];
-  printf("argvec[2]: %s\n", newPath);
   struct fs_stat statbuf;
-
-  printf("Current path: %s\n", path);
-  printf("New path: %s\n", newPath);
 
   deconPath* currPathParts = splitPath(path);
   hashTable* currParentDir = getDir(currPathParts->parentPath);
 
-  printf("Current parent path: %s\n", currPathParts->parentPath);
-  printf("Current child: %s\n", currPathParts->childName);
-
   deconPath* newPathParts = splitPath(newPath);
   hashTable* newParentDir = getDir(newPathParts->parentPath);
 
-  printf("New parent path: %s\n", newPathParts->parentPath);
-  printf("New child: %s\n", newPathParts->childName);
   dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
 
   dirEntry* newEntry = dirEntryInit(newPathParts->childName, entryToMove->isDir,
@@ -292,7 +277,6 @@ int cmd_mv(int argcnt, char* argvec[]) {
   //the disk with its new name
   if (newEntry->isDir && strcmp(newEntry->filename, entryToMove->filename) != 0) {
     hashTable* newDir = getDir(entryToMove->filename);
-    printTable(newDir);
     strcpy(newDir->dirName, newEntry->filename);
     writeTableData(newDir, newDir->location);
   }
@@ -346,7 +330,7 @@ int cmd_rm(int argcnt, char* argvec[]) {
     return (fs_delete(path));
   }
 
-  printf("The path %s is neither a file not a directory\n", path);
+  printf("The path %s is neither a file nor a directory\n", path);
 #endif
   return -1;
 }
@@ -607,7 +591,7 @@ void processcommand(char* cmd) {
   cmd_help(cmdc, cmdv);
   free(cmdv);
   cmdv = NULL;
-  }
+}
 
 
 
