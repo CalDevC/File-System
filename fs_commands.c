@@ -66,13 +66,13 @@ void writeTableData(hashTable* table, int lbaPosition) {
     dirEntry arr[arrNumBytes];
   } tableData;
 
-  tableData* data = malloc(blockSize * DIR_SIZE);
+  tableData* data = calloc(blockSize * DIR_SIZE, 1);
   if (!data) {
     mallocFailed();
   }
 
   //Directory entries
-  dirEntry* arr = malloc(arrNumBytes);
+  dirEntry* arr = calloc(arrNumBytes, 1);
   if (!arr) {
     mallocFailed();
   }
@@ -107,6 +107,13 @@ void writeTableData(hashTable* table, int lbaPosition) {
   //Write to the array out to the specified block numbers
   int val = LBAwrite(data, DIR_SIZE, lbaPosition);
 
+
+  clean(table);
+  table = NULL;
+  free(arr);
+  arr = NULL;
+  free(data);
+  data = NULL;
 }
 
 

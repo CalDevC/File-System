@@ -123,6 +123,10 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
 
   //If there is no collision then add a new initialized entry
   if (strcmp(entry->value->filename, "") == 0) {
+    free(entry->value);
+    entry->value = NULL;
+    free(entry);
+    entry = NULL;
     table->entries[hashVal] = entryInit(key, value);
     table->numEntries++;
     return;
@@ -281,30 +285,19 @@ void printTable(hashTable* table) {
 void clean(hashTable* table) {
   node* next = malloc(sizeof(node));
   for (int i = 0; i < SIZE; i++) {
-    printf("At i %d\n", i);
     node* entry = table->entries[i];
     if (entry->next) {
-      printf("Before memcpy 1\n");
       memcpy(next, entry->next, sizeof(node));
-      printf("After memcpy 1\n");
-    } else {
-      printf("Skipping memcpy 1\n");
     }
 
-
     free(entry->value);
-    printf("After free entry->value\n");
     free(entry);
-    printf("After free entry\n");
+
     while (next != NULL) {
-      printf("In while loop\n");
       entry = next;
       if (entry->next) {
-        printf("Before memcpy 2\n");
         memcpy(next, entry->next, sizeof(node));
-        printf("After memcpy 2\n");
       } else {
-        printf("Skipping memcpy 2\n");
         break;
       }
       free(entry->value);
