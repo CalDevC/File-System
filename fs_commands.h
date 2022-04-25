@@ -30,9 +30,6 @@ hashTable* workingDir;
 int blockSize;
 int numOfInts;
 
-//Handles what to do whaen malloc fails
-void mallocFailed();
-
 //Reads a directory from disk into a hash table (directory) on the heap
 hashTable* readTableData(int lbaPosition);
 

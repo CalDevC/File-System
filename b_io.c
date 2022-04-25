@@ -183,10 +183,10 @@ b_io_fd b_open(char* filename, int flags) {
   // printf("The child path is: %s\n", childPath);
 
   //****************End of Parse path*******************//
-  
+
   //****************Further checks**********************//
-  deconPath * pathParts = splitPath(filename);
-  hashTable * parentDir = getDir(pathParts->parentPath);
+  deconPath* pathParts = splitPath(filename);
+  hashTable* parentDir = getDir(pathParts->parentPath);
 
   // If path is invalid return error
   if (!parentDir) {
@@ -202,11 +202,7 @@ b_io_fd b_open(char* filename, int flags) {
     return -1;
   }
 
-      // TODO -- We need such function, because right now fs_isFile() only
-      // checks if the argument is a directory or not, it doesn't actually
-      // check if such file exists
-
-  dirEntry *dirEntry = getEntry(pathParts->childName, parentDir);
+  dirEntry* dirEntry = getEntry(pathParts->childName, parentDir);
 
   printf("fs_isFile() returns: %d\n", fs_isFile(filename));
   printf("fs_isDir() returns: %d\n", fs_isDir(filename));
@@ -219,7 +215,7 @@ b_io_fd b_open(char* filename, int flags) {
 
     if (fcb.flags[2] - '0') {
       dirEntry = dirEntryInit(pathParts->childName, 0, getFreeBlockNum(1),
-                               0, time(0), time(0));
+        0, time(0), time(0));
       setBlocksAsAllocated(dirEntry->location, 1);
       printf("In if cond before setEntry new file\n");
       setEntry(dirEntry->filename, dirEntry, parentDir);
@@ -239,16 +235,19 @@ b_io_fd b_open(char* filename, int flags) {
     if (!dirEntry) {
       printf("The dirEntry is NULL\n");
       exit(1);
-    }  
+    }
     if (fcb.flags[3] - '0') {
       printf("TRUNC flag is set\n");
       printf("The file's starting location is: %d\n", dirEntry->location);
 
       dirEntry->fileSize = 0;
 
-      char * buffer = malloc(blockSize);
+      char* buffer = malloc(blockSize);
+      if (!buffer) {
+        mallocFailed();
+      }
       LBAread(buffer, 1, dirEntry->location);
-      
+
       char blockChars[6];
 
       for (int j = 0; j < 5; j++) {
@@ -275,7 +274,10 @@ b_io_fd b_open(char* filename, int flags) {
 
         printf("In the while loop freeing file block: %d\n", nextBlock);
 
-        char *buffer = malloc(blockSize);
+        char* buffer = malloc(blockSize);
+        if (!buffer) {
+          mallocFailed();
+        }
         LBAread(buffer, 1, nextBlock);
 
         char blockChars[6];
@@ -287,18 +289,18 @@ b_io_fd b_open(char* filename, int flags) {
 
         // Convert the characters representing block number to
         // an integer
-        const char *constBlockNumbs = blockChars;
+        const char* constBlockNumbs = blockChars;
         nextBlock = atoi(constBlockNumbs);
       }
-      
+
       // printf("Exiting\n");
       // exit(0);
       // setBlocksAsFree(nextBlock, 1);
-      
+
       //char * buffer = malloc(blockSize);
       printTable(parentDir);
-      
-    }  
+
+    }
 
   }
   //****************End of Further checks**********************//
@@ -323,6 +325,9 @@ b_io_fd b_open(char* filename, int flags) {
   // Initially we malloc memory equivalent to 1 block we can malloc 
   // more memory as we need it
   fcb.buf = malloc(sizeof(char) * blockSize);
+  if (!fcb.buf) {
+    mallocFailed();
+  }
 
   // To represent number of valid bytes in our buffer
   fcb.buflen = 0;
@@ -499,6 +504,9 @@ int b_write(b_io_fd fd, char* buffer, int count) {
       fcb.location = freeBlock;
       // printf("Next free block is: %d\n", freeBlock);
       fcb.buf = malloc(sizeof(char) * blockSize);
+      if (!fcb.buf) {
+        mallocFailed();
+      }
       // Test
       // fcb.blocksRead++;
 
@@ -665,6 +673,9 @@ int b_read(b_io_fd fd, char* buffer, int count) {
       // }
 
       fcb.buf = malloc(sizeof(char) * blockSize);
+      if (!fcb.buf) {
+        mallocFailed();
+      }
       LBAread(fcb.buf, 1, nextBlock);
 
       fcb.index = 5;
@@ -722,7 +733,7 @@ void b_close(b_io_fd fd) {
 
   printf("Entry's filename is: %s\n", fcb.directory->entries[49]->key);
 
-  if (!getEntry(fcb.entry->filename,fcb.directory)) {
+  if (!getEntry(fcb.entry->filename, fcb.directory)) {
     printf("The entry is NULL\n");
   }
 

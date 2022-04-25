@@ -1,10 +1,5 @@
 #include "fs_commands.h"
 
-void mallocFailed() {
-  printf("Call to malloc memory failed, exiting program...\n");
-  exit(-1);
-}
-
 
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaPosition) {
@@ -249,6 +244,9 @@ int intBlock = 0;
 int getFreeBlockNum(int getNumBlocks) {
   //**********Get the free block number ***********
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  if (!bitVector) {
+    mallocFailed();
+  }
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
@@ -297,6 +295,9 @@ int getFreeBlockNum(int getNumBlocks) {
 
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  if (!bitVector) {
+    mallocFailed();
+  }
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
@@ -334,6 +335,9 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
 
 void setBlocksAsFree(int freeBlock, int blocksFreed) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
+  if (!bitVector) {
+    mallocFailed();
+  }
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
@@ -377,31 +381,34 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
 /****************************************************
 *  fs_stat
 ****************************************************/
-int fs_stat(const char* path, struct fs_stat* buf){
+int fs_stat(const char* path, struct fs_stat* buf) {
   // fs_stat() displays file details associated with the file system
 
   // printf("************* Entering fs_stat() **************\n");
 
   // *** Validation Checks ***
   //printf("*** Validation Checks ***\n");
-  if (path == NULL){
+  if (path == NULL) {
     printf("fs_stat(): Path cannot be null.\n");
     return -1;
-  }else{
+  } else {
     //printf("fs_stat(): const char* path is: %s\n", path);
   }
-  
-  char* pathCopy = malloc(sizeof(path));
 
-  if(pathCopy == NULL){
+  char* pathCopy = malloc(sizeof(path));
+  if (!pathCopy) {
+    mallocFailed();
+  }
+
+  if (pathCopy == NULL) {
     printf("fs_stat(): Memory allocation error.\n");
     return -1;
-  }else{
+  } else {
     //printf("fs_stat(): Memory allocation is successful. pathCopy is not null.\n");
   }
 
   // printf("fs_stat(): Validity checks finished.\n\n");
-  
+
   // *** Store information ***
   // printf("*** Store information ***\n");
 
@@ -415,7 +422,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
   char** parsedPath = stringParser(pathCopy);
   char* desiredPath;
   int i = 0;
-  while(parsedPath[i] != NULL){
+  while (parsedPath[i] != NULL) {
     desiredPath = parsedPath[i];
     i++;
   }
@@ -424,7 +431,7 @@ int fs_stat(const char* path, struct fs_stat* buf){
   // Pull desired path into memory
   hashTable* currentDirTbl = readTableData(workingDir->location);
   dirEntry* currentEntry = getEntry(desiredPath, currentDirTbl);
-  if(currentEntry == NULL){
+  if (currentEntry == NULL) {
     printf("fs_stat(): getEntry() failed. Could not find path within fs.\n");
     return -1;
   }
@@ -437,10 +444,10 @@ int fs_stat(const char* path, struct fs_stat* buf){
   buf->st_size = currentEntry->fileSize;
   printf("Size: \t%ld\n", buf->st_size);
 
-  buf->st_blksize = 512;
-  printf("IO Block size: \t%ld\n", buf->st_blksize);
+  buf->st_blksize = blockSize;
+  printf("IO Block size: \t%d\n", buf->st_blksize);
 
-  buf->st_blocks = currentEntry->fileSize / 512;
+  buf->st_blocks = currentEntry->fileSize / blockSize;
   printf("Blocks: \t%ld\n", buf->st_blocks);
 
   // Create variables for time
@@ -500,7 +507,7 @@ fdDir* fs_opendir(const char* name) {
     mallocFailed();
   }
 
-  hashTable* dir = getDir((char *)name);
+  hashTable* dir = getDir((char*)name);
 
   fdDir->dirTable = dir;
   fdDir->maxIdx = dir->maxNumEntries;
@@ -873,9 +880,15 @@ int fs_rmdir(const char* pathname) {
 int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
 
+<<<<<<< HEAD
   // if (!fs_isDir((char*)filename)) {
   //   return -1;
   // }
+=======
+  if (!fs_isFile((char*)filename)) {
+    return -1;
+  }
+>>>>>>> 785c3f265ef90db675072d9be6a9aa4cfdfd2db4
 
   hashTable* parentDir = getDir(pathParts->parentPath);
 
