@@ -214,7 +214,13 @@ b_io_fd b_open(char* filename, int flags) {
     printf("Initializing new file\n");
 
     if (fcb.flags[2] - '0') {
-      dirEntry = dirEntryInit(pathParts->childName, 0, getFreeBlockNum(1),
+      int freeBlock = getFreeBlockNum(1);
+      // Check if the freeBlock returned is valid or not
+      if (freeBlock < 0) {
+        return -1;
+      }
+      
+      dirEntry = dirEntryInit(pathParts->childName, 0, freeBlock,
         0, time(0), time(0));
       setBlocksAsAllocated(dirEntry->location, 1);
       printf("In if cond before setEntry new file\n");
@@ -468,6 +474,10 @@ int b_write(b_io_fd fd, char* buffer, int count) {
       // Since we have reached the limit of our current buffer we
       // need to write it to the volume
       int freeBlock = getFreeBlockNum(1);
+      // Check if the freeBlock returned is valid or not
+      if (freeBlock < 0) {
+        return -1;
+      }
 
       // We need to create a copy of freeBlock, because
       // we don't want the original freeBlock to get modified

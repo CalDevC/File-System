@@ -290,6 +290,7 @@ int getFreeBlockNum(int getNumBlocks) {
   }
 
   printf("Error: Couldn't find %d contiguous free blocks\n", getNumBlocks);
+  return -1;
 }
 
 
@@ -445,7 +446,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   printf("Size: \t%ld\n", buf->st_size);
 
   buf->st_blksize = blockSize;
-  printf("IO Block size: \t%d\n", buf->st_blksize);
+  printf("IO Block size: \t%ld\n", buf->st_blksize);
 
   buf->st_blocks = currentEntry->fileSize / blockSize;
   printf("Blocks: \t%ld\n", buf->st_blocks);
@@ -775,7 +776,12 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   if (!newEntry) {
     mallocFailed();
   }
+
   int freeBlock = getFreeBlockNum(DIR_SIZE);
+  // Check if the freeBlock returned is valid or not
+  if (freeBlock < 0) {
+    return -1;
+  }
 
   // Initialize the new directory entry
   strcpy(newEntry->filename, newDirName);
@@ -880,15 +886,9 @@ int fs_rmdir(const char* pathname) {
 int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
 
-<<<<<<< HEAD
   // if (!fs_isDir((char*)filename)) {
   //   return -1;
   // }
-=======
-  if (!fs_isFile((char*)filename)) {
-    return -1;
-  }
->>>>>>> 785c3f265ef90db675072d9be6a9aa4cfdfd2db4
 
   hashTable* parentDir = getDir(pathParts->parentPath);
 

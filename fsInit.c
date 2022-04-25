@@ -101,7 +101,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int numBlocksWritten = LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
-    vcbPtr->rootDir = getFreeBlockNum(DIR_SIZE);
+    int freeBlock = getFreeBlockNum(DIR_SIZE);
+
+    // Check if the freeBlock returned is valid or not
+    if (freeBlock < 0) {
+      return -1;
+    }
+    vcbPtr->rootDir = freeBlock;
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
