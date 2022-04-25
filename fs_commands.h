@@ -48,7 +48,7 @@ int isDirWithValidPath(char* path);
 deconPath* splitPath(char* fullPath);
 
 //Gets the next available block number that is not in use
-int getFreeBlockNum();
+int getFreeBlockNum(int getNumBlocks);
 
 //Updates the free space bit vector with allocated blocks
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated);

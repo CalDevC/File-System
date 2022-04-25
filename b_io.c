@@ -218,7 +218,7 @@ b_io_fd b_open(char* filename, int flags) {
     printf("Initializing new file\n");
 
     if (fcb.flags[2] - '0') {
-      dirEntry = dirEntryInit(pathParts->childName, 0, getFreeBlockNum(),
+      dirEntry = dirEntryInit(pathParts->childName, 0, getFreeBlockNum(1),
                                0, time(0), time(0));
       setBlocksAsAllocated(dirEntry->location, 1);
       printf("In if cond before setEntry new file\n");
@@ -235,7 +235,7 @@ b_io_fd b_open(char* filename, int flags) {
     // If the last component of the path exists, and is a file:
       // If the O_TRUNC flag is set, set it's length to 0 (meaning
       // clear the data from the file)
-      printTable(parentDir);
+    printTable(parentDir);
     if (!dirEntry) {
       printf("The dirEntry is NULL\n");
       exit(1);
@@ -462,7 +462,7 @@ int b_write(b_io_fd fd, char* buffer, int count) {
     if (fcb.buflen < 1) {
       // Since we have reached the limit of our current buffer we
       // need to write it to the volume
-      int freeBlock = getFreeBlockNum();
+      int freeBlock = getFreeBlockNum(1);
 
       // We need to create a copy of freeBlock, because
       // we don't want the original freeBlock to get modified
@@ -517,6 +517,9 @@ int b_write(b_io_fd fd, char* buffer, int count) {
     // printf("Length of our buffer is: %ld\n", strlen(fcb.buf));
     // printf("Index is: %d\n", fcb.index);
     // printf("We are writing the buffer to our volume in the if cond: %s\n", fcb.buf);
+    for (int i = 0; i < 5; i++) {
+        fcb.buf[i] = 0 + '0';
+    }
     LBAwrite(fcb.buf, 1, fcb.location);
     // printf("*******************Done Writing*******************\n");
     // Test
