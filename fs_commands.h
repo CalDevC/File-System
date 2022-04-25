@@ -1,3 +1,20 @@
+/**************************************************************
+* Class: CSC-415-02 Spring 2022
+* Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
+* Student IDs: 920457223, 921040156, 921369355, 918548844
+* GitHub Name: csc415-filesystem-CalDevC
+* Group Name: Sudoers
+* Project: Basic File System
+*
+* File: fs_commands.h
+*
+* Description: This file holds the prototypes of our helper
+* functions which are defined in fs_commands.c along with
+* the structure for our volume control block and some global
+* variables.
+*
+**************************************************************/
+
 #ifndef FS_COMMANDS_H
 #define FS_COMMANDS_H
 

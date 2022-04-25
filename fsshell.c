@@ -1,17 +1,14 @@
 /**************************************************************
-* Class:  CSC-415-0# - Fall 2021
-* Names:
-* Student IDs:
-* GitHub Name:
-* Group Name:
+* Class: CSC-415-02 Spring 2022
+* Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
+* Student IDs: 920457223, 921040156, 921369355, 918548844
+* GitHub Name: csc415-filesystem-CalDevC
+* Group Name: Sudoers
 * Project: Basic File System
 *
-* File: fsShell.c
+* File: fsshell.c
 *
 * Description: Main driver for file system assignment.
-*
-* Make sure to set the #defined on the CMDxxxx_ON from 0 to 1
-* when you are ready to test that feature
 *
 **************************************************************/
 

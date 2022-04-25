@@ -1,5 +1,20 @@
-#include "fs_commands.h"
+/**************************************************************
+* Class: CSC-415-02 Spring 2022
+* Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
+* Student IDs: 920457223, 921040156, 921369355, 918548844
+* GitHub Name: csc415-filesystem-CalDevC
+* Group Name: Sudoers
+* Project: Basic File System
+*
+* File: fs_commands.c
+*
+* Description: This file holds the implementations of our file system
+* functions defined in mfs.h along with the implementation of
+* additional helper functions.
+*
+**************************************************************/
 
+#include "fs_commands.h"
 
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaPosition) {
@@ -356,9 +371,7 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
 }
 
 
-/****************************************************
-*  fs_stat
-****************************************************/
+//Prints out the details of a directory entry
 int fs_stat(const char* path, struct fs_stat* buf) {
   // fs_stat() displays file details associated with the file system
 
@@ -471,7 +484,8 @@ int fs_closedir(fdDir* dirp) {
   return 0;
 }
 
-
+//Moves to the next entry in the directory associated with dirp and
+//returns its info
 struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
@@ -597,7 +611,8 @@ char** stringParser(char* inputStr) {
   return subStrings;
 }
 
-
+//Sets the current working directory to the directory specified by 
+//buf if it exists
 int fs_setcwd(char* buf) {
   hashTable* requestedDir = getDir(buf);
 
@@ -609,7 +624,7 @@ int fs_setcwd(char* buf) {
   return 0;
 }
 
-
+//Gets the current working directory
 char* fs_getcwd(char* buf, size_t size) {
   char* path = malloc(size);
   if (!path) {
@@ -662,7 +677,6 @@ char* fs_getcwd(char* buf, size_t size) {
 
   return buf;
 }
-
 
 //Creates a new directory
 int fs_mkdir(const char* pathname, mode_t mode) {
@@ -748,7 +762,7 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   return 0;
 }
 
-
+//Removes a directory if its empty
 int fs_rmdir(const char* pathname) {
   deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
@@ -799,25 +813,10 @@ int fs_rmdir(const char* pathname) {
   return 0;
 }
 
-
+//Removes a file
 int fs_delete(char* filename) {
   deconPath* pathParts = splitPath((char*)filename);
   hashTable* parentDir = getDir(pathParts->parentPath);
-
-  // int sizeOfEntry = sizeof(dirEntry);	//48 bytes
-  // int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
-  // int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
-
-  // // Get the bitVector in memory -- We need to know what
-  // // block is free so we can store our new directory
-  // // there
-  // int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-  // if (!bitVector) {
-  //   mallocFailed();
-  // }
-
-  // // Read the bitvector
-  // LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
   char* fileNameToRemove = pathParts->childName;
   dirEntry* dirEntry = getEntry(pathParts->childName, parentDir);

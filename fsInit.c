@@ -1,5 +1,5 @@
 /**************************************************************
-* Class:  CSC-415-02 Fall 2021
+* Class: CSC-415-02 Spring 2022
 * Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
 * Student IDs: 920457223, 921040156, 921369355, 918548844
 * GitHub Name: csc415-filesystem-CalDevC
@@ -8,9 +8,9 @@
 *
 * File: fsInit.c
 *
-* Description: Main driver for file system assignment.
-*
-* This file is where you will start and initialize your system
+* Description: Function to initialize our file system. This function
+* will check if the drive has been formatted. If not it will format
+* the drive and if so it will do some initial set up for the file system.
 *
 **************************************************************/
 #include <stdlib.h>
