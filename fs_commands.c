@@ -807,11 +807,26 @@ int fs_rmdir(const char* pathname) {
   int dirToRemoveLocation = getEntry(dirNameToRemove, parentDir)->location;
   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
 
-  //Don't delete if it is the root directory
-  if (strcmp(dirToRemove->dirName, workingDir->dirName) == 0 || strcmp(dirToRemove->dirName, "..") == 0) {
-    printf("rm: cannot remove directory '.' or '..'\n", pathname);
+  //Get the working directory's parent directory
+  char* cwdParentPath = malloc(100);
+  fs_getcwd(cwdParentPath, 100);
+  hashTable* cwdParent = getDir(strcat(cwdParentPath, ".."));
+
+  //Don't delete if it is the '.' or '..' directory
+  if (strcmp(dirToRemove->dirName, workingDir->dirName) == 0 ||
+    strcmp(dirToRemove->dirName, cwdParent->dirName) == 0) {
+    printf("rm: cannot remove directory '.' or '..'\n");
+    free(cwdParentPath);
+    cwdParentPath = NULL;
+    free(cwdParent);
+    cwdParent = NULL;
     return -1;
   }
+
+  free(cwdParentPath);
+  cwdParentPath = NULL;
+  free(cwdParent);
+  cwdParent = NULL;
 
   //Check if empty
   if (dirToRemove->numEntries > 2) {
