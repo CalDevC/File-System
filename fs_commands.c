@@ -16,7 +16,7 @@
 
 #include "fs_commands.h"
 
-//Read all directory entries from a certain disk location into a new hashmap
+//Read all directory entries from a certain disk location into a new hash table
 hashTable* readTableData(int lbaPosition) {
   //Calculate how many directory entries we will need to have space 
   //for in the tableData struct
@@ -61,32 +61,36 @@ hashTable* readTableData(int lbaPosition) {
 }
 
 
-//Write all directory entries in the hashTable to the disk
+//Write all directory entries in the provided hash table to the disk
 void writeTableData(hashTable* table, int lbaPosition) {
-  int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
+  int numEntries = table->maxNumEntries * sizeof(dirEntry);
 
-  //All table data
+  //Stores all table data written to disk when it is read-in
   typedef struct tableData {
     char dirName[20];
-    dirEntry arr[arrNumBytes];
+    dirEntry arr[numEntries];
   } tableData;
 
+  //malloc memory for tableData which will be written to disk 
+  //and for arr which will storing all of the directories
+  //found in the hash table
   tableData* data = calloc(blockSize * DIR_SIZE, 1);
   if (!data) {
     mallocFailed();
   }
 
-  //Directory entries
-  dirEntry* arr = calloc(arrNumBytes, 1);
+  dirEntry* arr = calloc(numEntries, 1);
   if (!arr) {
     mallocFailed();
   }
 
+  //Copy the hash table's name to the tableData object so that it
+  //can be written to the disk
   strncpy(data->dirName, table->dirName, strlen(table->dirName));
 
-  int j = 0;  //j will track indcies for the array
+  int j = 0;  //j will track indcies for the array of directory entries
 
-  //iterate through the whole table to find every directory entry that is in use
+  //Iterate through the whole table to find every directory entry that is in use
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
     if (strcmp(entry->value->filename, "") != 0) {
@@ -107,9 +111,9 @@ void writeTableData(hashTable* table, int lbaPosition) {
     }
   }
 
-  memcpy(data->arr, arr, arrNumBytes);
+  memcpy(data->arr, arr, numEntries);
 
-  //Write to the array out to the specified block numbers
+  //Write the array out to the specified block numbers
   int val = LBAwrite(data, DIR_SIZE, lbaPosition);
 
 
