@@ -212,7 +212,8 @@ int isDirWithValidPath(char* path) {
   return result;
 }
 
-
+//Seperate a path into its parent path and child compoent and store it 
+//in a deconstructed path (deconPath) struct
 deconPath* splitPath(char* fullPath) {
   char** parsedPath = stringParser(fullPath);
   char* parentPath = malloc(strlen(fullPath) + 1);
@@ -220,6 +221,9 @@ deconPath* splitPath(char* fullPath) {
     mallocFailed();
   }
 
+  //Build the parent path by concatenating each of the path components 
+  //provided by stringParser (excluding the final one) with a '/' in 
+  //between each component and a NULL character at the end
   int k = 0;
   int i = 0;
   for (; parsedPath[i + 1] != NULL; i++) {
@@ -236,6 +240,7 @@ deconPath* splitPath(char* fullPath) {
 
   parentPath[k] = '\0';
 
+  //Add the components to a deconstructed path struct
   deconPath* pathParts = malloc(sizeof(deconPath));
   if (!pathParts) {
     mallocFailed();
@@ -243,6 +248,9 @@ deconPath* splitPath(char* fullPath) {
   pathParts->parentPath = parentPath;
   pathParts->childName = parsedPath[i];
 
+  //Make sure that parentPath and childName are always initialized with 
+  //something. Infer that we are using the current directory if none 
+  //is specified
   if (strcmp(pathParts->parentPath, "") == 0) {
     pathParts->parentPath = ".";
   } else if (strcmp(pathParts->childName, "") == 0) {
