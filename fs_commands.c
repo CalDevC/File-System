@@ -212,6 +212,7 @@ int isDirWithValidPath(char* path) {
   return result;
 }
 
+
 //Seperate a path into its parent path and child compoent and store it 
 //in a deconstructed path (deconPath) struct
 deconPath* splitPath(char* fullPath) {
@@ -260,6 +261,7 @@ deconPath* splitPath(char* fullPath) {
 
   return pathParts;
 }
+
 
 // This will help us determine the int block in which we
 // found a bit of value 1 representing free block
@@ -318,6 +320,7 @@ int getFreeBlockNum(int getNumBlocks) {
 }
 
 
+//Updates the free space bit vector with allocated blocks
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
@@ -358,6 +361,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
 }
 
 
+//Updates the free space bit vector with freed blocks
 void setBlocksAsFree(int freeBlock, int blocksFreed) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
@@ -467,6 +471,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   printf("Create Time: \t%s\n", time_buf);
   return 0;
 }
+
 
 //Check if a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {

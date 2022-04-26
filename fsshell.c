@@ -253,21 +253,25 @@ int cmd_cp(int argcnt, char* argvec[]) {
 *  Move file commmand
 ****************************************************/
 int cmd_mv(int argcnt, char* argvec[]) {
-#if (CMDMV_ON == 1)				
-  char* path = argvec[1];
-  char* newPath = argvec[2];
+#if (CMDMV_ON == 1)
+  char* path = argvec[1];    //Path of starting file
+  char* newPath = argvec[2]; //Path where file should be relocated to
   struct fs_stat statbuf;
 
+  //Break up both paths into their parent directories and child components
   deconPath* currPathParts = splitPath(path);
   hashTable* currParentDir = getDir(currPathParts->parentPath);
 
   deconPath* newPathParts = splitPath(newPath);
   hashTable* newParentDir = getDir(newPathParts->parentPath);
 
+  //Locate the entry to move/rename
   dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
 
-  dirEntry* newEntry = dirEntryInit(newPathParts->childName, entryToMove->isDir,
-    entryToMove->location, entryToMove->fileSize,
+  //Create a new directory entry with the new name/time last modified and the
+  //rest of the information from the original directory entry
+  dirEntry* newEntry = dirEntryInit(newPathParts->childName,
+    entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
     time(0), entryToMove->dateCreated);
 
   //If the directory entry moved was a directory and it was renamed, rewrite it to
@@ -278,9 +282,12 @@ int cmd_mv(int argcnt, char* argvec[]) {
     writeTableData(newDir, newDir->location);
   }
 
+  //Remove the old entry from the original location and add the new one 
+  //to the new location
   rmEntry(entryToMove->filename, currParentDir);
   setEntry(newPathParts->childName, newEntry, newParentDir);
 
+  //Update both directories on the disk
   writeTableData(currParentDir, currParentDir->location);
   writeTableData(newParentDir, newParentDir->location);
 
