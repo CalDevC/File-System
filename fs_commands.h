@@ -47,6 +47,10 @@ hashTable* workingDir;
 int blockSize;
 int numOfInts;
 
+// This will help us determine the int block in which we found a bit of 
+// value 1 representing free block
+int intBlock;
+
 //Reads a directory from disk into a hash table (directory) on the heap
 hashTable* readTableData(int lbaPosition);
 

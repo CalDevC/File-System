@@ -262,11 +262,6 @@ deconPath* splitPath(char* fullPath) {
   return pathParts;
 }
 
-
-// This will help us determine the int block in which we
-// found a bit of value 1 representing free block
-int intBlock = 0;
-
 int getFreeBlockNum(int getNumBlocks) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
