@@ -100,9 +100,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int numBlocksWritten = LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
-<<<<<<< HEAD
-    vcbPtr->rootDir = getFreeBlockNum();
-=======
     int freeBlock = getFreeBlockNum(DIR_SIZE);
 
     // Check if the freeBlock returned is valid or not
@@ -110,7 +107,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
       return -1;
     }
     vcbPtr->rootDir = freeBlock;
->>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
@@ -131,63 +127,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
-<<<<<<< HEAD
-    //Get the number of the next free block
-    int freeBlock = getFreeBlockNum();
-
-    //Set the allocated blocks to 0 and the directory entry data 
-    //stored in the hash table
-    setBlocksAsAllocated(freeBlock, DIR_SIZE);
-    writeTableData(rootDir, freeBlock);
-
-
-    ////////////// TEST CODE FOR OPR/CLOSE/READ DIR //////////////
-    // printf("\n\n\n");
-
-    // fdDir* myDirPtr = fs_opendir(".");
-
-    // struct fs_diriteminfo* myInfo = fs_readdir(myDirPtr);
-    // if (myInfo == NULL) {
-    //   printf("END of directory\n");
-    // } else {
-    //   printf("Dir entry name: %s\n", myInfo->d_name);
-    // }
-
-    // myInfo = fs_readdir(myDirPtr);
-    // if (myInfo == NULL) {
-    //   printf("END of directory\n");
-    // } else {
-    //   printf("Dir entry name: %s\n", myInfo->d_name);
-    // }
-
-
-    // myInfo = fs_readdir(myDirPtr);
-    // if (myInfo == NULL) {
-    //   printf("END of directory\n");
-    // } else {
-    //   printf("Dir entry name: %s\n", myInfo->d_name);
-    // }
-
-    // fs_closedir(myDirPtr);
-    ////////////// END TEST CODE FOR OPR/CLOSE/READ DIR //////////////
-
-    ///////////// TEST CODE FOR SETCWD /////////////
-    // fs_mkdir("/home", 0777);
-    // fs_mkdir("/home/test", 0777);
-    // fs_mkdir("/home/test/succes", 0777);
-    // fs_mkdir("/home/test/done", 0777);
-    // printf("Set current working directory:\n");
-    // fs_setcwd("/home/test");
-
-    // printTable(workingDir);
-    ///////////// END TEST CODE FOR SETCWD /////////////
-=======
     //Set the allocated blocks to 0 and the directory entry data 
     //stored in the hash table
     setBlocksAsAllocated(vcbPtr->rootDir, DIR_SIZE);
     writeTableData(rootDir, vcbPtr->rootDir);
     workingDir = readTableData(vcbPtr->rootDir);
->>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
     free(bitVector);
     bitVector = NULL;

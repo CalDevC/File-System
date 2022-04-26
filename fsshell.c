@@ -197,13 +197,7 @@ int cmd_ls(int argcnt, char* argvec[]) {
     }
   } else   // no pathname/filename specified - use cwd
   {
-<<<<<<< HEAD
-    printf("Entering else statement\n");
     char* path = fs_getcwd(cwd, DIRMAX_LEN);	//get current working directory
-    printf("After fs_getcwd");
-=======
-    char* path = fs_getcwd(cwd, DIRMAX_LEN);	//get current working directory
->>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
     fdDir* dirp;
     dirp = fs_opendir(path);
     return (displayFiles(dirp, flall, fllong));
@@ -259,25 +253,6 @@ int cmd_cp(int argcnt, char* argvec[]) {
 *  Move file commmand
 ****************************************************/
 int cmd_mv(int argcnt, char* argvec[]) {
-<<<<<<< HEAD
-#if (CMDMV_ON == 1)				
-  // return -99;
-  // // **** TODO ****  For you to implement	
-  printf("******ENTER cmd_mv*****\n");
-  printf("argcnt: %d\n", argcnt);
-  int i=0;
-  
-  while(argvec[i] != NULL){
-    printf("argvec[%d]: %s\n", i, argvec[i]);
-    i++;
-  }
-
-  /*
-  argvec[0] = mv
-  argvec[1] = src
-  argvec[2] = dest
-  */
-=======
 #if (CMDMV_ON == 1)
   char* path = argvec[1];    //Path of starting file
   char* newPath = argvec[2]; //Path where file should be relocated to
@@ -317,7 +292,6 @@ int cmd_mv(int argcnt, char* argvec[]) {
   writeTableData(newParentDir, newParentDir->location);
 
   fs_stat(newPath, &statbuf);
->>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
 
   if (argcnt == 1){

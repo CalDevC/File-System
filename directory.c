@@ -173,14 +173,8 @@ dirEntry* getEntry(char key[20], hashTable* table) {
     }
     entry = entry->next;
   }
-<<<<<<< HEAD
-  printf("ENTRY IS NULL!\n");
-
-  return NULL;
-=======
 
   return NULL; //Entry not found
->>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 }
 
 //Remove an existing entry (1 = success, 0 = failed)
