@@ -129,10 +129,13 @@ void writeTableData(hashTable* table, int lbaPosition) {
 //Check if a path is a directory (1 = yes, 0 = no, -1 = error in parent path)
 int isDirWithValidPath(char* path) {
   char** parsedPath = stringParser(path);
+
+  //Determin if the provide path is absolute or relative
   int absPath = strcmp(parsedPath[0], "/") == 0;
 
-  //Check if path is root, empty, or multiple '/'
+  //Check if path is root or empty
   if (parsedPath[0] == NULL || (absPath && parsedPath[1] == NULL)) {
+    //If path is empty return -1 for error otherwise return 1 because it is root
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
@@ -145,33 +148,31 @@ int isDirWithValidPath(char* path) {
   }
 
   hashTable* currDir;
-  if (absPath) {  //Absolute path
-    // Reads data into VCB
-    // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-    // if (!vcbPtr) {
-    //   mallocFailed();
-    // }
-    // LBAread(vcbPtr, 1, 0);
-    // currDir = readTableData(vcbPtr->rootDir);
+  if (absPath) {  //If the path is absolute, start at root
     currDir = getDir("/");
-    // free(vcbPtr);
-    // vcbPtr = NULL;
-  } else {  //Relative path
+  } else {  //Otherwise start in the current working directory
     currDir = readTableData(workingDir->location);
   }
 
   int i = 0;
 
+  //If the path is absolute we will skip the first component of the path
+  //because we are already starting at root
   if (absPath) {
     i++;
   }
 
+  //Iterate through each component in the path and check that the location 
+  //exists and that it is a directory (validate the parent path)
   dirEntry* entry;
 
+  //only check up to the second to last component because we are only 
+  //validating the parent path not the entire path
   for (; parsedPath[i + 1] != NULL; i++) {
-    //check that the location exists and that it is a directory
     entry = getEntry(parsedPath[i], currDir);
 
+    //If the current component does not exist or is not a directory 
+    //then parent path is invalid
     if (entry == NULL || entry->isDir == 0) {
       free(parsedPath);
       parsedPath = NULL;
@@ -191,16 +192,18 @@ int isDirWithValidPath(char* path) {
   //Check that the final component in the path is a directory
   entry = getEntry(parsedPath[i], currDir);
 
-
   free(parsedPath);
   parsedPath = NULL;
   free(parentPath);
   parentPath = NULL;
 
+  //Error if the last path component does not exist
   if (entry == NULL) {
     return -1;
   }
 
+  //Now that we know the path is valid we can return either 
+  //0 if it is a file or 1 if it is a directory
   int result = entry->isDir;
 
   free(currDir);
