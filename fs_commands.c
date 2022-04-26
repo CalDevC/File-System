@@ -779,6 +779,10 @@ int fs_rmdir(const char* pathname) {
   char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir((char*)pathname)) {
+    printf("rm: cannot remove directory '%s': directory does not exist\n", pathname);
+    return -1;
+  } else if (strcmp(pathname, "/") == 0) {
+    printf("rm: cannot remove directory '%s': directory is root\n", pathname);
     return -1;
   }
 
@@ -803,9 +807,15 @@ int fs_rmdir(const char* pathname) {
   int dirToRemoveLocation = getEntry(dirNameToRemove, parentDir)->location;
   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
 
+  //Don't delete if it is the root directory
+  if (strcmp(dirToRemove->dirName, workingDir->dirName) == 0 || strcmp(dirToRemove->dirName, "..") == 0) {
+    printf("rm: cannot remove directory '.' or '..'\n", pathname);
+    return -1;
+  }
+
   //Check if empty
   if (dirToRemove->numEntries > 2) {
-    printf("Directory is not empty, refusing to delete\n");
+    printf("rm: cannot remove directory '%s': directory is not empty\n", pathname);
     return -1;
   }
 

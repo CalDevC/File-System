@@ -115,7 +115,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // Initialize our root directory to be a new hash table of directory entries
     hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
-    workingDir = readTableData(rootDir->location);
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
@@ -133,6 +132,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     //stored in the hash table
     setBlocksAsAllocated(vcbPtr->rootDir, DIR_SIZE);
     writeTableData(rootDir, vcbPtr->rootDir);
+    workingDir = readTableData(vcbPtr->rootDir);
 
     free(bitVector);
     bitVector = NULL;
