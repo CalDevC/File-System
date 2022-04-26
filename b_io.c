@@ -35,8 +35,6 @@ typedef struct b_fcb {
                       //so we can write to that location
 
   off_t offset;    		//holds the current position in file
-  off_t readOffset;		//holds the reading position in the file
-  off_t writeOffset;	//holds the writing position in the file
 
   int fileSize;			//holds the size of the opened file
   char flags[5];  		//at max we can have 4 flags set
@@ -258,12 +256,6 @@ b_io_fd b_open(char* filename, int flags) {
 
   // To represent the current position in the file
   fcb.offset = 0;
-
-  // To represent the read position in the file
-  fcb.readOffset = 0;
-
-  // To represent the write position in the file
-  fcb.writeOffset = 0;
 
   // If it's a new file then the file size is 0, else we need
   // to get that information from it's directory entry
