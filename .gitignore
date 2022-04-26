@@ -35,6 +35,8 @@
 *.i*86
 *.x86_64
 *.hex
+SampleVolume
+fsshell
 
 # Debug files
 *.dSYM/
@@ -53,3 +55,6 @@ dkms.conf
 
 # Hexdump Directory
 Hexdump/
+
+#IDE (Visual Studio Code)
+.vscode/
