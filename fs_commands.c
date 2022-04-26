@@ -18,19 +18,23 @@
 
 //Read all directory entries from a certain disk location into a new hashmap
 hashTable* readTableData(int lbaPosition) {
-  int arrNumBytes = ((DIR_SIZE * blockSize) / sizeof(dirEntry)) * sizeof(dirEntry);
+  //Calculate how many directory entries we will need to have space 
+  //for in the tableData struct
+  int numEntries = (DIR_SIZE * blockSize) / sizeof(dirEntry);
 
-  //All table data
+  //Stores all table data written to disk when it is read-in
   typedef struct tableData {
     char dirName[20];
-    dirEntry arr[arrNumBytes];
+    dirEntry arr[numEntries];
   } tableData;
 
-  //Read all of the entries into an array
+  //Read all of the directory entries from the disk into an instance of 
+  //tableData so that it can be loaded into the new hash table
   tableData* data = malloc(DIR_SIZE * blockSize);
   if (!data) {
     mallocFailed();
   }
+
   LBAread(data, DIR_SIZE, lbaPosition);
 
   dirEntry* arr = data->arr;
@@ -39,6 +43,7 @@ hashTable* readTableData(int lbaPosition) {
   hashTable* dirPtr = hashTableInit(data->dirName, ((DIR_SIZE * blockSize) / sizeof(dirEntry) - 1),
     lbaPosition);
 
+  //Loop through all entries in arr and add them to the new hash table
   int i = 0;
   dirEntry* currDirEntry = malloc(sizeof(dirEntry));
   if (!currDirEntry) {
