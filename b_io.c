@@ -212,16 +212,20 @@ b_io_fd b_open(char* filename, int flags) {
       buffer = calloc(blockSize, 1);
       LBAwrite(buffer, 1, dirEntry->location);
 
+      free(buffer);
+      buffer = NULL;
+
       // In the following loop we iterate through each block associated with
       // the file and set it as free, as it will allow those blocks to be
       // overwritten
       while (nextBlock) {
         setBlocksAsFree(nextBlock, 1);
 
-        char* buffer = malloc(blockSize);
+        buffer = malloc(blockSize);
         if (!buffer) {
           mallocFailed();
         }
+
         LBAread(buffer, 1, nextBlock);
 
         char blockChars[6];
@@ -235,15 +239,18 @@ b_io_fd b_open(char* filename, int flags) {
         // an integer
         const char* constBlockNumbs = blockChars;
         nextBlock = atoi(constBlockNumbs);
+
+        free(buffer);
+        buffer = NULL;
       }
 
     }
 
   }
-  
+
   // Initially we malloc memory equivalent to 1 block we can malloc 
   // more memory as we need it
-  fcb.buf = malloc(sizeof(char) * blockSize);
+  fcb.buf = calloc(sizeof(char) * blockSize, 1);
   if (!fcb.buf) {
     mallocFailed();
   }
@@ -397,6 +404,9 @@ int b_write(b_io_fd fd, char* buffer, int count) {
       // useful when we need to write next block to our volume
       fcb.location = freeBlock;
 
+      free(fcb.buf);
+      fcb.buf = NULL;
+
       fcb.buf = malloc(sizeof(char) * blockSize);
       if (!fcb.buf) {
         mallocFailed();
@@ -413,7 +423,7 @@ int b_write(b_io_fd fd, char* buffer, int count) {
   if (fcb.index != 5) {
     // Put 0s as a placeholder for next block 
     for (int i = 0; i < 5; i++) {
-        fcb.buf[i] = 0 + '0';
+      fcb.buf[i] = 0 + '0';
     }
     LBAwrite(fcb.buf, 1, fcb.location);
     setBlocksAsAllocated(fcb.location, 1);
@@ -510,6 +520,10 @@ int b_read(b_io_fd fd, char* buffer, int count) {
       const char* constBlockNumbs = blockChars;
       int nextBlock = atoi(constBlockNumbs);
 
+      free(fcb.buf);
+      fcb.buf = NULL;
+
+      // Start reading remaining text from next buffer
       fcb.buf = malloc(sizeof(char) * blockSize);
       if (!fcb.buf) {
         mallocFailed();
@@ -549,6 +563,7 @@ void b_close(b_io_fd fd) {
   writeTableData(fcb.directory, fcb.directory->location);
 
   // To indicate that the fcb at fd is now free to use
+  free(fcb.buf);
   fcb.buf = NULL;
 
   fcbArray[fd] = fcb;

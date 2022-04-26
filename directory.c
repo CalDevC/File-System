@@ -16,6 +16,7 @@
 
 #include "directory.h"
 
+//If malloc fails, inform the user and quit
 void mallocFailed() {
   printf("Call to malloc memory failed, exiting program...\n");
   exit(-1);
@@ -64,7 +65,7 @@ int hash(const char filename[20]) {
 
 //Initialize an entry for the hash table
 node* entryInit(char key[20], dirEntry* value) {
-  //allocate memory for the entry in the table and 
+  //allocate memory for the entry in the table (node) and 
   //the entry's value (directory entry)
   node* entry = malloc(sizeof(node));
   if (!entry) {
@@ -103,7 +104,7 @@ hashTable* hashTableInit(char* dirName, int maxNumEntries, int location) {
     table->entries[i] = entry;
   }
 
-  table->numEntries = 0;
+  table->numEntries = 0; //The hash table will start out as empty
 
   return table;
 }
@@ -117,12 +118,17 @@ void setEntry(char key[20], dirEntry* value, hashTable* table) {
   //If we have already reached the maximum capacity of the directory,
   //Don't attempt to create another directory entry
   if (table->numEntries == table->maxNumEntries) {
-    printf("Directory is full, no directory entry created.\n");
+    printf("Error: cannot create file/directory: directory is full\n");
     return;
   }
 
   //If there is no collision then add a new initialized entry
   if (strcmp(entry->value->filename, "") == 0) {
+    free(entry->value);
+    entry->value = NULL;
+    free(entry);
+    entry = NULL;
+
     table->entries[hashVal] = entryInit(key, value);
     table->numEntries++;
     return;
@@ -159,7 +165,8 @@ dirEntry* getEntry(char key[20], hashTable* table) {
   int hashVal = hash(key);
   node* entry = table->entries[hashVal];
 
-  //Checks hashTable for matching key and return its value
+  //Check the linked list at that hashed location for a matching key 
+  //and return its value
   while (entry != NULL) {
     if (strcmp(entry->key, key) == 0) {
       return entry->value;
@@ -167,7 +174,7 @@ dirEntry* getEntry(char key[20], hashTable* table) {
     entry = entry->next;
   }
 
-  return NULL;
+  return NULL; //Entry not found
 }
 
 //Remove an existing entry (1 = success, 0 = failed)
@@ -197,6 +204,8 @@ int rmEntry(char key[20], hashTable* table) {
         }
 
       } else { //Else the entry was not the first at the location
+        //Set the previous entry's next to point the same location
+        //as the removed entry's next
         prevEntry->next = entry->next;
       }
 
@@ -211,31 +220,38 @@ int rmEntry(char key[20], hashTable* table) {
     entry = prevEntry->next;
   }
 
-  //The key was not found
-  return 0;
+  return 0;  //The key was not found
 }
 
 //Given an index, find the index of the next entry in the table
 int getNextIdx(int currIdx, hashTable* table) {
-  //If we are looking for the first index in the list, start at entry 0
   int max = table->maxNumEntries;
-  static int prevIdx = -999;
+
+  //These atatic variables are used to track our position in the linked list 
+  //if we have more than 1 value hashed to a location
+  static int prevIdx = -999;    //The previously located index
+  //The number of times we have returned the previous index
   static int prevIdxCount = 0;
 
+  //Update the number of times we have found the previous index
   if (prevIdx == currIdx) {
     prevIdxCount++;
   } else {
     prevIdxCount = 0;
   }
 
+  //NOTE: fs_openDir will pass max as the initial index
+  //If we are starting from the beginning
   if (currIdx == max && strcmp(table->entries[0]->key, "") != 0) {
+    //return 0 if it is in use
     return 0;
-  } else if (currIdx == max) {
+  } else if (currIdx == max) { //Otherwise start at index 0 and begin checking
     currIdx = 0;
   }
 
   node* currNode = table->entries[currIdx];
 
+  //Check the next value of the last found index
   for (int i = prevIdxCount; i > 0; i--) {
     currNode = table->entries[currIdx]->next;
   }
@@ -255,22 +271,31 @@ int getNextIdx(int currIdx, hashTable* table) {
     }
   }
 
-  prevIdx = currIdx;
+  prevIdx = currIdx;  //Update previous index
 
+  //Return max to signify that we have reached the end of 
+  //the entries in the directory
   return max;
 }
 
 //Write out the hash table contents to the console for viewing
 void printTable(hashTable* table) {
-  printf("\n******** table ********\n");
+  printf("\n******** %s ********\n", table->dirName); //header
+
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
+
+    //If the current entry is in use
     if (strcmp(entry->value->filename, "") != 0) {
+      //Print the entry's name
       printf("[Entry %d] %s", i, table->entries[i]->key);
+
+      //Print any additional entries hashed to that location
       while (entry->next != NULL) {
         entry = entry->next;
         printf(", %s", entry->key);
       }
+
       printf("\n");
     }
   }
@@ -279,9 +304,35 @@ void printTable(hashTable* table) {
 
 //Free the memory allocated to the hashTable
 void clean(hashTable* table) {
+  //Store a reference to next so we can access it 
+  //after freeing the current entry
+  node* next = malloc(sizeof(node));
+
+  //Iterate through the hash table and free every entry and entry->value
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
+    if (entry->next) {
+      memcpy(next, entry->next, sizeof(node));
+    }
+
+    free(entry->value);
     free(entry);
+
+    while (next != NULL) {
+      entry = next;
+      if (entry->next) {
+        memcpy(next, entry->next, sizeof(node));
+      } else {
+        break;
+      }
+      free(entry->value);
+      free(entry);
+    }
   }
+
+  //Free our next pointer and the table
+  free(next);
+  next = NULL;
   free(table);
+  table = NULL;
 }

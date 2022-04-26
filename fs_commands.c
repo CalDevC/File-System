@@ -16,21 +16,25 @@
 
 #include "fs_commands.h"
 
-//Read all directory entries from a certain disk location into a new hashmap
+//Read all directory entries from a certain disk location into a new hash table
 hashTable* readTableData(int lbaPosition) {
-  int arrNumBytes = ((DIR_SIZE * blockSize) / sizeof(dirEntry)) * sizeof(dirEntry);
+  //Calculate how many directory entries we will need to have space 
+  //for in the tableData struct
+  int numEntries = (DIR_SIZE * blockSize) / sizeof(dirEntry);
 
-  //All table data
+  //Stores all table data written to disk when it is read-in
   typedef struct tableData {
     char dirName[20];
-    dirEntry arr[arrNumBytes];
+    dirEntry arr[numEntries];
   } tableData;
 
-  //Read all of the entries into an array
+  //Read all of the directory entries from the disk into an instance of 
+  //tableData so that it can be loaded into the new hash table
   tableData* data = malloc(DIR_SIZE * blockSize);
   if (!data) {
     mallocFailed();
   }
+
   LBAread(data, DIR_SIZE, lbaPosition);
 
   dirEntry* arr = data->arr;
@@ -39,6 +43,7 @@ hashTable* readTableData(int lbaPosition) {
   hashTable* dirPtr = hashTableInit(data->dirName, ((DIR_SIZE * blockSize) / sizeof(dirEntry) - 1),
     lbaPosition);
 
+  //Loop through all entries in arr and add them to the new hash table
   int i = 0;
   dirEntry* currDirEntry = malloc(sizeof(dirEntry));
   if (!currDirEntry) {
@@ -56,32 +61,36 @@ hashTable* readTableData(int lbaPosition) {
 }
 
 
-//Write all directory entries in the hashTable to the disk
+//Write all directory entries in the provided hash table to the disk
 void writeTableData(hashTable* table, int lbaPosition) {
-  int arrNumBytes = table->maxNumEntries * sizeof(dirEntry);
+  int numEntries = table->maxNumEntries * sizeof(dirEntry);
 
-  //All table data
+  //Stores all table data written to disk when it is read-in
   typedef struct tableData {
     char dirName[20];
-    dirEntry arr[arrNumBytes];
+    dirEntry arr[numEntries];
   } tableData;
 
-  tableData* data = malloc(blockSize * DIR_SIZE);
+  //malloc memory for tableData which will be written to disk 
+  //and for arr which will storing all of the directories
+  //found in the hash table
+  tableData* data = calloc(blockSize * DIR_SIZE, 1);
   if (!data) {
     mallocFailed();
   }
 
-  //Directory entries
-  dirEntry* arr = malloc(arrNumBytes);
+  dirEntry* arr = calloc(numEntries, 1);
   if (!arr) {
     mallocFailed();
   }
 
+  //Copy the hash table's name to the tableData object so that it
+  //can be written to the disk
   strncpy(data->dirName, table->dirName, strlen(table->dirName));
 
-  int j = 0;  //j will track indcies for the array
+  int j = 0;  //j will track indcies for the array of directory entries
 
-  //iterate through the whole table to find every directory entry that is in use
+  //Iterate through the whole table to find every directory entry that is in use
   for (int i = 0; i < SIZE; i++) {
     node* entry = table->entries[i];
     if (strcmp(entry->value->filename, "") != 0) {
@@ -102,21 +111,31 @@ void writeTableData(hashTable* table, int lbaPosition) {
     }
   }
 
-  memcpy(data->arr, arr, arrNumBytes);
+  memcpy(data->arr, arr, numEntries);
 
-  //Write to the array out to the specified block numbers
+  //Write the array out to the specified block numbers
   int val = LBAwrite(data, DIR_SIZE, lbaPosition);
 
+
+  clean(table);
+  table = NULL;
+  free(arr);
+  arr = NULL;
+  free(data);
+  data = NULL;
 }
 
 
 //Check if a path is a directory (1 = yes, 0 = no, -1 = error in parent path)
 int isDirWithValidPath(char* path) {
   char** parsedPath = stringParser(path);
+
+  //Determin if the provide path is absolute or relative
   int absPath = strcmp(parsedPath[0], "/") == 0;
 
-  //Check if path is root, empty, or multiple '/'
+  //Check if path is root or empty
   if (parsedPath[0] == NULL || (absPath && parsedPath[1] == NULL)) {
+    //If path is empty return -1 for error otherwise return 1 because it is root
     int result = parsedPath[0] == NULL ? -1 : 1;
     free(parsedPath);
     parsedPath = NULL;
@@ -129,33 +148,31 @@ int isDirWithValidPath(char* path) {
   }
 
   hashTable* currDir;
-  if (absPath) {  //Absolute path
-    // Reads data into VCB
-    // struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
-    // if (!vcbPtr) {
-    //   mallocFailed();
-    // }
-    // LBAread(vcbPtr, 1, 0);
-    // currDir = readTableData(vcbPtr->rootDir);
+  if (absPath) {  //If the path is absolute, start at root
     currDir = getDir("/");
-    // free(vcbPtr);
-    // vcbPtr = NULL;
-  } else {  //Relative path
+  } else {  //Otherwise start in the current working directory
     currDir = readTableData(workingDir->location);
   }
 
   int i = 0;
 
+  //If the path is absolute we will skip the first component of the path
+  //because we are already starting at root
   if (absPath) {
     i++;
   }
 
+  //Iterate through each component in the path and check that the location 
+  //exists and that it is a directory (validate the parent path)
   dirEntry* entry;
 
+  //only check up to the second to last component because we are only 
+  //validating the parent path not the entire path
   for (; parsedPath[i + 1] != NULL; i++) {
-    //check that the location exists and that it is a directory
     entry = getEntry(parsedPath[i], currDir);
 
+    //If the current component does not exist or is not a directory 
+    //then parent path is invalid
     if (entry == NULL || entry->isDir == 0) {
       free(parsedPath);
       parsedPath = NULL;
@@ -175,16 +192,18 @@ int isDirWithValidPath(char* path) {
   //Check that the final component in the path is a directory
   entry = getEntry(parsedPath[i], currDir);
 
-
   free(parsedPath);
   parsedPath = NULL;
   free(parentPath);
   parentPath = NULL;
 
+  //Error if the last path component does not exist
   if (entry == NULL) {
     return -1;
   }
 
+  //Now that we know the path is valid we can return either 
+  //0 if it is a file or 1 if it is a directory
   int result = entry->isDir;
 
   free(currDir);
@@ -194,6 +213,8 @@ int isDirWithValidPath(char* path) {
 }
 
 
+//Seperate a path into its parent path and child compoent and store it 
+//in a deconstructed path (deconPath) struct
 deconPath* splitPath(char* fullPath) {
   char** parsedPath = stringParser(fullPath);
   char* parentPath = malloc(strlen(fullPath) + 1);
@@ -201,6 +222,9 @@ deconPath* splitPath(char* fullPath) {
     mallocFailed();
   }
 
+  //Build the parent path by concatenating each of the path components 
+  //provided by stringParser (excluding the final one) with a '/' in 
+  //between each component and a NULL character at the end
   int k = 0;
   int i = 0;
   for (; parsedPath[i + 1] != NULL; i++) {
@@ -217,6 +241,7 @@ deconPath* splitPath(char* fullPath) {
 
   parentPath[k] = '\0';
 
+  //Add the components to a deconstructed path struct
   deconPath* pathParts = malloc(sizeof(deconPath));
   if (!pathParts) {
     mallocFailed();
@@ -224,6 +249,9 @@ deconPath* splitPath(char* fullPath) {
   pathParts->parentPath = parentPath;
   pathParts->childName = parsedPath[i];
 
+  //Make sure that parentPath and childName are always initialized with 
+  //something. Infer that we are using the current directory if none 
+  //is specified
   if (strcmp(pathParts->parentPath, "") == 0) {
     pathParts->parentPath = ".";
   } else if (strcmp(pathParts->childName, "") == 0) {
@@ -233,6 +261,7 @@ deconPath* splitPath(char* fullPath) {
 
   return pathParts;
 }
+
 
 // This will help us determine the int block in which we
 // found a bit of value 1 representing free block
@@ -298,6 +327,7 @@ int getFreeBlockNum(int getNumBlocks) {
 }
 
 
+//Updates the free space bit vector with allocated blocks
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
@@ -346,6 +376,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
 }
 
 
+//Updates the free space bit vector with freed blocks
 void setBlocksAsFree(int freeBlock, int blocksFreed) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
@@ -463,6 +494,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   printf("Create Time: \t%s\n", time_buf);
   return 0;
 }
+
 
 //Check if a path is a directory (1 = yes, 0 = no)
 int fs_isDir(char* path) {
@@ -706,11 +738,18 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
 
-  if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
+  if (!fs_isDir(parentPath)) {
+    printf("md: cannot create directory '%s': No such file or directory\n", pathname);
+    return -1;
+  } else if (fs_isDir((char*)pathname)) {
+    printf("md: cannot create directory '%s': File exists\n", pathname);
     return -1;
   }
 
   hashTable* parentDir = getDir(parentPath);
+
+  // Create a new directory entry
+  char* newDirName = pathParts->childName;
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -726,9 +765,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-
-  // Create a new directory entry
-  char* newDirName = pathParts->childName;
 
   dirEntry* newEntry = malloc(sizeof(dirEntry));
   if (!newEntry) {
@@ -791,6 +827,10 @@ int fs_rmdir(const char* pathname) {
   char* parentPath = pathParts->parentPath;
 
   if (!fs_isDir((char*)pathname)) {
+    printf("rm: cannot remove directory '%s': directory does not exist\n", pathname);
+    return -1;
+  } else if (strcmp(pathname, "/") == 0) {
+    printf("rm: cannot remove directory '%s': directory is root\n", pathname);
     return -1;
   }
 
@@ -815,9 +855,30 @@ int fs_rmdir(const char* pathname) {
   int dirToRemoveLocation = getEntry(dirNameToRemove, parentDir)->location;
   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
 
+  //Get the working directory's parent directory
+  char* cwdParentPath = malloc(100);
+  fs_getcwd(cwdParentPath, 100);
+  hashTable* cwdParent = getDir(strcat(cwdParentPath, ".."));
+
+  //Don't delete if it is the '.' or '..' directory
+  if (strcmp(dirToRemove->dirName, workingDir->dirName) == 0 ||
+    strcmp(dirToRemove->dirName, cwdParent->dirName) == 0) {
+    printf("rm: cannot remove directory '.' or '..'\n");
+    free(cwdParentPath);
+    cwdParentPath = NULL;
+    free(cwdParent);
+    cwdParent = NULL;
+    return -1;
+  }
+
+  free(cwdParentPath);
+  cwdParentPath = NULL;
+  free(cwdParent);
+  cwdParent = NULL;
+
   //Check if empty
   if (dirToRemove->numEntries > 2) {
-    printf("Directory is not empty, refusing to delete\n");
+    printf("rm: cannot remove directory '%s': directory is not empty\n", pathname);
     return -1;
   }
 
