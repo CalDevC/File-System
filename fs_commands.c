@@ -402,52 +402,37 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
 }
 
 
-//Prints out the details of a directory entry
+//Displays file details associated with the file system
 int fs_stat(const char* path, struct fs_stat* buf) {
-  // fs_stat() displays file details associated with the file system
 
-  // *** Validation Checks ***
   if (path == NULL) {
     return -1;
   }
 
-  char* pathCopy = malloc(sizeof(path));
-  if (!pathCopy) {
-    mallocFailed();
-  }
+  //Split the parent path from the child component
+  deconPath* pathParts = splitPath((char*)path);
 
-  // Create a char* from const char* in order to manipulate path
-  strcpy(pathCopy, path);
+  //Get the child's directory entry from its parent directory
+  hashTable* dir = getDir(pathParts->parentPath);
+  dirEntry* entry = getEntry(pathParts->childName, dir);
 
-  // Handle the case of when an absolute path is given
-  char** parsedPath = stringParser(pathCopy);
-  char* desiredPath;
-  int i = 0;
-  while (parsedPath[i] != NULL) {
-    desiredPath = parsedPath[i];
-    i++;
-  }
-
-  // Pull desired path into memory
-  hashTable* currentDirTbl = readTableData(workingDir->location);
-  dirEntry* currentEntry = getEntry(desiredPath, currentDirTbl);
-
-  if (currentEntry == NULL) {
+  if (entry == NULL) {
     return -1;
   }
 
-  printf("File: \t%s\n", currentEntry->filename);
+  //Display file info
+  printf("File: \t%s\n", entry->filename);
 
-  buf->st_size = currentEntry->fileSize;
+  buf->st_size = entry->fileSize;
   printf("Size: \t%ld\n", buf->st_size);
 
   buf->st_blksize = blockSize;
   printf("IO Block size: \t%ld\n", buf->st_blksize);
 
-  buf->st_blocks = currentEntry->fileSize / blockSize;
+  buf->st_blocks = entry->fileSize / blockSize;
   printf("Blocks: \t%ld\n", buf->st_blocks);
 
-  // Create variables for time
+  //Get and store current time
   time_t currentTime;
   struct tm ts;
   char time_buf[80];
@@ -455,20 +440,21 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   time(&currentTime);
 
   // Store epoch time, but print out formatted time
-  buf->st_accesstime = currentEntry->dateModified;
+  buf->st_accesstime = entry->dateModified;
   ts = *localtime(&buf->st_accesstime);
   strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
-  printf("Access Time: \t%s\n", time_buf);
+  printf("Last Accessed: \t%s\n", time_buf);
 
-  buf->st_modtime = currentEntry->dateModified;
+  buf->st_modtime = entry->dateModified;
   ts = *localtime(&buf->st_modtime);
   strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
-  printf("Modtime: \t%s\n", time_buf);
+  printf("Last Modified: \t%s\n", time_buf);
 
-  buf->st_createtime = currentEntry->dateCreated;
+  buf->st_createtime = entry->dateCreated;
   ts = *localtime(&buf->st_createtime);
   strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
-  printf("Create Time: \t%s\n", time_buf);
+  printf("Created: \t%s\n", time_buf);
+
   return 0;
 }
 
