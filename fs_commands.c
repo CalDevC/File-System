@@ -690,11 +690,18 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
 
-  if (!fs_isDir(parentPath) || fs_isDir((char*)pathname)) {
+  if (!fs_isDir(parentPath)) {
+    printf("md: cannot create directory '%s': No such file or directory\n", pathname);
+    return -1;
+  } else if (fs_isDir((char*)pathname)) {
+    printf("md: cannot create directory '%s': File exists\n", pathname);
     return -1;
   }
 
   hashTable* parentDir = getDir(parentPath);
+
+  // Create a new directory entry
+  char* newDirName = pathParts->childName;
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
@@ -710,9 +717,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
 
   // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-
-  // Create a new directory entry
-  char* newDirName = pathParts->childName;
 
   dirEntry* newEntry = malloc(sizeof(dirEntry));
   if (!newEntry) {
