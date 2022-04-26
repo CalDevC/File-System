@@ -239,7 +239,6 @@ deconPath* splitPath(char* fullPath) {
 int intBlock = 0;
 
 int getFreeBlockNum(int getNumBlocks) {
-  //**********Get the free block number ***********
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
   if (!bitVector) {
     mallocFailed();
@@ -251,19 +250,26 @@ int getFreeBlockNum(int getNumBlocks) {
   // This will help determine the first block number that is
   // free
   int freeBlock = -1;
+
+  // Whenever we find a free block we subtract one from the blocksToFind
+  // and when it reaches 0, we know that we have found the specified
+  // number of contiguous free blocks
   int blocksToFind = getNumBlocks;
 
   //****Calculate free space block number*****
   // We can use the following formula to calculate the block
-  // number => (32 * i) + (32 - j), where (32 * i) will give us 
-  // the number of 32 bit blocks where we found a bit of value 1
-  // and we add (31 - j) which is a offset to get the block number 
-  // it represents within that 32 bit block
+  // number => (32 * intBlock) + (31 - j), where (32 * intBlock)
+  // will give us the number of 32 bit blocks where we found a bit 
+  // of value 1 and we add (31 - j) which is a offset to get the 
+  // block number it represents within that 32 bit block
   for (int i = 0; i < numOfInts; i++) {
     for (int j = 31; j >= 0; j--) {
+      // If the 'if condition' is true that we have found a free block
       if (bitVector[i] & (1 << j)) {
         blocksToFind--;
 
+        // If freeBlock is -1 then it means that the first free block
+        // has been found, so we calculate it's position in the bitVector
         if (freeBlock == -1) {
           intBlock = i;
           freeBlock = (intBlock * 32) + (31 - j);
@@ -278,7 +284,8 @@ int getFreeBlockNum(int getNumBlocks) {
 
       // If the freeBlock is not -1 and the bit is 0 then it means that we have
       // to start looking for contiguous free blocks again, since we have found a 
-      // block that is not free after finding a block that was free
+      // block that is not free after finding a block that was free, therefore
+      // blocks are not contiguous
       else if (freeBlock != -1) {
         freeBlock = -1;
         blocksToFind = getNumBlocks;
@@ -297,11 +304,8 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
     mallocFailed();
   }
 
-  // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
-  // Set the number of bits specified in the blocksAllocated
-  // to 0 starting from freeBlock
   freeBlock += 1;
 
   int bitNum = freeBlock - ((intBlock * 32) + 32);
@@ -310,20 +314,31 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
     bitNum *= -1;
   }
 
-  // This will give us the specific bit where
-  // we found the free block in the specific
-  // int block
+  // This will give us the specific bit where we found the free block
+  // in the specific int block
   bitNum = 32 - bitNum;
 
   int index = bitNum;
-  int sumOfFreeBlAndBlocksAlloc = (bitNum + blocksAllocated);
 
-  for (; index < sumOfFreeBlAndBlocksAlloc; index++) {
+  // We want to start from the bitnum (index) and go up to the bitNum + 
+  // blocksAllocated while setting the bits to 0, representing that the
+  // corresponding blocks are used
+  int total = (bitNum + blocksAllocated); 
+
+  for (; index < total; index++) {
+    // If we have reached the end of an integer, we move on to the next
+    // integer, and reset the index
     if (index > 32) {
       intBlock += 1;
       index = 1;
-      sumOfFreeBlAndBlocksAlloc -= 32;
+      total -= 32;
     }
+
+    // We first create a bit mask by shifting 1 to the left, to a
+    // position we want to clear the bit at, calculated using (32 - index)
+    // then we use the not (~) operator to clear the bit at the position given
+    // by (32 - index) and then we apply the mask to our integer, which will 
+    // basically clear the corresponding bit, since 1 & 0 = 0
     bitVector[intBlock] = bitVector[intBlock] & ~(1 << (32 - index));
   }
 
@@ -337,11 +352,8 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
     mallocFailed();
   }
 
-  // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
-  // Set the number of bits specified in the blocksFreed
-  // to 1 starting from freeBlock
   freeBlock += 1;
 
   int bitNum = freeBlock - ((intBlock * 32) + 32);
@@ -356,14 +368,25 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
   bitNum = 32 - bitNum;
 
   int index = bitNum;
+
+  // We want to start from the bitnum (index) and go up to the bitNum + 
+  // blocksAllocated while setting the bits to 1, representing that the
+  // corresponding blocks are free
   int total = (bitNum + blocksFreed);
 
   for (; index < total; index++) {
+    // If we have reached the end of an integer, we move on to the next
+    // integer, and reset the index
     if (index > 32) {
       intBlock += 1;
       index = 1;
       total -= 32;
     }
+
+    // We first create a bit mask by shifting 1 to the left, to a
+    // position we want to set the bit at, calculated using (32 - index)
+    // then we apply the mask to our integer, which will 
+    // basically set the corresponding bit
     bitVector[intBlock] = bitVector[intBlock] | (1 << (32 - index));
   }
 
@@ -815,6 +838,7 @@ int fs_rmdir(const char* pathname) {
 
 //Removes a file
 int fs_delete(char* filename) {
+  // Split the path into parent and child component
   deconPath* pathParts = splitPath((char*)filename);
   hashTable* parentDir = getDir(pathParts->parentPath);
 
@@ -822,9 +846,9 @@ int fs_delete(char* filename) {
   dirEntry* dirEntry = getEntry(pathParts->childName, parentDir);
   int fileToRemoveLocation = dirEntry->location;
 
-  //Iterate over each file block to get all associated block nums
   int blockToFree = dirEntry->location;
 
+  //Iterate over each file block to get all associated block nums
   while (blockToFree) {
     //Set each block num as free
     setBlocksAsFree(blockToFree, 1);
