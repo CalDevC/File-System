@@ -1,17 +1,14 @@
 /**************************************************************
-* Class:  CSC-415-0# - Fall 2021
-* Names:
-* Student IDs:
-* GitHub Name:
-* Group Name:
+* Class: CSC-415-02 Spring 2022
+* Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
+* Student IDs: 920457223, 921040156, 921369355, 918548844
+* GitHub Name: csc415-filesystem-CalDevC
+* Group Name: Sudoers
 * Project: Basic File System
 *
-* File: fsShell.c
+* File: fsshell.c
 *
 * Description: Main driver for file system assignment.
-*
-* Make sure to set the #defined on the CMDxxxx_ON from 0 to 1
-* when you are ready to test that feature
 *
 **************************************************************/
 
@@ -200,9 +197,13 @@ int cmd_ls(int argcnt, char* argvec[]) {
     }
   } else   // no pathname/filename specified - use cwd
   {
+<<<<<<< HEAD
     printf("Entering else statement\n");
     char* path = fs_getcwd(cwd, DIRMAX_LEN);	//get current working directory
     printf("After fs_getcwd");
+=======
+    char* path = fs_getcwd(cwd, DIRMAX_LEN);	//get current working directory
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
     fdDir* dirp;
     dirp = fs_opendir(path);
     return (displayFiles(dirp, flall, fllong));
@@ -258,6 +259,7 @@ int cmd_cp(int argcnt, char* argvec[]) {
 *  Move file commmand
 ****************************************************/
 int cmd_mv(int argcnt, char* argvec[]) {
+<<<<<<< HEAD
 #if (CMDMV_ON == 1)				
   // return -99;
   // // **** TODO ****  For you to implement	
@@ -275,6 +277,47 @@ int cmd_mv(int argcnt, char* argvec[]) {
   argvec[1] = src
   argvec[2] = dest
   */
+=======
+#if (CMDMV_ON == 1)
+  char* path = argvec[1];    //Path of starting file
+  char* newPath = argvec[2]; //Path where file should be relocated to
+  struct fs_stat statbuf;
+
+  //Break up both paths into their parent directories and child components
+  deconPath* currPathParts = splitPath(path);
+  hashTable* currParentDir = getDir(currPathParts->parentPath);
+
+  deconPath* newPathParts = splitPath(newPath);
+  hashTable* newParentDir = getDir(newPathParts->parentPath);
+
+  //Locate the entry to move/rename
+  dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
+
+  //Create a new directory entry with the new name/time last modified and the
+  //rest of the information from the original directory entry
+  dirEntry* newEntry = dirEntryInit(newPathParts->childName,
+    entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
+    time(0), entryToMove->dateCreated);
+
+  //If the directory entry moved was a directory and it was renamed, rewrite it to
+  //the disk with its new name
+  if (newEntry->isDir && strcmp(newEntry->filename, entryToMove->filename) != 0) {
+    hashTable* newDir = getDir(entryToMove->filename);
+    strcpy(newDir->dirName, newEntry->filename);
+    writeTableData(newDir, newDir->location);
+  }
+
+  //Remove the old entry from the original location and add the new one 
+  //to the new location
+  rmEntry(entryToMove->filename, currParentDir);
+  setEntry(newPathParts->childName, newEntry, newParentDir);
+
+  //Update both directories on the disk
+  writeTableData(currParentDir, currParentDir->location);
+  writeTableData(newParentDir, newParentDir->location);
+
+  fs_stat(newPath, &statbuf);
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
 
   if (argcnt == 1){
@@ -346,7 +389,7 @@ int cmd_rm(int argcnt, char* argvec[]) {
     return (fs_delete(path));
   }
 
-  printf("The path %s is neither a file not a directory\n", path);
+  printf("The path %s is neither a file nor a directory\n", path);
 #endif
   return -1;
 }
@@ -467,6 +510,10 @@ int cmd_cd(int argcnt, char* argvec[]) {
 int cmd_pwd(int argcnt, char* argvec[]) {
 #if (CMDPWD_ON == 1)
   char* dir_buf = malloc(DIRMAX_LEN + 1);
+  if (!dir_buf) {
+    mallocFailed();
+  }
+
   char* ptr;
   ptr = fs_getcwd(dir_buf, DIRMAX_LEN);
   if (ptr == NULL)			//an error occurred
@@ -521,6 +568,9 @@ void processcommand(char* cmd) {
   cmdLen = strlen(cmd);
   cmdv = (char**)malloc(sizeof(char*) * ((cmdLen / 2) + 2));
   cmdc = 0;
+  if (!cmdv) {
+    mallocFailed();
+  }
 
   cmdv[cmdc] = cmd;
   ++cmdc;
@@ -650,6 +700,10 @@ int main(int argc, char* argv[]) {
 #endif
 
     cmd = malloc(strlen(cmdin) + 30);
+    if (!cmd) {
+      mallocFailed();
+    }
+
     strcpy(cmd, cmdin);
     free(cmdin);
     cmdin = NULL;

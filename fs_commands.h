@@ -1,3 +1,23 @@
+<<<<<<< HEAD
+=======
+/**************************************************************
+* Class: CSC-415-02 Spring 2022
+* Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
+* Student IDs: 920457223, 921040156, 921369355, 918548844
+* GitHub Name: csc415-filesystem-CalDevC
+* Group Name: Sudoers
+* Project: Basic File System
+*
+* File: fs_commands.h
+*
+* Description: This file holds the prototypes of our helper
+* functions which are defined in fs_commands.c along with
+* the structure for our volume control block and some global
+* variables.
+*
+**************************************************************/
+
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 #ifndef FS_COMMANDS_H
 #define FS_COMMANDS_H
 
@@ -30,8 +50,14 @@ hashTable* workingDir;
 int blockSize;
 int numOfInts;
 
+<<<<<<< HEAD
 //Handles what to do whaen malloc fails
 void mallocFailed();
+=======
+// This will help us determine the int block in which we found a bit of 
+// value 1 representing free block
+int intBlock;
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
 //Reads a directory from disk into a hash table (directory) on the heap
 hashTable* readTableData(int lbaPosition);
@@ -48,7 +74,11 @@ int isDirWithValidPath(char* path);
 deconPath* splitPath(char* fullPath);
 
 //Gets the next available block number that is not in use
+<<<<<<< HEAD
 int getFreeBlockNum();
+=======
+int getFreeBlockNum(int getNumBlocks);
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
 //Updates the free space bit vector with allocated blocks
 void setBlocksAsAllocated(int freeBlock, int blocksAllocated);

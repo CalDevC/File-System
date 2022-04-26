@@ -1,5 +1,5 @@
 /**************************************************************
-* Class:  CSC-415-02 Fall 2021
+* Class: CSC-415-02 Spring 2022
 * Names: Patrick Celedio, Chase Alexander, Gurinder Singh, Jonathan Luu
 * Student IDs: 920457223, 921040156, 921369355, 918548844
 * GitHub Name: csc415-filesystem-CalDevC
@@ -8,9 +8,9 @@
 *
 * File: fsInit.c
 *
-* Description: Main driver for file system assignment.
-*
-* This file is where you will start and initialize your system
+* Description: Function to initialize our file system. This function
+* will check if the drive has been formatted. If not it will format
+* the drive and if so it will do some initial set up for the file system.
 *
 **************************************************************/
 #include <stdlib.h>
@@ -37,6 +37,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   // is because 610 * 32 = 19520 bits which are not enough to
   // represent 19531 blocks
   numOfInts = (numberOfBlocks / 32) + 1;
+
+
+  // This will help us determine the int block in which we found a bit of 
+  // value 1 representing free block
+  intBlock = 0;
 
   struct volumeCtrlBlock* vcbPtr = malloc(definedBlockSize);
 
@@ -95,7 +100,17 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     int numBlocksWritten = LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, FREE_SPACE_START_BLOCK);
 
     vcbPtr->freeBlockNum = FREE_SPACE_START_BLOCK;
+<<<<<<< HEAD
     vcbPtr->rootDir = getFreeBlockNum();
+=======
+    int freeBlock = getFreeBlockNum(DIR_SIZE);
+
+    // Check if the freeBlock returned is valid or not
+    if (freeBlock < 0) {
+      return -1;
+    }
+    vcbPtr->rootDir = freeBlock;
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
     int sizeOfEntry = sizeof(dirEntry);	//48 bytes
     int dirSizeInBytes = (DIR_SIZE * definedBlockSize);	//2560 bytes
@@ -103,7 +118,6 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // Initialize our root directory to be a new hash table of directory entries
     hashTable* rootDir = hashTableInit("/", maxNumEntries, vcbPtr->rootDir);
-    workingDir = readTableData(rootDir->location);
 
     // Initializing the "." current directory and the ".." parent Directory 
     dirEntry* curDir = dirEntryInit(".", 1, FREE_SPACE_START_BLOCK + numBlocksWritten,
@@ -117,6 +131,7 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
     // Writes VCB to block 0
     int writeVCB = LBAwrite(vcbPtr, 1, 0);
 
+<<<<<<< HEAD
     //Get the number of the next free block
     int freeBlock = getFreeBlockNum();
 
@@ -166,6 +181,13 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // printTable(workingDir);
     ///////////// END TEST CODE FOR SETCWD /////////////
+=======
+    //Set the allocated blocks to 0 and the directory entry data 
+    //stored in the hash table
+    setBlocksAsAllocated(vcbPtr->rootDir, DIR_SIZE);
+    writeTableData(rootDir, vcbPtr->rootDir);
+    workingDir = readTableData(vcbPtr->rootDir);
+>>>>>>> c9a2562f33cfdb71c573f0cb9e602b58edab9440
 
     free(bitVector);
     bitVector = NULL;
