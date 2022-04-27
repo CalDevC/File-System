@@ -27,25 +27,23 @@
 
 typedef struct b_fcb {
   /** TODO add all the information you need in the file control block **/
-  char* buf;				//holds the open file buffer
-  int index;				//holds the current position in the buffer
-  int buflen;				//holds how many valid bytes are in the buffer
+  char* buf;				       //holds the open file buffer
+  int index;				       //holds the current position in the buffer
+  int buflen;				       //holds how many valid bytes are in the buffer
 
-  int location;   		//holds the file location(block number) in the volume, 
-                      //so we can write to that location
+  int location;   		    //holds the file location(block number) in the volume, 
+                          //so we can write to that location
 
-  off_t offset;    		//holds the current position in file
-  off_t readOffset;		//holds the reading position in the file
-  off_t writeOffset;	//holds the writing position in the file
+  off_t offset;    		    //holds the current position in file
 
-  int fileSize;			//holds the size of the opened file
-  char flags[5];  		//at max we can have 4 flags set
+  int fileSize;			      //holds the size of the opened file
+  char flags[5];  		    //at max we can have 4 flags set
 
-  hashTable* directory; 	//points to the directory that contains
+  hashTable* directory; 	//points to the parent directory that contains
                           //the opened file
 
-  dirEntry* entry;  		//points to the directory entry associated
-                        //with opened file
+  dirEntry* entry;  		  //points to the directory entry associated
+                          //with opened file
 } b_fcb;
 
 b_fcb fcbArray[MAXFCBS];
@@ -98,8 +96,8 @@ b_io_fd b_open(char* filename, int flags) {
   //****************Permissions*********************//
 
   // 0th index represents the read flag, and 1st index
-  // represents the write flag, 2nd represents the create
-  // flag, and 3rd represents the truncate flag
+  // represents the write flag, 2nd represents the O_CREAT
+  // flag, and 3rd represents the O_TRUNC flag
 
   // Initialy we set all flags to 0
   for (int i = 0; i < 4; i++) {
@@ -206,21 +204,24 @@ b_io_fd b_open(char* filename, int flags) {
       const char* constBlockNumbs = blockChars;
       int nextBlock = atoi(constBlockNumbs);
 
-      // We want to overrite the existing file's first block with
-      // empty buffer
       free(buffer);
       buffer = NULL;
 
+      // We want to overrite the existing file's first block with
+      // empty buffer
       buffer = calloc(blockSize, 1);
       LBAwrite(buffer, 1, dirEntry->location);
 
       free(buffer);
       buffer = NULL;
 
+      // In the following loop we iterate through each block associated with
+      // the file and set it as free, as it will allow those blocks to be
+      // overwritten
       while (nextBlock) {
         setBlocksAsFree(nextBlock, 1);
 
-        buffer = malloc(blockSize);
+        buffer = calloc(blockSize, 1);
         if (!buffer) {
           mallocFailed();
         }
@@ -264,12 +265,6 @@ b_io_fd b_open(char* filename, int flags) {
 
   // To represent the current position in the file
   fcb.offset = 0;
-
-  // To represent the read position in the file
-  fcb.readOffset = 0;
-
-  // To represent the write position in the file
-  fcb.writeOffset = 0;
 
   // If it's a new file then the file size is 0, else we need
   // to get that information from it's directory entry
@@ -341,7 +336,8 @@ int b_write(b_io_fd fd, char* buffer, int count) {
 
   b_fcb fcb = fcbArray[fd];
 
-  // We first check if this file has write flag set or not
+  // We first check if this file has write flag set or not, indicating
+  // write permission
   if (!(fcb.flags[1] - '0')) {
     printf("ERROR: Cannot write to this file\n");
     return -1;
@@ -349,13 +345,15 @@ int b_write(b_io_fd fd, char* buffer, int count) {
 
 
   // This represents the amount of text we can store in our
-  // buffer its 5 less than 512 because we reserve 5 character
+  // buffer, it's 5 less than 512 because we reserve 5 character
   // to store characters representing next block associated with
   // the file
   fcb.buflen = blockSize - fcb.index;
 
   int numBytesWritten = 0;
 
+  // Next we write the number of bytes specified in the count variable
+  // from the provided buffer to our file
   for (int i = 0; i < count; i++) {
     if (fcb.buflen >= 1) {
       fcb.buf[fcb.index] = buffer[i];
@@ -398,21 +396,23 @@ int b_write(b_io_fd fd, char* buffer, int count) {
         j--;
       }
 
-      // We now set the location to the next free block it will be
-      // useful when we need to write next block to our volume
       LBAwrite(fcb.buf, 1, fcb.location);
 
       setBlocksAsAllocated(freeBlock, 1);
+
+      // We now set the location to the next free block it will be
+      // useful when we need to write next block to our volume
       fcb.location = freeBlock;
 
       free(fcb.buf);
       fcb.buf = NULL;
 
-      fcb.buf = malloc(sizeof(char) * blockSize);
+      fcb.buf = calloc(blockSize, 1);
       if (!fcb.buf) {
         mallocFailed();
       }
 
+      // Since we start with a new buffer we reset the index and buflen
       fcb.index = 5;
       fcb.buflen = blockSize - fcb.index;
     }
@@ -524,12 +524,15 @@ int b_read(b_io_fd fd, char* buffer, int count) {
       fcb.buf = NULL;
 
       // Start reading remaining text from next buffer
-      fcb.buf = malloc(sizeof(char) * blockSize);
+      fcb.buf = calloc(blockSize, 1);
       if (!fcb.buf) {
         mallocFailed();
       }
+
+      // Start reading remaining text from next buffer
       LBAread(fcb.buf, 1, nextBlock);
 
+      // Since we start with a new buffer we reset the index and buflen
       fcb.index = 5;
       fcb.buflen = blockSize - fcb.index;
     }
@@ -550,7 +553,7 @@ void b_close(b_io_fd fd) {
   b_fcb fcb = fcbArray[fd];
 
   // We need to write the directory entry representing
-  // the open file, since we might have changed the file
+  // the open file, since we might have changed the file's
   // size, dateModified, or dateCreated fields
   fcb.entry->fileSize = fcb.fileSize;
   fcb.entry->dateModified = time(0);

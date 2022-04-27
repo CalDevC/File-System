@@ -38,6 +38,11 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
   // represent 19531 blocks
   numOfInts = (numberOfBlocks / 32) + 1;
 
+
+  // This will help us determine the int block in which we found a bit of 
+  // value 1 representing free block
+  intBlock = 0;
+
   struct volumeCtrlBlock* vcbPtr = malloc(definedBlockSize);
   if (!vcbPtr) {
     mallocFailed();

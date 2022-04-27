@@ -179,7 +179,6 @@ int cmd_ls(int argcnt, char* argvec[]) {
 
   if (optind < argcnt) {
     //processing arguments after options
-    printf("optind < arcnt\n");
     for (int k = optind; k < argcnt; k++) {
       if (fs_isDir(argvec[k])) {
         fdDir* dirp;

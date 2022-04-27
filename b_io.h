@@ -19,9 +19,14 @@
 
 typedef int b_io_fd;
 
+// Function to open the specified file for read/write operations
+// based on the flags specified, it returns a file descriptor
+// that gets used in other file functions as an identifier for 
+// a file
 b_io_fd b_open(char* filename, int flags);
 int b_read(b_io_fd fd, char* buffer, int count);
 int b_write(b_io_fd fd, char* buffer, int count);
+// Function to change the offset of a file
 int b_seek(b_io_fd fd, off_t offset, int whence);
 void b_close(b_io_fd fd);
 
