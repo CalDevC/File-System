@@ -221,7 +221,7 @@ b_io_fd b_open(char* filename, int flags) {
       while (nextBlock) {
         setBlocksAsFree(nextBlock, 1);
 
-        buffer = malloc(blockSize);
+        buffer = calloc(blockSize, 1);
         if (!buffer) {
           mallocFailed();
         }
@@ -407,7 +407,7 @@ int b_write(b_io_fd fd, char* buffer, int count) {
       free(fcb.buf);
       fcb.buf = NULL;
 
-      fcb.buf = malloc(sizeof(char) * blockSize);
+      fcb.buf = calloc(blockSize, 1);
       if (!fcb.buf) {
         mallocFailed();
       }
@@ -524,7 +524,7 @@ int b_read(b_io_fd fd, char* buffer, int count) {
       fcb.buf = NULL;
 
       // Start reading remaining text from next buffer
-      fcb.buf = malloc(sizeof(char) * blockSize);
+      fcb.buf = calloc(blockSize, 1);
       if (!fcb.buf) {
         mallocFailed();
       }

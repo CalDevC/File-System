@@ -513,6 +513,8 @@ fdDir* fs_opendir(const char* name) {
     mallocFailed();
   }
 
+  // Get the directory corresponding to the name
+  // passed as an argument
   hashTable* dir = getDir((char*)name);
 
   fdDir->dirTable = dir;
@@ -628,9 +630,14 @@ char** stringParser(char* inputStr) {
     mallocFailed();
   }
 
+  // We need to copy the orginial path because the strtok_r function
+  // modifies the string that it receives as a parameter, so we
+  // cannot pass the original string
   strcpy(stringToParse, inputStr);
 
+
   char** subStrings = (char**)malloc(sizeof(char*) * (strlen(stringToParse) + 1));
+
   if (!subStrings) {
     mallocFailed();
   }
@@ -640,6 +647,7 @@ char** stringParser(char* inputStr) {
   char* delim = "/";
 
   int stringCount = 0;
+
   //Check if root directory
   if (stringToParse[0] == '/') {
     subStrings[stringCount] = "/";
@@ -648,7 +656,8 @@ char** stringParser(char* inputStr) {
 
   subString = strtok_r(stringToParse, delim, &savePtr);
 
-
+  // We keep dividing the string into substrings until
+  // we get NULL as a substring
   while (subString != NULL) {
     subStrings[stringCount] = subString;
     stringCount++;
@@ -730,9 +739,13 @@ char* fs_getcwd(char* buf, size_t size) {
 
 //Creates a new directory
 int fs_mkdir(const char* pathname, mode_t mode) {
+  // We call splitPath() to split the given path into 
+  // child and parent path
   deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
 
+  // We check if the parent path is valid and is a directory, before
+  // we create a new directory within it
   if (!fs_isDir(parentPath)) {
     printf("md: cannot create directory '%s': No such file or directory\n", pathname);
     return -1;
@@ -758,7 +771,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
     mallocFailed();
   }
 
-  // Read the bitvector
   LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
   dirEntry* newEntry = malloc(sizeof(dirEntry));
@@ -834,17 +846,6 @@ int fs_rmdir(const char* pathname) {
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
-
-  // Get the bitVector in memory -- We need to know what
-  // block is free so we can store our new directory
-  // there
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-  if (!bitVector) {
-    mallocFailed();
-  }
-
-  // Read the bitvector
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
 
   char* dirNameToRemove = pathParts->childName;
   int dirToRemoveLocation = getEntry(dirNameToRemove, parentDir)->location;
