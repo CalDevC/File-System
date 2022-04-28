@@ -199,6 +199,8 @@ int isDirWithValidPath(char* path) {
 
   //Error if the last path component does not exist
   if (entry == NULL) {
+    free(currDir);
+    currDir = NULL;
     return -1;
   }
 
@@ -258,6 +260,11 @@ deconPath* splitPath(char* fullPath) {
     pathParts->childName = pathParts->parentPath;
     pathParts->parentPath = ".";
   }
+
+  free(parentPath);
+  parentPath = NULL;
+  free(parsedPath);
+  parsedPath = NULL;
 
   return pathParts;
 }
@@ -348,7 +355,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
   // We want to start from the bitnum (index) and go up to the bitNum + 
   // blocksAllocated while setting the bits to 0, representing that the
   // corresponding blocks are used
-  int total = (bitNum + blocksAllocated); 
+  int total = (bitNum + blocksAllocated);
 
   for (; index < total; index++) {
     // If we have reached the end of an integer, we move on to the next
