@@ -110,6 +110,10 @@ int initFileSystem(uint64_t numberOfBlocks, uint64_t definedBlockSize) {
 
     // Check if the freeBlock returned is valid or not
     if (freeBlock < 0) {
+      free(bitVector);
+      bitVector = NULL;
+      free(vcbPtr);
+      vcbPtr = NULL;
       return -1;
     }
     vcbPtr->rootDir = freeBlock;
