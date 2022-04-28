@@ -762,9 +762,13 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // we create a new directory within it
   if (!fs_isDir(parentPath)) {
     printf("md: cannot create directory '%s': No such file or directory\n", pathname);
+    free(pathParts);
+    pathParts = NULL;
     return -1;
   } else if (fs_isDir((char*)pathname)) {
     printf("md: cannot create directory '%s': File exists\n", pathname);
+    free(pathParts);
+    pathParts = NULL;
     return -1;
   }
 
@@ -777,16 +781,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
-  // Get the bitVector in memory -- We need to know what
-  // block is free so we can store our new directory
-  // there
-  int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
-  if (!bitVector) {
-    mallocFailed();
-  }
-
-  LBAread(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
-
   dirEntry* newEntry = malloc(sizeof(dirEntry));
   if (!newEntry) {
     mallocFailed();
@@ -795,6 +789,10 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   int freeBlock = getFreeBlockNum(DIR_SIZE);
   // Check if the freeBlock returned is valid or not
   if (freeBlock < 0) {
+    free(pathParts);
+    pathParts = NULL;
+    free(newEntry);
+    newEntry = NULL;
     return -1;
   }
 
@@ -832,8 +830,6 @@ int fs_mkdir(const char* pathname, mode_t mode) {
   // Update the bit vector
   setBlocksAsAllocated(freeBlock, DIR_SIZE);
 
-  free(bitVector);
-  bitVector = NULL;
   free(newEntry);
   newEntry = NULL;
   free(pathParts);
@@ -849,9 +845,13 @@ int fs_rmdir(const char* pathname) {
 
   if (!fs_isDir((char*)pathname)) {
     printf("rm: cannot remove directory '%s': directory does not exist\n", pathname);
+    free(pathParts);
+    pathParts = NULL;
     return -1;
   } else if (strcmp(pathname, "/") == 0) {
     printf("rm: cannot remove directory '%s': directory is root\n", pathname);
+    free(pathParts);
+    pathParts = NULL;
     return -1;
   }
 
@@ -867,7 +867,7 @@ int fs_rmdir(const char* pathname) {
 
   //Get the working directory's parent directory
   char* cwdParentPath = malloc(100);
-  fs_getcwd(cwdParentPath, 100);
+  free(fs_getcwd(cwdParentPath, 100));
   hashTable* cwdParent = getDir(strcat(cwdParentPath, ".."));
 
   //Don't delete if it is the '.' or '..' directory
@@ -876,19 +876,23 @@ int fs_rmdir(const char* pathname) {
     printf("rm: cannot remove directory '.' or '..'\n");
     free(cwdParentPath);
     cwdParentPath = NULL;
-    free(cwdParent);
-    cwdParent = NULL;
+    clean(cwdParent);
+    free(pathParts);
+    pathParts = NULL;
+    clean(dirToRemove);
     return -1;
   }
 
   free(cwdParentPath);
   cwdParentPath = NULL;
-  free(cwdParent);
-  cwdParent = NULL;
+  clean(cwdParent);
 
   //Check if empty
   if (dirToRemove->numEntries > 2) {
     printf("rm: cannot remove directory '%s': directory is not empty\n", pathname);
+    free(pathParts);
+    pathParts = NULL;
+    clean(dirToRemove);
     return -1;
   }
 
@@ -903,6 +907,7 @@ int fs_rmdir(const char* pathname) {
 
   free(pathParts);
   pathParts = NULL;
+  clean(dirToRemove);
 
   return 0;
 }
