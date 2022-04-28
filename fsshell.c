@@ -179,7 +179,6 @@ int cmd_ls(int argcnt, char* argvec[]) {
 
   if (optind < argcnt) {
     //processing arguments after options
-    printf("optind < arcnt\n");
     for (int k = optind; k < argcnt; k++) {
       if (fs_isDir(argvec[k])) {
         fdDir* dirp;
@@ -299,23 +298,6 @@ int cmd_mv(int argcnt, char* argvec[]) {
     printf("Try 'help' for more information\n");
     return -1;
   }else{
-    // Pull desired path into memory
-    char * src = argvec[1];
-    char * dest = argvec[2];
-    // hashTable* currentDirTbl = readTableData(workingDir->location);
-    // dirEntry* currentEntry = getEntry(argcnt[1], currentDirTbl);
-    // Check if desitnation file/dir exits
-
-    // Get location of destionation file/dir
-
-    // Rename destionation
-   
-    // THIS WAS ONLY FOR TESTING fs_stat()
-      char* path = argvec[1];
-      printf("argvec[1]: %s\n", path);
-      struct fs_stat statbuf;
-      fs_stat(path, &statbuf);
-      // END fs_stat() test
 
     return 0;
   }
@@ -494,7 +476,6 @@ int cmd_pwd(int argcnt, char* argvec[]) {
   {
     printf("An error occurred while trying to get the current working directory\n");
   } else {
-    printf("cmd_pwd(): ptr is not NULL\n");
     printf("%s\n", ptr);
   }
   free(dir_buf);
