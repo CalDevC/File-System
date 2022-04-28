@@ -444,7 +444,7 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   printf("Size: \t%ld\n", buf->st_size);
 
   buf->st_blksize = blockSize;
-  printf("IO Block size: \t%ld\n", buf->st_blksize);
+  printf("IO Block size: \t%d\n", buf->st_blksize);
 
   buf->st_blocks = entry->fileSize / blockSize;
   printf("Blocks: \t%ld\n", buf->st_blocks);
