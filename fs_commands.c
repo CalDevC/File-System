@@ -943,6 +943,8 @@ int fs_delete(char* filename) {
     // an integer
     const char* constBlockNumbs = blockChars;
     blockToFree = atoi(constBlockNumbs);
+    free(buffer);
+    buffer = NULL;
   }
 
   //Remove dirEntry from the parent dir
