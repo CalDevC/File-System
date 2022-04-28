@@ -74,7 +74,7 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated);
 //Updates the free space bit vector with freed blocks
 void setBlocksAsFree(int freeBlock, int blocksFreed);
 
-//Prints out the details of a directory entry
+//Displays file details associated with the file system
 int fs_stat(const char* path, struct fs_stat* buf);
 
 //Check if a path is a directory (1 = yes, 0 = no)

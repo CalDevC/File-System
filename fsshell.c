@@ -261,11 +261,62 @@ int cmd_mv(int argcnt, char* argvec[]) {
   deconPath* currPathParts = splitPath(path);
   hashTable* currParentDir = getDir(currPathParts->parentPath);
 
-  deconPath* newPathParts = splitPath(newPath);
-  hashTable* newParentDir = getDir(newPathParts->parentPath);
-
   //Locate the entry to move/rename
   dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
+
+  if (fs_isDir(newPath)) {  //If the directory exists, move the file into it
+
+    hashTable* newDir = getDir(newPath);
+    //Create a new directory entry with the new name/time last modified and the
+    //rest of the information from the original directory entry
+    dirEntry* newEntry = dirEntryInit(currPathParts->childName,
+      entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
+      time(0), entryToMove->dateCreated);
+
+    //Remove the old entry from the original location and add the new one 
+    //to the new location
+    rmEntry(entryToMove->filename, currParentDir);
+    setEntry(newEntry->filename, newEntry, newDir);
+
+    //Update both directories on the disk
+    writeTableData(currParentDir, currParentDir->location);
+    writeTableData(newDir, newDir->location);
+
+  } else if (fs_isFile(newPath)) {  //Error it already exists
+    printf("mv: cannot move file: %s already exists\n", newPath);
+    return -1;
+  } else {
+    deconPath* newPathParts = splitPath(newPath);
+    hashTable* newParentDir = getDir(newPathParts->parentPath);
+
+    //Create a new directory entry with the new name/time last modified and the
+    //rest of the information from the original directory entry
+    dirEntry* newEntry = dirEntryInit(newPathParts->childName,
+      entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
+      time(0), entryToMove->dateCreated);
+
+    //If the directory entry moved was a directory and it was renamed, rewrite it to
+    //the disk with its new name
+    if (newEntry->isDir && strcmp(newEntry->filename, entryToMove->filename) != 0) {
+      hashTable* newDir = getDir(entryToMove->filename);
+      strcpy(newDir->dirName, newEntry->filename);
+      writeTableData(newDir, newDir->location);
+    }
+
+    //Remove the old entry from the original location and add the new one 
+    //to the new location
+    rmEntry(entryToMove->filename, currParentDir);
+    setEntry(newPathParts->childName, newEntry, newParentDir);
+
+    //Update both directories on the disk
+    writeTableData(currParentDir, currParentDir->location);
+    writeTableData(newParentDir, newParentDir->location);
+  }
+
+  fs_stat(newPath, &statbuf);
+
+  deconPath* newPathParts = splitPath(newPath);
+  hashTable* newParentDir = getDir(newPathParts->parentPath);
 
   //Create a new directory entry with the new name/time last modified and the
   //rest of the information from the original directory entry
