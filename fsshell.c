@@ -256,8 +256,21 @@ int cmd_cp(int argcnt, char* argvec[]) {
 ****************************************************/
 int cmd_mv(int argcnt, char* argvec[]) {
 #if (CMDMV_ON == 1)
-  char* path = argvec[1];    //Path of starting file
-  char* newPath = argvec[2]; //Path where file should be relocated to
+
+  char* path;    //Path of starting file
+  char* newPath; //Path where file should be relocated to
+
+  switch (argcnt) {
+    case 3:	//only one name provided
+      path = argvec[1];
+      newPath = argvec[2];
+      break;
+
+    default:
+      printf("Usage: mv srcfile destfile\n");
+      return -1;
+  }
+
   struct fs_stat statbuf;
 
   //Break up both paths into their parent directories and child components

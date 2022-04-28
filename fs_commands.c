@@ -625,7 +625,7 @@ hashTable* getDir(char* buf) {
       currDir = readTableData(entry->location);
     }
 
-    return readTableData(currDir->location);
+    return currDir;
 
   } else {
     return NULL;
@@ -689,6 +689,9 @@ int fs_setcwd(char* buf) {
   if (requestedDir == NULL) {
     return -1;
   }
+
+  free(workingDir);
+  workingDir = NULL;
 
   workingDir = requestedDir;
   return 0;
