@@ -488,8 +488,6 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   pathParts->childName = NULL;
   free(pathParts);
   pathParts = NULL;
-  free(dir);
-  dir = NULL;
 
   return 0;
 }

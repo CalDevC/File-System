@@ -331,7 +331,6 @@ int cmd_mv(int argcnt, char* argvec[]) {
 
   fs_stat(newPath, &statbuf);
 
-
 #endif
   return 0;
 }
@@ -633,7 +632,7 @@ void processcommand(char* cmd) {
   cmd_help(cmdc, cmdv);
   free(cmdv);
   cmdv = NULL;
-}
+  }
 
 
 
