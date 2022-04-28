@@ -261,13 +261,9 @@ deconPath* splitPath(char* fullPath) {
     pathParts->parentPath = ".";
   }
 
-  free(parentPath);
-  parentPath = NULL;
-  free(parsedPath);
-  parsedPath = NULL;
-
   return pathParts;
 }
+
 
 int getFreeBlockNum(int getNumBlocks) {
   int* bitVector = malloc(NUM_FREE_SPACE_BLOCKS * blockSize);
@@ -309,6 +305,8 @@ int getFreeBlockNum(int getNumBlocks) {
         // If the blocksToFind is 0 than we have found the contiguous blocks
         // that the caller asked for
         if (blocksToFind == 0) {
+          free(bitVector);
+          bitVector = NULL;
           return freeBlock;
         }
       }
@@ -325,6 +323,8 @@ int getFreeBlockNum(int getNumBlocks) {
   }
 
   printf("Error: Couldn't find %d contiguous free blocks\n", getNumBlocks);
+  free(bitVector);
+  bitVector = NULL;
   return -1;
 }
 
@@ -375,6 +375,8 @@ void setBlocksAsAllocated(int freeBlock, int blocksAllocated) {
   }
 
   LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  free(bitVector);
+  bitVector = NULL;
 }
 
 
