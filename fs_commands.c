@@ -529,7 +529,7 @@ fdDir* fs_opendir(const char* name) {
 }
 
 
-// Closes the directory stream associated with dirp
+// Closes the directory stream associated with dirp and cleans up
 int fs_closedir(fdDir* dirp) {
   free(dirp->dirTable);
   dirp->dirTable = NULL;
@@ -590,11 +590,12 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
 
 
 hashTable* getDir(char* buf) {
+  //Check if the path is valid and is a directory
   if (fs_isDir(buf)) {
-    //Parse path
     char** parsedPath = stringParser(buf);
     int fullPath = strcmp(parsedPath[0], "/") == 0;
 
+    //Check if the path is absolute or relative to determine starting point
     hashTable* currDir;
     if (fullPath) {  //Absolute path
       struct volumeCtrlBlock* vcbPtr = malloc(blockSize);
@@ -615,9 +616,11 @@ hashTable* getDir(char* buf) {
       i++;
     }
 
+    //Navigate to the requested directory, read it in, and return 
+    //the pointer to it
     dirEntry* entry;
     for (; parsedPath[i] != NULL; i++) {
-      //check that the location exists and that it is a directory
+      //Check that the location exists and that it is a directory
       entry = getEntry(parsedPath[i], currDir);
       free(currDir);
       currDir = readTableData(entry->location);
@@ -684,6 +687,7 @@ char** stringParser(char* inputStr) {
 int fs_setcwd(char* buf) {
   hashTable* requestedDir = getDir(buf);
 
+  //If the requested directory is found then set working directory to it
   if (requestedDir == NULL) {
     return -1;
   }
@@ -841,6 +845,7 @@ int fs_rmdir(const char* pathname) {
   deconPath* pathParts = splitPath((char*)pathname);
   char* parentPath = pathParts->parentPath;
 
+  //Check if path is root or nonexistent
   if (!fs_isDir((char*)pathname)) {
     printf("rm: cannot remove directory '%s': directory does not exist\n", pathname);
     free(pathParts);
@@ -853,12 +858,14 @@ int fs_rmdir(const char* pathname) {
     return -1;
   }
 
+  //Get the parent directory
   hashTable* parentDir = getDir(parentPath);
 
   int sizeOfEntry = sizeof(dirEntry);	//48 bytes
   int dirSizeInBytes = (DIR_SIZE * blockSize);	//2560 bytes
   int maxNumEntries = (dirSizeInBytes / sizeOfEntry) - 1; //52 entries
 
+  //Gather details of directory to remove
   char* dirNameToRemove = pathParts->childName;
   int dirToRemoveLocation = getEntry(dirNameToRemove, parentDir)->location;
   hashTable* dirToRemove = readTableData(dirToRemoveLocation);
