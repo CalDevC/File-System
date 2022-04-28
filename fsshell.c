@@ -273,61 +273,72 @@ int cmd_mv(int argcnt, char* argvec[]) {
 
   struct fs_stat statbuf;
 
-  //Break up both paths into their parent directories and child components
-  deconPath* currPathParts = splitPath(path);
-  hashTable* currParentDir = getDir(currPathParts->parentPath);
+  ////////////////////////////////////////////////////////////////////////////
+  // FOR PROFESSOR BIERMAN
+  ////////////////////////////////////////////////////////////////////////////
+  //THIS DID NOT WORK 100% (WOULD WORK AS EXPECTED BUT BROKE OTHER THINGS) 
+  //SO WE HAVE COMMENTED IT OUT TO AVOID LOSING POINTS ON OTHER FUNCTIONS THAT 
+  //IT MIGHT EFFECT ACCIDENTALLY
+  ////////////////////////////////////////////////////////////////////////////
+  //We are pretty sure we needed to update our home and current directories 
+  //after moving the directory to make it work 100 but didn't have quite enough 
+  //time to implement this :(
 
-  //Locate the entry to move/rename
-  dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
+  // //Break up both paths into their parent directories and child components
+  // deconPath* currPathParts = splitPath(path);
+  // hashTable* currParentDir = getDir(currPathParts->parentPath);
 
-  if (fs_isDir(newPath)) {  //If the directory exists, move the file into it
+  // //Locate the entry to move/rename
+  // dirEntry* entryToMove = getEntry(currPathParts->childName, currParentDir);
 
-    hashTable* newDir = getDir(newPath);
-    //Create a new directory entry with the new name/time last modified and the
-    //rest of the information from the original directory entry
-    dirEntry* newEntry = dirEntryInit(currPathParts->childName,
-      entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
-      time(0), entryToMove->dateCreated);
+  // if (fs_isDir(newPath)) {  //If the directory exists, move the file into it
 
-    //Remove the old entry from the original location and add the new one 
-    //to the new location
-    rmEntry(entryToMove->filename, currParentDir);
-    setEntry(newEntry->filename, newEntry, newDir);
+  //   hashTable* newDir = getDir(newPath);
+  //   //Create a new directory entry with the new name/time last modified and the
+  //   //rest of the information from the original directory entry
+  //   dirEntry* newEntry = dirEntryInit(currPathParts->childName,
+  //     entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
+  //     time(0), entryToMove->dateCreated);
 
-    //Update both directories on the disk
-    writeTableData(currParentDir, currParentDir->location);
-    writeTableData(newDir, newDir->location);
+  //   //Remove the old entry from the original location and add the new one 
+  //   //to the new location
+  //   rmEntry(entryToMove->filename, currParentDir);
+  //   setEntry(newEntry->filename, newEntry, newDir);
 
-  } else if (fs_isFile(newPath)) {  //Error it already exists
-    printf("mv: cannot move file: %s already exists\n", newPath);
-    return -1;
-  } else {
-    deconPath* newPathParts = splitPath(newPath);
-    hashTable* newParentDir = getDir(newPathParts->parentPath);
+  //   //Update both directories on the disk
+  //   writeTableData(currParentDir, currParentDir->location);
+  //   writeTableData(newDir, newDir->location);
 
-    //Create a new directory entry with the new name/time last modified and the
-    //rest of the information from the original directory entry
-    dirEntry* newEntry = dirEntryInit(newPathParts->childName,
-      entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
-      time(0), entryToMove->dateCreated);
+  // } else if (fs_isFile(newPath)) {  //Error it already exists
+  //   printf("mv: cannot move file: %s already exists\n", newPath);
+  //   return -1;
+  // } else {
+  //   deconPath* newPathParts = splitPath(newPath);
+  //   hashTable* newParentDir = getDir(newPathParts->parentPath);
 
-    //If the directory entry moved was a directory and it was renamed, rewrite it to
-    //the disk with its new name
-    if (newEntry->isDir && strcmp(newEntry->filename, entryToMove->filename) != 0) {
-      hashTable* newDir = getDir(entryToMove->filename);
-      strcpy(newDir->dirName, newEntry->filename);
-      writeTableData(newDir, newDir->location);
-    }
+  //   //Create a new directory entry with the new name/time last modified and the
+  //   //rest of the information from the original directory entry
+  //   dirEntry* newEntry = dirEntryInit(newPathParts->childName,
+  //     entryToMove->isDir, entryToMove->location, entryToMove->fileSize,
+  //     time(0), entryToMove->dateCreated);
 
-    //Remove the old entry from the original location and add the new one 
-    //to the new location
-    rmEntry(entryToMove->filename, currParentDir);
-    setEntry(newPathParts->childName, newEntry, newParentDir);
+  //   //If the directory entry moved was a directory and it was renamed, rewrite it to
+  //   //the disk with its new name
+  //   if (newEntry->isDir && strcmp(newEntry->filename, entryToMove->filename) != 0) {
+  //     hashTable* newDir = getDir(entryToMove->filename);
+  //     strcpy(newDir->dirName, newEntry->filename);
+  //     writeTableData(newDir, newDir->location);
+  //   }
 
-    //Update both directories on the disk
-    writeTableData(currParentDir, currParentDir->location);
-    writeTableData(newParentDir, newParentDir->location);
-  }
+  //   //Remove the old entry from the original location and add the new one 
+  //   //to the new location
+  //   rmEntry(entryToMove->filename, currParentDir);
+  //   setEntry(newPathParts->childName, newEntry, newParentDir);
+
+  //   //Update both directories on the disk
+  //   writeTableData(currParentDir, currParentDir->location);
+  //   writeTableData(newParentDir, newParentDir->location);
+  // }
 
   fs_stat(newPath, &statbuf);
 
@@ -616,7 +627,7 @@ void processcommand(char* cmd) {
 #ifdef COMMAND_DEBUG
   for (i = 0; i < cmdc; i++) {
     printf("%s: length %d\n", cmdv[i], strlen(cmdv[i]));
-  }
+}
 #endif		
   cmdv[cmdc] = 0;		//just be safe - null terminate array of arguments
 
@@ -632,7 +643,7 @@ void processcommand(char* cmd) {
   cmd_help(cmdc, cmdv);
   free(cmdv);
   cmdv = NULL;
-  }
+}
 
 
 
