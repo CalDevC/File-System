@@ -748,7 +748,7 @@ char* fs_getcwd(char* buf, size_t size) {
   //copy path to buf
   strncpy(buf, path, size);
 
-  return buf;
+  return path;
 }
 
 //Creates a new directory
