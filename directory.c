@@ -227,7 +227,7 @@ int rmEntry(char key[20], hashTable* table) {
 int getNextIdx(int currIdx, hashTable* table) {
   int max = table->maxNumEntries;
 
-  //These atatic variables are used to track our position in the linked list 
+  //These static variables are used to track our position in the linked list 
   //if we have more than 1 value hashed to a location
   static int prevIdx = -999;    //The previously located index
   //The number of times we have returned the previous index

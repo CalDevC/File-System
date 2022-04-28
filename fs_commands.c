@@ -426,6 +426,8 @@ void setBlocksAsFree(int freeBlock, int blocksFreed) {
   }
 
   LBAwrite(bitVector, NUM_FREE_SPACE_BLOCKS, 1);
+  free(bitVector);
+  bitVector = NULL;
 }
 
 
@@ -482,6 +484,13 @@ int fs_stat(const char* path, struct fs_stat* buf) {
   strftime(time_buf, sizeof(time_buf), "%a %Y-%m-%d %H:%M:%S %Z", &ts);
   printf("Created: \t%s\n", time_buf);
 
+  free(pathParts->childName);
+  pathParts->childName = NULL;
+  free(pathParts);
+  pathParts = NULL;
+  free(dir);
+  dir = NULL;
+
   return 0;
 }
 
@@ -537,22 +546,29 @@ struct fs_diriteminfo* fs_readdir(fdDir* dirp) {
   //Calculate the new hash table index to use and save it to the fdDir
   int dirEntIdx = getNextIdx(dirp->dirEntryPosition, dirp->dirTable);
 
-  static int prevIdx = -999;
+  //These static variables are used to track our position in the linked list 
+  //if we have more than 1 value hashed to a location
+  static int prevIdx = -999;  //The previously located index
+  //The number of times we have visited the previous index
   static int prevIdxCount = 0;
 
+  //Update the number of times we have found the previous index
   if (prevIdx == dirEntIdx) {
     prevIdxCount++;
   } else {
     prevIdxCount = 0;
   }
 
-
+  //Return NULL to signify we have reached the end of the directory
   if (dirEntIdx == dirp->maxIdx) {
     return NULL;
   }
 
+  //Update descriptor with current location in directory
   dirp->dirEntryPosition = dirEntIdx;
 
+  //Get the information of the entry at the found index and use it to 
+  //create a dirItemInfo instance to return
   hashTable* dirTable = dirp->dirTable;
   dirEntry* dirEnt = dirTable->entries[dirEntIdx]->value;
 

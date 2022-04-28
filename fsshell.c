@@ -100,9 +100,12 @@ int displayFiles(fdDir* dirp, int flall, int fllong) {
         printf("%s\n", di->d_name);
       }
     }
+    free(di);
     di = fs_readdir(dirp);
   }
   fs_closedir(dirp);
+  free(di);
+  di = NULL;
 #endif
   return 0;
 }
