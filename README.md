@@ -1,132 +1,42 @@
-# CSC415 Group Term Assignment - File System
-
-This is a GROUP assignment written in C.  Only one person on the team needs to submit the project.
-
-Over the past month you and your team have been designing components of a file system.  You have defined the goals and designed the directory entry structure, the volume structure and the free space.  Now it is time to implement your file system.  
-
-To help I have written the low level LBA based read and write.  The routines are in fsLow.o, the necessary header for you to include file is fsLow.h.  You do NOT need to understand the code in fsLow, but you do need to understand the header file and the functions.  There are 2 key functions:
-
-
-
-`uint64_t LBAwrite (void * buffer, uint64_t lbaCount, uint64_t lbaPosition);`
-
-`uint64_t LBAread (void * buffer, uint64_t lbaCount, uint64_t lbaPosition);`
-
-LBAread and LBAwrite take a buffer, a count of LBA blocks and the starting LBA block number (0 based).  The buffer must be large enough for the number of blocks * the block size.
-
-On return, these function returns the number of **blocks** read or written.
-
-
-
-In addition, I have written a hexdump utility that will allow you to analyze your volume file in the Hexdump subdirectory.
-
-**Your assignment is to write a file system!** 
-
-You will need to format your volume, create and maintain a free space management system, initialize a root directory and maintain directory information, create, read, write, and delete files, and display info.  See below for specifics.
-
-I will provide an initial “main” (fsShell.c) that will be the driver to test you file system.  Your group can modifiy this driver as needed.   The driver will be interactive (with all built in commands) to list directories, create directories, add and remove files, copy files, move files, and two “special commands” one to copy from the normal filesystem to your filesystem and the other from your filesystem to the normal filesystem.
-
-You should modify this driver as needed for your filesystem, adding the display/setting of any additional meta data, and other functions you want to add.
-
-The shell also calls two function in the file fsInit.c `initFileSystem` and `exitFileSystem` which are routines for you to fill in with whatever initialization and exit code you need for your file system.  
-
-Some specifics - you need to provide the following interfaces:
-
-```
-b_io_fd b_open (char * filename, int flags);
-int b_read (b_io_fd fd, char * buffer, int count);
-int b_write (b_io_fd fd, char * buffer, int count);
-int b_seek (b_io_fd fd, off_t offset, int whence);
-void b_close (b_io_fd fd);
-
-```
-
-Note that the function are similar to the b_read and b_write you have done, there is a signifigant difference since you do not have the linux open and read to use.  
-You have to have methods of locating files, and knowing which logical block addresses are associated with the file.
-
-Directory Functions - see [https://www.thegeekstuff.com/2012/06/c-directory/](https://www.thegeekstuff.com/2012/06/c-directory/) for reference.
-
-```
-int fs_mkdir(const char *pathname, mode_t mode);
-int fs_rmdir(const char *pathname);
-fdDir * fs_opendir(const char *name);
-struct fs_diriteminfo *fs_readdir(fdDir *dirp);
-int fs_closedir(fdDir *dirp);
-
-char * fs_getcwd(char *buf, size_t size);
-int fs_setcwd(char *buf);   //linux chdir
-int fs_isFile(char * path);	//return 1 if file, 0 otherwise
-int fs_isDir(char * path);		//return 1 if directory, 0 otherwise
-int fs_delete(char* filename);	//removes a file
-
-struct fs_diriteminfo
-	{
-    unsigned short d_reclen;    /* length of this record */
-    unsigned char fileType;    
-    char d_name[256]; 			/* filename max filename is 255 characters */
-	};
-```
-Finally file stats - not all the fields in the structure are needed for this assingment
-
-```
-int fs_stat(const char *path, struct fs_stat *buf);
-
-struct fs_stat
-	{
-	off_t     st_size;    		/* total size, in bytes */
-	blksize_t st_blksize; 		/* blocksize for file system I/O */
-	blkcnt_t  st_blocks;  		/* number of 512B blocks allocated */
-	time_t    st_accesstime;   	/* time of last access */
-	time_t    st_modtime;   	/* time of last modification */
-	time_t    st_createtime;   	/* time of last status change */
-	
-	/* add additional attributes here for your file system */
-	};
-
-```
-
-These interfaces will also be provided to you in mfs.h.
-
-**Note:** You will need to modify mfs.h for the fdDIR strucutre to be what your file system need to maintain and track interation through the directory structure.
-
-A shell program designed to demonstrate your file system called fsshell.c is proviced.  It has a number of built in functions that will work if you implement the above interfaces, these are:
-```
-ls - Lists the file in a directory
-cp - Copies a file - source [dest]
-mv - Moves a file - source dest
-md - Make a new directory
-rm - Removes a file or directory
-cp2l - Copies a file from the test file system to the linux file system
-cp2fs - Copies a file from the Linux file system to the test file system
-cd - Changes directory
-pwd - Prints the working directory
-history - Prints out the history
-help - Prints out help
-```
-
-
-This is deliberately vague, as it is dependent on your filesystem design.  And this all you may get initially for a real-world assignment, so if you have questions, please ask.
-
-We will discuss some of this in class.
-
-For our purposes use 10,000,000 or less (minimum 500,000) bytes for the volume size and 512 bytes per sector.  These are the values to pass into startPartitionSystem.
-
-What needs to be submitted (via GitHub and iLearn):
-
-* 	All source files (.c and .h)
-* 	Modified Driver program (must be a program that just utilizes the header file for your file system).
-* 	The Driver program must be named:  `fsshell.c`
-* 	A make file (named “Makefile”) to build your entire program
- 
-* A PDF writeup on project that should include (this is also submitted in iLearn):
-	* The github link for your group submission.
-	* A description of your file system
-	* Issues you had
-	* Detail of how your driver program works
-	* Screen shots showing each of the commands listed above
-* 	Your volume file (limit 10MB)
-*  There will also be an INDIVIDUAL report (form) to complete.
-
-
-
-
+# File System
+![img1](https://user-images.githubusercontent.com/62198796/166818095-fb6958d6-77f5-4845-8f60-e893affa1369.PNG)
+![img2](https://user-images.githubusercontent.com/62198796/166818098-8315cb81-5bdf-4a8b-9034-2af9b7db293b.PNG)
+![img3](https://user-images.githubusercontent.com/62198796/166818099-1004fac1-ad28-4e79-a509-e8e20983e969.PNG)
+![img4](https://user-images.githubusercontent.com/62198796/166818100-4f77f92c-07f8-44fa-ae1e-b42fe2d0de43.PNG)
+![img5](https://user-images.githubusercontent.com/62198796/166818101-58fe821d-ede0-4158-926f-03909bb05fb2.PNG)
+![img6](https://user-images.githubusercontent.com/62198796/166818103-e4c9f672-8368-4445-aec9-43918ae60372.PNG)
+![img7](https://user-images.githubusercontent.com/62198796/166818105-1994475e-9329-456e-bdc3-89f41428a0af.PNG)
+![img8](https://user-images.githubusercontent.com/62198796/166818106-8b5c0188-5a3c-4439-9ced-261c572cd1bc.PNG)
+![img9](https://user-images.githubusercontent.com/62198796/166818108-57d3978b-7363-4b6a-96c8-02e268d588c3.PNG)
+![img10](https://user-images.githubusercontent.com/62198796/166818109-73585ea3-a67f-460b-92ac-029bdbea3d9e.PNG)
+![img11](https://user-images.githubusercontent.com/62198796/166818112-ab6a4cef-ccea-4687-b1b3-f6f30b20bc69.PNG)
+![img12](https://user-images.githubusercontent.com/62198796/166818113-63d4e225-a96b-406e-a8b8-ce699669b802.PNG)
+![img13](https://user-images.githubusercontent.com/62198796/166818115-068a6a84-30b7-4717-94db-771d29f2ed8c.PNG)
+![img14](https://user-images.githubusercontent.com/62198796/166818117-325b6b11-46ba-463a-b0e3-4dc89dabbe8c.PNG)
+![img15](https://user-images.githubusercontent.com/62198796/166818119-b50dc47f-3ec5-49b2-b508-4c89661ec58c.PNG)
+![img16](https://user-images.githubusercontent.com/62198796/166818121-fe4fe574-6dd2-4d53-abce-683551f3eee4.PNG)
+![img17](https://user-images.githubusercontent.com/62198796/166818124-04a82c14-5e18-4c59-9c49-fc8a26419d5f.PNG)
+![img18](https://user-images.githubusercontent.com/62198796/166818125-e48793fa-7f80-4b1a-8fc6-57547ec3296c.PNG)
+![img19](https://user-images.githubusercontent.com/62198796/166818126-457f124d-3cf3-41e8-a01e-b447eaf00b5d.PNG)
+![img20](https://user-images.githubusercontent.com/62198796/166818127-14d499c7-a35f-4fda-9a91-51408b7dc697.PNG)
+![img21](https://user-images.githubusercontent.com/62198796/166818128-b587a1bd-b1b9-477b-8255-3e835c002c9f.PNG)
+![img22](https://user-images.githubusercontent.com/62198796/166818129-3d0790eb-b123-4d5f-b085-82344747d2df.PNG)
+![img23](https://user-images.githubusercontent.com/62198796/166818130-fe9e559e-199a-4f41-9a79-32e5de27f3c1.PNG)
+![img24](https://user-images.githubusercontent.com/62198796/166818131-154c2a17-8660-4974-a64d-415500a04e4f.PNG)
+![img25](https://user-images.githubusercontent.com/62198796/166818132-a1e933b5-3d46-4c31-a6d1-f1f875afd979.PNG)
+![img26](https://user-images.githubusercontent.com/62198796/166818133-c759d6f8-84ca-47b4-9172-7bbc99dde327.PNG)
+![img27](https://user-images.githubusercontent.com/62198796/166818134-94a90751-3366-4fb0-ac2f-05ea00022131.PNG)
+![img28](https://user-images.githubusercontent.com/62198796/166818136-ab9edb2d-4d8b-4f7c-b622-97d3e8cfd8b1.PNG)
+![img29](https://user-images.githubusercontent.com/62198796/166818138-a92a22de-ea0e-49db-9132-b2d05a36992f.PNG)
+![img30](https://user-images.githubusercontent.com/62198796/166818140-68865d4b-378e-4ed3-993e-85cd4ebad084.PNG)
+![img31](https://user-images.githubusercontent.com/62198796/166818141-bc3a2b05-c61d-418f-83c2-7155c0ecb4e7.PNG)
+![img32](https://user-images.githubusercontent.com/62198796/166818143-8518d6c4-8e6a-4abb-a9b4-a6e9e94b14d3.PNG)
+![img33](https://user-images.githubusercontent.com/62198796/166818145-7a4d6896-3b1e-4501-a514-3995c7000e3f.PNG)
+![img34](https://user-images.githubusercontent.com/62198796/166818147-4bff1500-1907-497f-bca4-5ebad934be6f.PNG)
+![img35](https://user-images.githubusercontent.com/62198796/166818148-e01bfa44-34d0-42c7-9625-70212e7fe434.PNG)
+![img36](https://user-images.githubusercontent.com/62198796/166818150-a395ff72-8f66-47d9-9ba9-a68413d9fdff.PNG)
+![img37](https://user-images.githubusercontent.com/62198796/166818152-f804363a-8cee-4978-92ec-a743d89360c1.PNG)
+![img38](https://user-images.githubusercontent.com/62198796/166818154-624836b4-5c37-46aa-bd9f-615725668941.PNG)
+![img39](https://user-images.githubusercontent.com/62198796/166818156-55fa7c35-d53b-4bf6-8818-e5d877a097a0.PNG)
+![img40](https://user-images.githubusercontent.com/62198796/166818160-6ea63dbc-7a92-4cb5-8db7-b53dff9a72a8.PNG)
+![img41](https://user-images.githubusercontent.com/62198796/166818161-14cef7cc-4cb1-45ad-ad58-9aa81f2cad82.PNG)
